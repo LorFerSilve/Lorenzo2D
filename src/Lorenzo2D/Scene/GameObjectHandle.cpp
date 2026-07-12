@@ -8,8 +8,11 @@ namespace l2d
     {
     }
 
-    GameObjectHandle::GameObjectHandle(Scene* scene, GameObjectId id)
-        : m_scene(scene),
+    GameObjectHandle::GameObjectHandle(
+        const std::shared_ptr<detail::SceneHandleState>& sceneState,
+        GameObjectId id
+    )
+        : m_sceneState(sceneState),
         m_id(id)
     {
     }
@@ -26,18 +29,26 @@ namespace l2d
 
     Scene* GameObjectHandle::scene() const
     {
-        return m_scene;
+        const std::shared_ptr<detail::SceneHandleState> sceneState =
+            m_sceneState.lock();
+
+        if (sceneState == nullptr)
+            return nullptr;
+
+        return sceneState->scene;
     }
 
     GameObject* GameObjectHandle::get() const
     {
-        if (m_scene == nullptr)
+        Scene* currentScene = scene();
+
+        if (currentScene == nullptr)
             return nullptr;
 
         if (m_id == InvalidGameObjectId)
             return nullptr;
 
-        GameObject* gameObject = m_scene->findGameObjectById(m_id);
+        GameObject* gameObject = currentScene->findGameObjectById(m_id);
 
         if (gameObject == nullptr)
             return nullptr;
@@ -55,7 +66,7 @@ namespace l2d
 
     void GameObjectHandle::reset()
     {
-        m_scene = nullptr;
+        m_sceneState.reset();
         m_id = InvalidGameObjectId;
     }
 }

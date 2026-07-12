@@ -9,6 +9,8 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 
+#include <cmath>
+
 namespace l2d
 {
     PhysicsDebugRenderer2D::PhysicsDebugRenderer2D()
@@ -31,7 +33,7 @@ namespace l2d
 
     void PhysicsDebugRenderer2D::setOutlineThickness(float thickness)
     {
-        if (thickness < 0.f)
+        if (!std::isfinite(thickness) || thickness < 0.f)
             thickness = 0.f;
 
         m_outlineThickness = thickness;

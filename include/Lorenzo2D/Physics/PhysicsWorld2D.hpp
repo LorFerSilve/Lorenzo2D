@@ -17,7 +17,7 @@ namespace l2d
         void resetPhysicsStates(Scene& scene);
         void resolveCircleBoxCollisions(Scene& scene);
 
-        void resolveCircleAgainstBox(
+        bool resolveCircleAgainstBox(
             GameObject& circleObject,
             CircleCollider2D& circleCollider,
             RigidBody2D& rigidBody,

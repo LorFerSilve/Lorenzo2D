@@ -1,5 +1,6 @@
 #include "Lorenzo2D/ECS/GameObject.hpp"
 
+#include <cstddef>
 #include <utility>
 
 namespace
@@ -94,10 +95,14 @@ namespace l2d
         if (!m_active || m_destroyQueued)
             return;
 
-        for (const std::unique_ptr<Component>& component : m_components)
+        const std::size_t componentCount = m_components.size();
+
+        for (std::size_t index = 0; index < componentCount; ++index)
         {
-            if (m_destroyQueued)
+            if (!m_active || m_destroyQueued)
                 return;
+
+            Component* component = m_components[index].get();
 
             if (component->isActive())
                 component->onUpdate(deltaTime);
@@ -109,8 +114,15 @@ namespace l2d
         if (!m_active || m_destroyQueued)
             return;
 
-        for (const std::unique_ptr<Component>& component : m_components)
+        const std::size_t componentCount = m_components.size();
+
+        for (std::size_t index = 0; index < componentCount; ++index)
         {
+            if (!m_active || m_destroyQueued)
+                return;
+
+            Component* component = m_components[index].get();
+
             if (component->isActive())
                 component->onRender(window);
         }

@@ -23,6 +23,11 @@ namespace l2d
     public:
         explicit GameObject(std::string name = "GameObject");
 
+        GameObject(const GameObject&) = delete;
+        GameObject& operator=(const GameObject&) = delete;
+        GameObject(GameObject&&) = delete;
+        GameObject& operator=(GameObject&&) = delete;
+
         GameObjectId id() const;
         GameObjectId getId() const;
 

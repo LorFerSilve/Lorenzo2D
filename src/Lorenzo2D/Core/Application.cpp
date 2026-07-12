@@ -25,10 +25,16 @@ namespace l2d
             WindowEvents::beginFrame();
             processEvents();
 
+            if (!m_window.isOpen())
+                break;
+
             Input::update();
             Mouse::update(m_window);
 
             onUpdate(Time::deltaTime());
+
+            if (!m_window.isOpen())
+                break;
 
             m_window.clear(sf::Color::Black);
 

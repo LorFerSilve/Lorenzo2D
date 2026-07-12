@@ -1,10 +1,33 @@
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 
+#include <cmath>
+
 namespace l2d
 {
+    namespace
+    {
+        constexpr float MIN_DIMENSION = 0.0001f;
+
+        float sanitizeDimension(float dimension)
+        {
+            if (!std::isfinite(dimension) || dimension < MIN_DIMENSION)
+                return MIN_DIMENSION;
+
+            return dimension;
+        }
+
+        sf::Vector2f sanitizeSize(sf::Vector2f size)
+        {
+            return {
+                sanitizeDimension(size.x),
+                sanitizeDimension(size.y)
+            };
+        }
+    }
+
     BoxCollider2D::BoxCollider2D(sf::Vector2f size)
         : Collider2D(ColliderType::Box),
-        m_size(size)
+        m_size(sanitizeSize(size))
     {
     }
 
@@ -15,7 +38,7 @@ namespace l2d
 
     void BoxCollider2D::setSize(sf::Vector2f size)
     {
-        m_size = size;
+        m_size = sanitizeSize(size);
     }
 
     sf::Vector2f BoxCollider2D::min() const

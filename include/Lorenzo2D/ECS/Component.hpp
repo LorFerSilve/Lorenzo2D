@@ -15,6 +15,11 @@ namespace l2d
         Component();
         virtual ~Component() = default;
 
+        Component(const Component&) = delete;
+        Component& operator=(const Component&) = delete;
+        Component(Component&&) = delete;
+        Component& operator=(Component&&) = delete;
+
         bool isActive() const;
         void setActive(bool active);
 
