@@ -14,7 +14,13 @@ namespace l2d
         void step(Scene& scene, float deltaTime);
 
     private:
+        bool isPhysicsParticipant(
+            const Scene& scene,
+            const GameObject* gameObject
+        ) const;
+
         void resetPhysicsStates(Scene& scene);
+        void integrateRigidBodies(Scene& scene, float deltaTime);
         void resolveCircleBoxCollisions(Scene& scene);
 
         bool resolveCircleAgainstBox(

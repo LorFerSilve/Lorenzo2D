@@ -37,8 +37,10 @@ namespace l2d
 
         std::size_t sceneCount() const;
 
+        void fixedUpdate(float deltaTime);
         void update(float deltaTime);
         void render(sf::RenderWindow& window);
+        void render(sf::RenderWindow& window, float interpolationAlpha);
 
         void destroyQueuedGameObjects();
         std::size_t destroyQueuedGameObjectCount() const;

@@ -9,6 +9,26 @@ option(L2D_WARNINGS_AS_ERRORS "Treat Lorenzo2D compiler warnings as errors" OFF)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
+function(l2d_enable_warnings target)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /permissive-)
+        if(L2D_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE /WX)
+        endif()
+    else()
+        target_compile_options(${target} PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wshadow
+        )
+        if(L2D_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE -Werror)
+        endif()
+    endif()
+endfunction()
+
 if(L2D_USE_SYSTEM_SFML)
     find_package(SFML 3.1 CONFIG REQUIRED COMPONENTS Graphics)
 else()
@@ -36,6 +56,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Assets/AssetManager.cpp
     src/Lorenzo2D/Core/ActionMap.cpp
     src/Lorenzo2D/Core/Application.cpp
+    src/Lorenzo2D/Core/FixedStepScheduler.cpp
     src/Lorenzo2D/Core/Input.cpp
     src/Lorenzo2D/Core/Mouse.cpp
     src/Lorenzo2D/Core/Time.cpp
@@ -72,18 +93,7 @@ target_include_directories(Lorenzo2D
 
 target_compile_features(Lorenzo2D PUBLIC cxx_std_17)
 target_link_libraries(Lorenzo2D PUBLIC SFML::Graphics)
-
-if(MSVC)
-    target_compile_options(Lorenzo2D PRIVATE /W4 /permissive-)
-    if(L2D_WARNINGS_AS_ERRORS)
-        target_compile_options(Lorenzo2D PRIVATE /WX)
-    endif()
-else()
-    target_compile_options(Lorenzo2D PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
-    if(L2D_WARNINGS_AS_ERRORS)
-        target_compile_options(Lorenzo2D PRIVATE -Werror)
-    endif()
-endif()
+l2d_enable_warnings(Lorenzo2D)
 
 if(L2D_BUILD_SANDBOX)
     add_executable(Sandbox sandbox/main.cpp)
@@ -94,6 +104,7 @@ if(L2D_BUILD_SANDBOX)
     )
 
     target_link_libraries(Sandbox PRIVATE Lorenzo2D::Lorenzo2D)
+    l2d_enable_warnings(Sandbox)
 
     set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT Sandbox)
     set_target_properties(Sandbox PROPERTIES
@@ -106,6 +117,7 @@ if(L2D_BUILD_TESTS)
 
     add_executable(Lorenzo2DTests tests/Lorenzo2DTests.cpp)
     target_link_libraries(Lorenzo2DTests PRIVATE Lorenzo2D::Lorenzo2D)
+    l2d_enable_warnings(Lorenzo2DTests)
 
     add_test(NAME Lorenzo2DTests COMMAND Lorenzo2DTests)
 endif()

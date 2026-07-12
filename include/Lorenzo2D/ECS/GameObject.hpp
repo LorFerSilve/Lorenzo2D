@@ -14,6 +14,8 @@
 
 namespace l2d
 {
+    class Scene;
+
     using GameObjectId = std::uint64_t;
 
     constexpr GameObjectId InvalidGameObjectId = 0;
@@ -105,6 +107,7 @@ namespace l2d
 
         void update(float deltaTime);
         void render(sf::RenderWindow& window);
+        void render(sf::RenderWindow& window, float interpolationAlpha);
 
         Transform transform;
 
@@ -116,7 +119,10 @@ namespace l2d
 
         bool m_active = true;
         bool m_destroyQueued = false;
+        std::uint64_t m_fixedUpdateGeneration = 0;
 
         std::vector<std::unique_ptr<Component>> m_components;
+
+        friend class Scene;
     };
 }

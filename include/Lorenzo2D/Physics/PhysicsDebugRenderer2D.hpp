@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/System/Vector2.hpp>
 
 namespace sf
 {
@@ -32,11 +33,28 @@ namespace l2d
         sf::Color collidingColor() const;
 
         void render(Scene& scene, sf::RenderWindow& window) const;
+        void render(
+            Scene& scene,
+            sf::RenderWindow& window,
+            float interpolationAlpha
+        ) const;
 
     private:
-        void renderGameObject(GameObject& gameObject, sf::RenderWindow& window) const;
-        void renderBoxCollider(const BoxCollider2D& collider, sf::RenderWindow& window) const;
-        void renderCircleCollider(const CircleCollider2D& collider, sf::RenderWindow& window) const;
+        void renderGameObject(
+            GameObject& gameObject,
+            sf::RenderWindow& window,
+            float interpolationAlpha
+        ) const;
+        void renderBoxCollider(
+            const BoxCollider2D& collider,
+            sf::Vector2f ownerPosition,
+            sf::RenderWindow& window
+        ) const;
+        void renderCircleCollider(
+            const CircleCollider2D& collider,
+            sf::Vector2f ownerPosition,
+            sf::RenderWindow& window
+        ) const;
 
     private:
         bool m_enabled;

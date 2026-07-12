@@ -15,21 +15,28 @@ namespace l2d
     {
         constexpr std::size_t SOLVER_ITERATIONS = 4;
         constexpr float GROUND_NORMAL_Y_THRESHOLD = -0.7f;
-
-        bool isPhysicsParticipant(const GameObject* gameObject)
-        {
-            return gameObject != nullptr &&
-                gameObject->isActive() &&
-                !gameObject->isDestroyQueued();
-        }
     }
 
     void PhysicsWorld2D::step(Scene& scene, float deltaTime)
     {
-        (void)deltaTime;
-
         resetPhysicsStates(scene);
+
+        if (!std::isfinite(deltaTime) || deltaTime <= 0.f)
+            return;
+
+        integrateRigidBodies(scene, deltaTime);
         resolveCircleBoxCollisions(scene);
+    }
+
+    bool PhysicsWorld2D::isPhysicsParticipant(
+        const Scene& scene,
+        const GameObject* gameObject
+    ) const
+    {
+        return gameObject != nullptr &&
+            gameObject->isActive() &&
+            !gameObject->isDestroyQueued() &&
+            scene.isFixedStepParticipant(*gameObject);
     }
 
     void PhysicsWorld2D::resetPhysicsStates(Scene& scene)
@@ -52,6 +59,27 @@ namespace l2d
         }
     }
 
+    void PhysicsWorld2D::integrateRigidBodies(
+        Scene& scene,
+        float deltaTime
+    )
+    {
+        for (const auto& gameObjectPtr : scene.gameObjects())
+        {
+            GameObject* gameObject = gameObjectPtr.get();
+
+            if (!isPhysicsParticipant(scene, gameObject))
+                continue;
+
+            RigidBody2D* rigidBody = gameObject->getComponent<RigidBody2D>();
+
+            if (rigidBody == nullptr || !rigidBody->isActive())
+                continue;
+
+            rigidBody->integrate(deltaTime);
+        }
+    }
+
     void PhysicsWorld2D::resolveCircleBoxCollisions(Scene& scene)
     {
         for (std::size_t iteration = 0; iteration < SOLVER_ITERATIONS; ++iteration)
@@ -62,7 +90,7 @@ namespace l2d
             {
                 GameObject* circleObject = circleObjectPtr.get();
 
-                if (!isPhysicsParticipant(circleObject))
+                if (!isPhysicsParticipant(scene, circleObject))
                     continue;
 
                 auto* circleCollider = circleObject->getComponent<CircleCollider2D>();
@@ -82,7 +110,7 @@ namespace l2d
                 {
                     GameObject* boxObject = boxObjectPtr.get();
 
-                    if (!isPhysicsParticipant(boxObject))
+                    if (!isPhysicsParticipant(scene, boxObject))
                         continue;
 
                     if (boxObject == circleObject)

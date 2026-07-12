@@ -4,6 +4,15 @@
 
 namespace l2d
 {
+    struct TransformState
+    {
+        sf::Vector2f position = { 0.f, 0.f };
+        float rotation = 0.f;
+        sf::Vector2f scale = { 1.f, 1.f };
+    };
+
+    class Scene;
+
     class Transform
     {
     public:
@@ -21,9 +30,18 @@ namespace l2d
         const sf::Vector2f& scale() const;
         void setScale(sf::Vector2f scale);
 
+        TransformState interpolated(float alpha) const;
+        void resetInterpolation();
+
     private:
-        sf::Vector2f m_position;
-        float m_rotation;
-        sf::Vector2f m_scale;
+        void capturePrevious();
+        void synchronizePreviousBeforeFirstSnapshot();
+
+    private:
+        TransformState m_current;
+        TransformState m_previous;
+        bool m_hasHistory = false;
+
+        friend class Scene;
     };
 }

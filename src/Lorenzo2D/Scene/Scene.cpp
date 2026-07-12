@@ -1,6 +1,7 @@
 #include "Lorenzo2D/Scene/Scene.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <utility>
 
 namespace l2d
@@ -282,13 +283,27 @@ namespace l2d
         return m_gameObjects;
     }
 
-    void Scene::update(float deltaTime)
+    void Scene::fixedUpdate(float deltaTime)
     {
         beginDispatch();
 
         try
         {
+            advanceFixedUpdateGeneration();
+
             const std::size_t gameObjectCount = m_gameObjects.size();
+
+            for (std::size_t index = 0; index < gameObjectCount; ++index)
+            {
+                GameObject* gameObject = m_gameObjects[index].get();
+
+                if (gameObject != nullptr && !gameObject->isDestroyQueued())
+                {
+                    gameObject->m_fixedUpdateGeneration =
+                        m_fixedUpdateGeneration;
+                    gameObject->transform.capturePrevious();
+                }
+            }
 
             for (std::size_t index = 0; index < gameObjectCount; ++index)
             {
@@ -314,7 +329,46 @@ namespace l2d
         endDispatch();
     }
 
+    void Scene::advanceFixedUpdateGeneration()
+    {
+        if (
+            m_fixedUpdateGeneration ==
+            std::numeric_limits<std::uint64_t>::max()
+        )
+        {
+            for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
+            {
+                if (gameObject != nullptr)
+                    gameObject->m_fixedUpdateGeneration = 0;
+            }
+
+            m_fixedUpdateGeneration = 1;
+            return;
+        }
+
+        ++m_fixedUpdateGeneration;
+    }
+
+    bool Scene::isFixedStepParticipant(const GameObject& gameObject) const
+    {
+        return m_fixedUpdateGeneration == 0 ||
+            gameObject.m_fixedUpdateGeneration == m_fixedUpdateGeneration;
+    }
+
+    void Scene::update(float deltaTime)
+    {
+        fixedUpdate(deltaTime);
+    }
+
     void Scene::render(sf::RenderWindow& window)
+    {
+        render(window, 1.f);
+    }
+
+    void Scene::render(
+        sf::RenderWindow& window,
+        float interpolationAlpha
+    )
     {
         beginDispatch();
 
@@ -333,7 +387,7 @@ namespace l2d
                     gameObject->isActive() &&
                     !gameObject->isDestroyQueued())
                 {
-                    gameObject->render(window);
+                    gameObject->render(window, interpolationAlpha);
                 }
             }
         }

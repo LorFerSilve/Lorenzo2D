@@ -23,6 +23,10 @@ namespace l2d
         sf::Color color() const;
 
         void onRender(sf::RenderWindow& window) override;
+        void onRender(
+            sf::RenderWindow& window,
+            float interpolationAlpha
+        ) override;
 
     private:
         const sf::Texture* m_texture;

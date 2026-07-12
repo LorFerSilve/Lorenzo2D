@@ -19,6 +19,10 @@ namespace l2d
         sf::Color fillColor() const;
 
         void onRender(sf::RenderWindow& window) override;
+        void onRender(
+            sf::RenderWindow& window,
+            float interpolationAlpha
+        ) override;
 
     private:
         sf::CircleShape m_shape;

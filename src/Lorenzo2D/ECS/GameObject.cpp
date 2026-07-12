@@ -111,6 +111,14 @@ namespace l2d
 
     void GameObject::render(sf::RenderWindow& window)
     {
+        render(window, 1.f);
+    }
+
+    void GameObject::render(
+        sf::RenderWindow& window,
+        float interpolationAlpha
+    )
+    {
         if (!m_active || m_destroyQueued)
             return;
 
@@ -124,7 +132,7 @@ namespace l2d
             Component* component = m_components[index].get();
 
             if (component->isActive())
-                component->onRender(window);
+                component->onRender(window, interpolationAlpha);
         }
     }
 }
