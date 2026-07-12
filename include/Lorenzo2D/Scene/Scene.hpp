@@ -6,12 +6,15 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace l2d
 {
+    class PhysicsWorld2D;
+
     class Scene
     {
     public:
@@ -55,8 +58,10 @@ namespace l2d
 
         const std::vector<std::unique_ptr<GameObject>>& gameObjects() const;
 
+        void fixedUpdate(float deltaTime);
         void update(float deltaTime);
         void render(sf::RenderWindow& window);
+        void render(sf::RenderWindow& window, float interpolationAlpha);
 
         void clear();
 
@@ -64,6 +69,8 @@ namespace l2d
         void beginDispatch();
         void endDispatch();
         void destroyQueuedGameObjectsImmediately();
+        void advanceFixedUpdateGeneration();
+        bool isFixedStepParticipant(const GameObject& gameObject) const;
 
     private:
         std::string m_name;
@@ -72,7 +79,10 @@ namespace l2d
         std::size_t m_dispatchDepth = 0;
         bool m_destroySweepDeferred = false;
         bool m_clearDeferred = false;
+        std::uint64_t m_fixedUpdateGeneration = 0;
 
         std::shared_ptr<detail::SceneHandleState> m_handleState;
+
+        friend class PhysicsWorld2D;
     };
 }

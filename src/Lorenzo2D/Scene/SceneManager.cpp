@@ -66,20 +66,33 @@ namespace l2d
         return m_scenes.size();
     }
 
-    void SceneManager::update(float deltaTime)
+    void SceneManager::fixedUpdate(float deltaTime)
     {
         if (m_activeScene == nullptr)
             return;
 
-        m_activeScene->update(deltaTime);
+        m_activeScene->fixedUpdate(deltaTime);
+    }
+
+    void SceneManager::update(float deltaTime)
+    {
+        fixedUpdate(deltaTime);
     }
 
     void SceneManager::render(sf::RenderWindow& window)
     {
+        render(window, 1.f);
+    }
+
+    void SceneManager::render(
+        sf::RenderWindow& window,
+        float interpolationAlpha
+    )
+    {
         if (m_activeScene == nullptr)
             return;
 
-        m_activeScene->render(window);
+        m_activeScene->render(window, interpolationAlpha);
     }
 
     void SceneManager::destroyQueuedGameObjects()

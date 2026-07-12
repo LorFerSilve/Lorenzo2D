@@ -38,6 +38,15 @@ namespace l2d
         (void)window;
     }
 
+    void Component::onRender(
+        sf::RenderWindow& window,
+        float interpolationAlpha
+    )
+    {
+        (void)interpolationAlpha;
+        onRender(window);
+    }
+
     void Component::setOwner(GameObject* owner)
     {
         m_owner = owner;

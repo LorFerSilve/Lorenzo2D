@@ -64,7 +64,19 @@ namespace l2d
         return m_collidingColor;
     }
 
-    void PhysicsDebugRenderer2D::render(Scene& scene, sf::RenderWindow& window) const
+    void PhysicsDebugRenderer2D::render(
+        Scene& scene,
+        sf::RenderWindow& window
+    ) const
+    {
+        render(scene, window, 1.f);
+    }
+
+    void PhysicsDebugRenderer2D::render(
+        Scene& scene,
+        sf::RenderWindow& window,
+        float interpolationAlpha
+    ) const
     {
         if (!m_enabled)
             return;
@@ -77,37 +89,51 @@ namespace l2d
             if (!gameObject->isActive())
                 continue;
 
-            renderGameObject(*gameObject, window);
+            renderGameObject(*gameObject, window, interpolationAlpha);
         }
     }
 
-    void PhysicsDebugRenderer2D::renderGameObject(GameObject& gameObject, sf::RenderWindow& window) const
+    void PhysicsDebugRenderer2D::renderGameObject(
+        GameObject& gameObject,
+        sf::RenderWindow& window,
+        float interpolationAlpha
+    ) const
     {
-        if (const BoxCollider2D* boxCollider = gameObject.getComponent<BoxCollider2D>())
+        const sf::Vector2f ownerPosition =
+            gameObject.transform.interpolated(interpolationAlpha).position;
+
+        if (
+            const BoxCollider2D* boxCollider =
+                gameObject.getComponent<BoxCollider2D>()
+        )
         {
             if (boxCollider->isActive())
             {
-                renderBoxCollider(*boxCollider, window);
+                renderBoxCollider(*boxCollider, ownerPosition, window);
             }
         }
 
-        if (const CircleCollider2D* circleCollider = gameObject.getComponent<CircleCollider2D>())
+        if (
+            const CircleCollider2D* circleCollider =
+                gameObject.getComponent<CircleCollider2D>()
+        )
         {
             if (circleCollider->isActive())
             {
-                renderCircleCollider(*circleCollider, window);
+                renderCircleCollider(*circleCollider, ownerPosition, window);
             }
         }
     }
 
     void PhysicsDebugRenderer2D::renderBoxCollider(
         const BoxCollider2D& collider,
+        sf::Vector2f ownerPosition,
         sf::RenderWindow& window
     ) const
     {
         sf::RectangleShape shape;
 
-        shape.setPosition(collider.min());
+        shape.setPosition(ownerPosition + collider.offset());
         shape.setSize(collider.size());
 
         shape.setFillColor(sf::Color::Transparent);
@@ -123,11 +149,12 @@ namespace l2d
 
     void PhysicsDebugRenderer2D::renderCircleCollider(
         const CircleCollider2D& collider,
+        sf::Vector2f ownerPosition,
         sf::RenderWindow& window
     ) const
     {
         const float radius = collider.radius();
-        const sf::Vector2f center = collider.center();
+        const sf::Vector2f center = ownerPosition + collider.offset();
 
         sf::CircleShape shape(radius);
 

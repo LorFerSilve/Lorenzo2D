@@ -42,6 +42,7 @@ namespace GameActions
     constexpr const char* MoveRight = "MoveRight";
     constexpr const char* Jump = "Jump";
     constexpr const char* TogglePhysicsDebug = "TogglePhysicsDebug";
+    constexpr const char* Quit = "Quit";
 }
 
 namespace GameTags
@@ -57,6 +58,11 @@ public:
     explicit PlayerController(const l2d::ActionMap& actions)
         : m_actions(&actions)
     {
+    }
+
+    void requestJump()
+    {
+        m_jumpRequested = true;
     }
 
     void onUpdate(float deltaTime) override
@@ -87,20 +93,19 @@ public:
         if (m_actions != nullptr && m_actions->isActionPressed(GameActions::MoveRight))
             velocity.x += moveSpeed;
 
-        if (
-            m_actions != nullptr &&
-            m_actions->wasActionPressed(GameActions::Jump) &&
-            rigidBody->isGrounded()
-            )
+        if (m_jumpRequested && rigidBody->isGrounded())
         {
             velocity.y = -jumpSpeed;
         }
+
+        m_jumpRequested = false;
 
         rigidBody->setVelocity(velocity);
     }
 
 private:
     const l2d::ActionMap* m_actions;
+    bool m_jumpRequested = false;
 };
 
 class CollisionColorDebug : public l2d::Component
@@ -226,11 +231,17 @@ public:
     }
 
 protected:
-    void onUpdate(float deltaTime) override
+    void onFrameStart(float frameDeltaTime) override
     {
-        (void)deltaTime;
+        (void)frameDeltaTime;
 
-        const float dt = l2d::Time::deltaTime();
+        if (m_actions.wasActionPressed(GameActions::Quit))
+        {
+            requestClose();
+            return;
+        }
+
+        queuePlayerJump();
 
         if (m_actions.wasActionPressed(GameActions::TogglePhysicsDebug))
         {
@@ -244,14 +255,23 @@ protected:
 
             m_physicsDebugRenderer.setEnabled(enabled);
         }
+    }
 
-        m_sceneManager.update(dt);
+    void onFixedPreSimulation(float fixedDeltaTime) override
+    {
+        m_sceneManager.fixedUpdate(fixedDeltaTime);
+    }
 
+    void onFixedSimulation(float fixedDeltaTime) override
+    {
         if (m_levelScene != nullptr)
         {
-            m_physicsWorld.step(*m_levelScene, dt);
+            m_physicsWorld.step(*m_levelScene, fixedDeltaTime);
         }
+    }
 
+    void onFixedPostSimulation(float fixedDeltaTime) override
+    {
         collectCoins();
         checkEnemyCollisions();
 
@@ -259,24 +279,33 @@ protected:
 
         if (m_respawnCooldown > 0.f)
         {
-            m_respawnCooldown -= dt;
+            m_respawnCooldown -= fixedDeltaTime;
             if (m_respawnCooldown < 0.f)
                 m_respawnCooldown = 0.f;
         }
+    }
 
-        updateCamera(dt);
-        updateMouseDebug();
+    void onUpdate(float frameDeltaTime) override
+    {
+        updateCamera(
+            frameDeltaTime,
+            l2d::Time::interpolationAlpha()
+        );
+        updateMouseDebug(l2d::Time::interpolationAlpha());
         updateWindowEventDebug();
         updateDebug();
     }
 
-    void onRender(sf::RenderWindow& window) override
+    void onRender(
+        sf::RenderWindow& window,
+        float interpolationAlpha
+    ) override
     {
         if (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::World))
         {
             m_camera.applyTo(window);
 
-            m_sceneManager.render(window);
+            m_sceneManager.render(window, interpolationAlpha);
         }
 
         if (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::PhysicsDebug))
@@ -285,7 +314,11 @@ protected:
 
             if (m_levelScene != nullptr)
             {
-                m_physicsDebugRenderer.render(*m_levelScene, window);
+                m_physicsDebugRenderer.render(
+                    *m_levelScene,
+                    window,
+                    interpolationAlpha
+                );
             }
         }
 
@@ -513,6 +546,7 @@ private:
             return;
 
         player->transform.setPosition(m_playerSpawnPosition);
+        player->transform.resetInterpolation();
 
         l2d::RigidBody2D* rigidBody =
             player->getComponent<l2d::RigidBody2D>();
@@ -628,6 +662,7 @@ private:
         m_actions.bindAction(GameActions::Jump, l2d::Key::Up);
 
         m_actions.bindAction(GameActions::TogglePhysicsDebug, l2d::Key::F1);
+        m_actions.bindAction(GameActions::Quit, l2d::Key::Escape);
     }
 
     void setupAssets()
@@ -687,7 +722,24 @@ private:
         m_debugOverlay.setFillColor(sf::Color::White);
     }
 
-    sf::Vector2f playerCenter() const
+    void queuePlayerJump()
+    {
+        if (!m_actions.wasActionPressed(GameActions::Jump))
+            return;
+
+        l2d::GameObject* player = m_playerHandle.get();
+
+        if (player == nullptr)
+            return;
+
+        if (PlayerController* controller =
+            player->getComponent<PlayerController>())
+        {
+            controller->requestJump();
+        }
+    }
+
+    sf::Vector2f playerCenter(float interpolationAlpha = 1.f) const
     {
         l2d::GameObject* player = m_playerHandle.get();
 
@@ -697,18 +749,22 @@ private:
         l2d::CircleCollider2D* playerCollider =
             player->getComponent<l2d::CircleCollider2D>();
 
-        if (playerCollider != nullptr)
-            return playerCollider->center();
+        const l2d::TransformState transformState =
+            player->transform.interpolated(interpolationAlpha);
 
-        return player->transform.position();
+        if (playerCollider != nullptr)
+            return transformState.position + playerCollider->offset();
+
+        return transformState.position;
     }
 
     bool isPointInsideCircleCollider(
         const sf::Vector2f& point,
-        const l2d::CircleCollider2D& collider
+        const l2d::CircleCollider2D& collider,
+        const sf::Vector2f& ownerPosition
     ) const
     {
-        const sf::Vector2f center = collider.center();
+        const sf::Vector2f center = ownerPosition + collider.offset();
 
         const float dx = point.x - center.x;
         const float dy = point.y - center.y;
@@ -721,11 +777,12 @@ private:
 
     bool isPointInsideBoxCollider(
         const sf::Vector2f& point,
-        const l2d::BoxCollider2D& collider
+        const l2d::BoxCollider2D& collider,
+        const sf::Vector2f& ownerPosition
     ) const
     {
-        const sf::Vector2f minimum = collider.min();
-        const sf::Vector2f maximum = collider.max();
+        const sf::Vector2f minimum = ownerPosition + collider.offset();
+        const sf::Vector2f maximum = minimum + collider.size();
 
         return point.x >= minimum.x
             && point.x <= maximum.x
@@ -735,15 +792,23 @@ private:
 
     bool isPointInsideGameObject(
         const sf::Vector2f& point,
-        l2d::GameObject& gameObject
+        l2d::GameObject& gameObject,
+        float interpolationAlpha
     ) const
     {
+        const sf::Vector2f ownerPosition =
+            gameObject.transform.interpolated(interpolationAlpha).position;
+
         l2d::CircleCollider2D* circleCollider =
             gameObject.getComponent<l2d::CircleCollider2D>();
 
         if (circleCollider != nullptr)
         {
-            return isPointInsideCircleCollider(point, *circleCollider);
+            return isPointInsideCircleCollider(
+                point,
+                *circleCollider,
+                ownerPosition
+            );
         }
 
         l2d::BoxCollider2D* boxCollider =
@@ -751,13 +816,20 @@ private:
 
         if (boxCollider != nullptr)
         {
-            return isPointInsideBoxCollider(point, *boxCollider);
+            return isPointInsideBoxCollider(
+                point,
+                *boxCollider,
+                ownerPosition
+            );
         }
 
         return false;
     }
 
-    void pickObjectAtWorldPosition(const sf::Vector2f& worldPosition)
+    void pickObjectAtWorldPosition(
+        const sf::Vector2f& worldPosition,
+        float interpolationAlpha
+    )
     {
         if (m_levelScene == nullptr)
         {
@@ -782,7 +854,11 @@ private:
             if (gameObject->isDestroyQueued())
                 continue;
 
-            if (isPointInsideGameObject(worldPosition, *gameObject))
+            if (isPointInsideGameObject(
+                worldPosition,
+                *gameObject,
+                interpolationAlpha
+            ))
             {
                 m_selectedObjectHandle =
                     m_levelScene->createHandle(*gameObject);
@@ -802,11 +878,13 @@ private:
         m_camera.setCenter(playerCenter());
     }
 
-    void updateCamera(float deltaTime)
+    void updateCamera(float deltaTime, float interpolationAlpha)
     {
         if (m_playerHandle.isValid())
         {
-            m_cameraController.setFollowTarget(playerCenter());
+            m_cameraController.setFollowTarget(
+                playerCenter(interpolationAlpha)
+            );
         }
         else
         {
@@ -816,7 +894,7 @@ private:
         m_cameraController.update(deltaTime);
     }
 
-    void updateMouseDebug()
+    void updateMouseDebug(float interpolationAlpha)
     {
         m_mouseScreenPosition =
             l2d::Mouse::screenPosition();
@@ -827,7 +905,10 @@ private:
         if (l2d::Mouse::wasButtonPressed(l2d::MouseButton::Left))
         {
             m_leftMouseClicks++;
-            pickObjectAtWorldPosition(m_mouseWorldPosition);
+            pickObjectAtWorldPosition(
+                m_mouseWorldPosition,
+                interpolationAlpha
+            );
         }
     }
 
@@ -906,8 +987,14 @@ private:
         }
 
         text << "FPS: " << l2d::Time::fps() << "\n";
-        text << "DeltaTime: " << l2d::Time::deltaTime() << "\n";
+        text << "Frame dt: " << l2d::Time::frameDeltaTime() << "\n";
+        text << "Raw dt: " << l2d::Time::rawDeltaTime() << "\n";
+        text << "Fixed dt: " << l2d::Time::fixedDeltaTime() << "\n";
         text << "Frame: " << l2d::Time::frameCount() << "\n";
+        text << "Tick: " << l2d::Time::tickCount() << "\n";
+        text << "Ticks this frame: " << l2d::Time::ticksThisFrame() << "\n";
+        text << "Interpolation: " << l2d::Time::interpolationAlpha() << "\n";
+        text << "Dropped ticks: " << l2d::Time::droppedTickCount() << "\n";
 
         if (player != nullptr)
         {

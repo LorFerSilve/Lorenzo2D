@@ -54,20 +54,29 @@ namespace l2d
 
     void SpriteRenderer::onRender(sf::RenderWindow& window)
     {
+        onRender(window, 1.f);
+    }
+
+    void SpriteRenderer::onRender(
+        sf::RenderWindow& window,
+        float interpolationAlpha
+    )
+    {
         GameObject* gameObject = owner();
 
         if (gameObject == nullptr)
             return;
 
-        const sf::Vector2f transformScale = gameObject->transform.scale();
+        const TransformState state =
+            gameObject->transform.interpolated(interpolationAlpha);
 
-        m_sprite.setPosition(gameObject->transform.position());
-        m_sprite.setRotation(sf::degrees(gameObject->transform.rotation()));
+        m_sprite.setPosition(state.position);
+        m_sprite.setRotation(sf::degrees(state.rotation));
 
         m_sprite.setScale(
             {
-                m_sizeScale.x * transformScale.x,
-                m_sizeScale.y * transformScale.y
+                m_sizeScale.x * state.scale.x,
+                m_sizeScale.y * state.scale.y
             }
         );
 

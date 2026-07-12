@@ -100,12 +100,7 @@ namespace l2d
         return m_isGrounded;
     }
 
-    void RigidBody2D::setGrounded(bool grounded)
-    {
-        m_isGrounded = grounded;
-    }
-
-    void RigidBody2D::onUpdate(float deltaTime)
+    void RigidBody2D::integrate(float deltaTime)
     {
         GameObject* gameObject = owner();
 
@@ -126,5 +121,10 @@ namespace l2d
         gameObject->transform.move(m_velocity * deltaTime);
 
         m_forceAccumulator = { 0.f, 0.f };
+    }
+
+    void RigidBody2D::setGrounded(bool grounded)
+    {
+        m_isGrounded = grounded;
     }
 }

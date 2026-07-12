@@ -35,14 +35,25 @@ namespace l2d
 
     void RectangleRenderer::onRender(sf::RenderWindow& window)
     {
+        onRender(window, 1.f);
+    }
+
+    void RectangleRenderer::onRender(
+        sf::RenderWindow& window,
+        float interpolationAlpha
+    )
+    {
         GameObject* gameObject = owner();
 
         if (gameObject == nullptr)
             return;
 
-        m_shape.setPosition(gameObject->transform.position());
-        m_shape.setRotation(sf::degrees(gameObject->transform.rotation()));
-        m_shape.setScale(gameObject->transform.scale());
+        const TransformState state =
+            gameObject->transform.interpolated(interpolationAlpha);
+
+        m_shape.setPosition(state.position);
+        m_shape.setRotation(sf::degrees(state.rotation));
+        m_shape.setScale(state.scale);
 
         window.draw(m_shape);
     }

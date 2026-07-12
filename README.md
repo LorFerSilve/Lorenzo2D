@@ -10,7 +10,9 @@ production-ready engine.
 
 ## Current features
 
-- SFML application loop with frame timing, keyboard, mouse, and window events
+- SFML application loop with fixed simulation ticks and bounded catch-up
+- Previous/current transform interpolation for smooth presentation
+- Frame timing, keyboard, mouse, and window events
 - Action bindings with multiple keys per gameplay action
 - Game objects, transforms, polymorphic components, tags, and deferred deletion
 - Scenes, scene switching, object queries, and lifetime-aware object handles
@@ -20,7 +22,7 @@ production-ready engine.
 - Basic rigid bodies, gravity, circle/box collision response, and debug drawing
 - Named font and texture storage
 - Debug overlay and independently switchable world, physics, and UI layers
-- Headless regression tests for core scene, physics, and tilemap behavior
+- Headless regression tests for timing, transforms, scenes, physics, and tilemaps
 
 ## Requirements
 
@@ -62,7 +64,7 @@ Useful configuration options:
 | `L2D_BUILD_SANDBOX` | `ON` | Build the interactive sandbox |
 | `L2D_BUILD_TESTS` | `ON` | Build and register regression tests |
 | `L2D_USE_SYSTEM_SFML` | `OFF` | Use an installed SFML package |
-| `L2D_WARNINGS_AS_ERRORS` | `OFF` | Promote engine warnings to errors |
+| `L2D_WARNINGS_AS_ERRORS` | `OFF` | Promote engine, sandbox, and test warnings to errors |
 
 ## Sandbox controls
 
@@ -72,6 +74,7 @@ Useful configuration options:
 | `D` / Right arrow | Move right |
 | Space / Up arrow | Jump |
 | `F1` | Toggle physics debug outlines |
+| `Escape` | Quit the sandbox |
 | Mouse wheel | Zoom the camera |
 | Left mouse button | Inspect the object under the cursor |
 
@@ -114,12 +117,71 @@ cannot be copied or moved. Create object handles through `Scene::createHandle`,
 and mutate scene ownership only through `Scene` methods; `gameObjects()` exposes
 the collection for structurally read-only iteration.
 
+## Simulation timing
+
+`Application` separates wall-clock frames from deterministic simulation ticks.
+The default fixed delta is `1 / 60` second. A rendered frame may run zero, one,
+or several fixed ticks, but every simulation tick receives exactly the same
+delta.
+
+The callback order for each frame is:
+
+| Callback | Frequency | Intended work |
+| --- | --- | --- |
+| `onFrameStart` | Once, before fixed ticks | Sample and buffer frame-scoped input |
+| `onFixedPreSimulation` | Zero or more times | Controllers and scene component updates |
+| `onFixedSimulation` | Zero or more times | Physics integration and collision solving |
+| `onFixedPostSimulation` | Zero or more times | Contact-dependent gameplay and cleanup |
+| `onUpdate` | Once, after fixed ticks | Camera, UI, and other presentation state |
+| `onRender` | Once | Draw using the supplied interpolation alpha |
+
+Call `Scene::fixedUpdate` from `onFixedPreSimulation`; the retained
+`Scene::update` name is a compatibility alias for the same fixed-update path.
+Rigid bodies no longer integrate during component updates, so each fixed tick
+must call `PhysicsWorld2D::step` from `onFixedSimulation`. Objects created while
+a scene is running its fixed callbacks join component and physics processing on
+the following fixed tick, keeping both phases on the same participant set.
+
+Keyboard and mouse pressed/released edges are frame-scoped. The value remains
+visible to every fixed tick in that frame, so one-shot gameplay actions must be
+buffered in `onFrameStart` and consumed only once by fixed simulation. The
+sandbox uses this pattern for jumping.
+
+The timing values deliberately describe different clocks:
+
+| Value | Meaning |
+| --- | --- |
+| `Time::rawDeltaTime()` | Sanitized wall-clock duration of the frame |
+| `Time::frameDeltaTime()` / `deltaTime()` | Raw delta clamped by `maximumFrameDeltaTime` |
+| `Time::fixedDeltaTime()` | Constant delta supplied to every fixed tick |
+| `Time::realElapsedTime()` | Accumulated raw wall-clock time |
+| `Time::elapsedTime()` | Accumulated clamped frame time |
+| `Time::simulationTime()` | Time represented by completed fixed ticks |
+
+`frameCount`, `tickCount`, `ticksThisFrame`, `droppedTickCount`, and
+`droppedSimulationTime` expose the corresponding counters. FPS is calculated
+from raw wall-clock time rather than the clamped simulation budget.
+
+To prevent a long stall from causing a spiral of death, raw frame time is first
+clamped and only `maximumTicksPerFrame` ticks may execute. Whole ticks still
+left in the clamped accumulator are dropped and counted; the fractional
+remainder is retained for interpolation and the next frame. Time removed by the
+initial raw-frame clamp is visible through the difference between raw and frame
+delta, but is not counted as dropped simulation ticks.
+
+Rendering samples between each transform's previous and current fixed state.
+An alpha of zero selects the previous state and an alpha of one selects the
+current state, creating the usual one-fixed-tick presentation latency in return
+for smooth motion. Call `Transform::resetInterpolation()` after teleports,
+respawns, or other discontinuous movement to prevent a visible sweep from the
+old position.
+
 ## Current limitations and next milestones
 
 - Physics currently resolves dynamic circles against axis-aligned static boxes.
-  Transform rotation/scale, circle-circle response, dynamic boxes, a fixed-step
-  accumulator, continuous collision detection, and a spatial broad phase are
-  future work.
+  Physics support for transform rotation/scale, circle-circle response, dynamic
+  boxes, continuous collision detection, and a spatial broad phase are future
+  work.
 - Every solid tile is currently an individual entity, renderer, and collider.
   Chunked rendering, camera culling, and merged static colliders are planned for
   larger maps.

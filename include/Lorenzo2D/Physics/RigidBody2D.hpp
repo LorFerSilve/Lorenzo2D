@@ -33,9 +33,8 @@ namespace l2d
 
         bool isGrounded() const;
 
-        void onUpdate(float deltaTime) override;
-
     private:
+        void integrate(float deltaTime);
         void setGrounded(bool grounded);
 
     private:

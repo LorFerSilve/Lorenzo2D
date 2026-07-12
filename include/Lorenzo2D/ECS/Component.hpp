@@ -28,6 +28,10 @@ namespace l2d
 
         virtual void onUpdate(float deltaTime);
         virtual void onRender(sf::RenderWindow& window);
+        virtual void onRender(
+            sf::RenderWindow& window,
+            float interpolationAlpha
+        );
 
     private:
         void setOwner(GameObject* owner);
