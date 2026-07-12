@@ -17,6 +17,14 @@ namespace l2d
     class SceneManager
     {
     public:
+        SceneManager() = default;
+        ~SceneManager() = default;
+
+        SceneManager(const SceneManager&) = delete;
+        SceneManager& operator=(const SceneManager&) = delete;
+        SceneManager(SceneManager&&) = delete;
+        SceneManager& operator=(SceneManager&&) = delete;
+
         Scene& createScene(const std::string& name = "Scene");
 
         bool setActiveScene(const std::string& name);

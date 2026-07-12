@@ -6,8 +6,24 @@
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
+#include <cmath>
+#include <cstddef>
+
 namespace l2d
 {
+    namespace
+    {
+        constexpr std::size_t SOLVER_ITERATIONS = 4;
+        constexpr float GROUND_NORMAL_Y_THRESHOLD = -0.7f;
+
+        bool isPhysicsParticipant(const GameObject* gameObject)
+        {
+            return gameObject != nullptr &&
+                gameObject->isActive() &&
+                !gameObject->isDestroyQueued();
+        }
+    }
+
     void PhysicsWorld2D::step(Scene& scene, float deltaTime)
     {
         (void)deltaTime;
@@ -22,7 +38,7 @@ namespace l2d
         {
             GameObject* gameObject = gameObjectPtr.get();
 
-            if (gameObject == nullptr || !gameObject->isActive())
+            if (gameObject == nullptr)
                 continue;
 
             if (auto* circleCollider = gameObject->getComponent<CircleCollider2D>())
@@ -38,45 +54,65 @@ namespace l2d
 
     void PhysicsWorld2D::resolveCircleBoxCollisions(Scene& scene)
     {
-        for (const auto& circleObjectPtr : scene.gameObjects())
+        for (std::size_t iteration = 0; iteration < SOLVER_ITERATIONS; ++iteration)
         {
-            GameObject* circleObject = circleObjectPtr.get();
+            bool resolvedAnyCollision = false;
 
-            if (circleObject == nullptr || !circleObject->isActive())
-                continue;
-
-            auto* circleCollider = circleObject->getComponent<CircleCollider2D>();
-            auto* rigidBody = circleObject->getComponent<RigidBody2D>();
-
-            if (circleCollider == nullptr || rigidBody == nullptr)
-                continue;
-
-            for (const auto& boxObjectPtr : scene.gameObjects())
+            for (const auto& circleObjectPtr : scene.gameObjects())
             {
-                GameObject* boxObject = boxObjectPtr.get();
+                GameObject* circleObject = circleObjectPtr.get();
 
-                if (boxObject == nullptr || !boxObject->isActive())
+                if (!isPhysicsParticipant(circleObject))
                     continue;
 
-                if (boxObject == circleObject)
+                auto* circleCollider = circleObject->getComponent<CircleCollider2D>();
+                auto* rigidBody = circleObject->getComponent<RigidBody2D>();
+
+                if (
+                    circleCollider == nullptr ||
+                    rigidBody == nullptr ||
+                    !circleCollider->isActive() ||
+                    !rigidBody->isActive()
+                )
+                {
                     continue;
+                }
 
-                auto* boxCollider = boxObject->getComponent<BoxCollider2D>();
+                for (const auto& boxObjectPtr : scene.gameObjects())
+                {
+                    GameObject* boxObject = boxObjectPtr.get();
 
-                if (boxCollider == nullptr)
-                    continue;
+                    if (!isPhysicsParticipant(boxObject))
+                        continue;
 
-                resolveCircleAgainstBox(
-                    *circleObject,
-                    *circleCollider,
-                    *rigidBody,
-                    *boxCollider
-                );
+                    if (boxObject == circleObject)
+                        continue;
+
+                    auto* boxCollider = boxObject->getComponent<BoxCollider2D>();
+
+                    if (boxCollider == nullptr || !boxCollider->isActive())
+                        continue;
+
+                    if (
+                        resolveCircleAgainstBox(
+                            *circleObject,
+                            *circleCollider,
+                            *rigidBody,
+                            *boxCollider
+                        )
+                    )
+                    {
+                        resolvedAnyCollision = true;
+                    }
+                }
             }
+
+            if (!resolvedAnyCollision)
+                break;
         }
     }
 
-    void PhysicsWorld2D::resolveCircleAgainstBox(
+    bool PhysicsWorld2D::resolveCircleAgainstBox(
         GameObject& circleObject,
         CircleCollider2D& circleCollider,
         RigidBody2D& rigidBody,
@@ -84,7 +120,7 @@ namespace l2d
     )
     {
         if (!circleCollider.overlaps(boxCollider))
-            return;
+            return false;
 
         circleCollider.setColliding(true);
         boxCollider.setColliding(true);
@@ -92,25 +128,40 @@ namespace l2d
         const sf::Vector2f resolution =
             circleCollider.collisionResolutionVector(boxCollider);
 
+        if (!std::isfinite(resolution.x) || !std::isfinite(resolution.y))
+            return false;
+
+        const double resolutionLength = std::hypot(
+            static_cast<double>(resolution.x),
+            static_cast<double>(resolution.y)
+        );
+
+        if (!std::isfinite(resolutionLength) || resolutionLength <= 0.0)
+            return false;
+
+        const sf::Vector2f contactNormal{
+            static_cast<float>(resolution.x / resolutionLength),
+            static_cast<float>(resolution.y / resolutionLength)
+        };
+
         circleObject.transform.move(resolution);
 
         sf::Vector2f velocity = rigidBody.velocity();
 
-        if (resolution.x != 0.f)
-            velocity.x = 0.f;
+        const float inwardNormalVelocity =
+            velocity.x * contactNormal.x +
+            velocity.y * contactNormal.y;
 
-        if (resolution.y != 0.f)
+        if (inwardNormalVelocity < 0.f)
         {
-            velocity.y = 0.f;
-
-            // Als resolution.y negatief is, werd de cirkel omhoog geduwd.
-            // Dat betekent: hij stond op iets.
-            if (resolution.y < 0.f)
-            {
-                rigidBody.setGrounded(true);
-            }
+            velocity -= contactNormal * inwardNormalVelocity;
         }
 
+        if (contactNormal.y <= GROUND_NORMAL_Y_THRESHOLD)
+            rigidBody.setGrounded(true);
+
         rigidBody.setVelocity(velocity);
+
+        return true;
     }
 }

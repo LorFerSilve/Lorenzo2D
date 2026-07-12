@@ -2,12 +2,23 @@
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
 
+#include <cmath>
+
 namespace l2d
 {
     namespace
     {
         constexpr float GRAVITY = 980.f;
         constexpr float MIN_MASS = 0.0001f;
+        constexpr float DEFAULT_GRAVITY_SCALE = 1.f;
+
+        float sanitizeMass(float mass)
+        {
+            if (!std::isfinite(mass) || mass < MIN_MASS)
+                return MIN_MASS;
+
+            return mass;
+        }
     }
 
     RigidBody2D::RigidBody2D()
@@ -58,10 +69,7 @@ namespace l2d
 
     void RigidBody2D::setMass(float mass)
     {
-        if (mass <= 0.f)
-            m_mass = MIN_MASS;
-        else
-            m_mass = mass;
+        m_mass = sanitizeMass(mass);
     }
 
     bool RigidBody2D::useGravity() const
@@ -81,6 +89,9 @@ namespace l2d
 
     void RigidBody2D::setGravityScale(float gravityScale)
     {
+        if (!std::isfinite(gravityScale))
+            gravityScale = DEFAULT_GRAVITY_SCALE;
+
         m_gravityScale = gravityScale;
     }
 

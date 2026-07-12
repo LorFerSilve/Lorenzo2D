@@ -6,8 +6,15 @@
 namespace l2d
 {
     Scene::Scene(std::string name)
-        : m_name(std::move(name))
+        : m_name(std::move(name)),
+        m_handleState(std::make_shared<detail::SceneHandleState>())
     {
+        m_handleState->scene = this;
+    }
+
+    Scene::~Scene()
+    {
+        m_handleState->scene = nullptr;
     }
 
     const std::string& Scene::name() const
@@ -41,7 +48,7 @@ namespace l2d
                 if (currentGameObject->isDestroyQueued())
                     return GameObjectHandle();
 
-                return GameObjectHandle(this, currentGameObject->id());
+                return GameObjectHandle(m_handleState, currentGameObject->id());
             }
         }
 
@@ -58,7 +65,7 @@ namespace l2d
         if (gameObject->isDestroyQueued())
             return GameObjectHandle();
 
-        return GameObjectHandle(this, id);
+        return GameObjectHandle(m_handleState, id);
     }
 
     GameObject* Scene::findGameObjectById(GameObjectId id)
@@ -68,7 +75,7 @@ namespace l2d
 
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->id() == id)
+            if (!gameObject->isDestroyQueued() && gameObject->id() == id)
                 return gameObject.get();
         }
 
@@ -82,7 +89,7 @@ namespace l2d
 
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->id() == id)
+            if (!gameObject->isDestroyQueued() && gameObject->id() == id)
                 return gameObject.get();
         }
 
@@ -93,7 +100,7 @@ namespace l2d
     {
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->name() == name)
+            if (!gameObject->isDestroyQueued() && gameObject->name() == name)
                 return gameObject.get();
         }
 
@@ -104,7 +111,7 @@ namespace l2d
     {
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->name() == name)
+            if (!gameObject->isDestroyQueued() && gameObject->name() == name)
                 return gameObject.get();
         }
 
@@ -117,7 +124,7 @@ namespace l2d
 
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->hasTag(tag))
+            if (!gameObject->isDestroyQueued() && gameObject->hasTag(tag))
                 result.push_back(gameObject.get());
         }
 
@@ -132,7 +139,7 @@ namespace l2d
 
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->hasTag(tag))
+            if (!gameObject->isDestroyQueued() && gameObject->hasTag(tag))
                 result.push_back(gameObject.get());
         }
 
@@ -147,7 +154,9 @@ namespace l2d
 
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->isActive() && gameObject->hasTag(tag))
+            if (!gameObject->isDestroyQueued() &&
+                gameObject->isActive() &&
+                gameObject->hasTag(tag))
                 result.push_back(gameObject.get());
         }
 
@@ -162,7 +171,9 @@ namespace l2d
 
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->isActive() && gameObject->hasTag(tag))
+            if (!gameObject->isDestroyQueued() &&
+                gameObject->isActive() &&
+                gameObject->hasTag(tag))
                 result.push_back(gameObject.get());
         }
 
@@ -175,7 +186,7 @@ namespace l2d
 
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->hasTag(tag))
+            if (!gameObject->isDestroyQueued() && gameObject->hasTag(tag))
                 count++;
         }
 
@@ -188,7 +199,9 @@ namespace l2d
 
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->isActive() && gameObject->hasTag(tag))
+            if (!gameObject->isDestroyQueued() &&
+                gameObject->isActive() &&
+                gameObject->hasTag(tag))
                 count++;
         }
 
@@ -208,6 +221,17 @@ namespace l2d
     }
 
     void Scene::destroyQueuedGameObjects()
+    {
+        if (m_dispatchDepth > 0)
+        {
+            m_destroySweepDeferred = true;
+            return;
+        }
+
+        destroyQueuedGameObjectsImmediately();
+    }
+
+    void Scene::destroyQueuedGameObjectsImmediately()
     {
         std::vector<std::unique_ptr<GameObject>>::iterator newEnd =
             std::remove_if(
@@ -246,16 +270,11 @@ namespace l2d
 
         for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
         {
-            if (gameObject->isActive())
+            if (!gameObject->isDestroyQueued() && gameObject->isActive())
                 count++;
         }
 
         return count;
-    }
-
-    std::vector<std::unique_ptr<GameObject>>& Scene::gameObjects()
-    {
-        return m_gameObjects;
     }
 
     const std::vector<std::unique_ptr<GameObject>>& Scene::gameObjects() const
@@ -265,24 +284,111 @@ namespace l2d
 
     void Scene::update(float deltaTime)
     {
-        for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
+        beginDispatch();
+
+        try
         {
-            if (gameObject->isActive() && !gameObject->isDestroyQueued())
-                gameObject->update(deltaTime);
+            const std::size_t gameObjectCount = m_gameObjects.size();
+
+            for (std::size_t index = 0; index < gameObjectCount; ++index)
+            {
+                if (m_clearDeferred)
+                    break;
+
+                GameObject* gameObject = m_gameObjects[index].get();
+
+                if (gameObject != nullptr &&
+                    gameObject->isActive() &&
+                    !gameObject->isDestroyQueued())
+                {
+                    gameObject->update(deltaTime);
+                }
+            }
         }
+        catch (...)
+        {
+            endDispatch();
+            throw;
+        }
+
+        endDispatch();
     }
 
     void Scene::render(sf::RenderWindow& window)
     {
-        for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
+        beginDispatch();
+
+        try
         {
-            if (gameObject->isActive() && !gameObject->isDestroyQueued())
-                gameObject->render(window);
+            const std::size_t gameObjectCount = m_gameObjects.size();
+
+            for (std::size_t index = 0; index < gameObjectCount; ++index)
+            {
+                if (m_clearDeferred)
+                    break;
+
+                GameObject* gameObject = m_gameObjects[index].get();
+
+                if (gameObject != nullptr &&
+                    gameObject->isActive() &&
+                    !gameObject->isDestroyQueued())
+                {
+                    gameObject->render(window);
+                }
+            }
         }
+        catch (...)
+        {
+            endDispatch();
+            throw;
+        }
+
+        endDispatch();
     }
 
     void Scene::clear()
     {
+        if (m_dispatchDepth > 0)
+        {
+            for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
+            {
+                if (gameObject != nullptr)
+                    gameObject->destroy();
+            }
+
+            m_clearDeferred = true;
+            return;
+        }
+
+        m_clearDeferred = false;
+        m_destroySweepDeferred = false;
         m_gameObjects.clear();
+    }
+
+    void Scene::beginDispatch()
+    {
+        m_dispatchDepth++;
+    }
+
+    void Scene::endDispatch()
+    {
+        m_dispatchDepth--;
+
+        if (m_dispatchDepth > 0)
+            return;
+
+        if (m_clearDeferred)
+        {
+            m_clearDeferred = false;
+            m_destroySweepDeferred = false;
+            m_gameObjects.clear();
+            return;
+        }
+
+        if (m_destroySweepDeferred)
+        {
+            m_destroySweepDeferred = false;
+            destroyQueuedGameObjectsImmediately();
+        }
     }
 }

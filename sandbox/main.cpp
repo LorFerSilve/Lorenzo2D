@@ -22,7 +22,7 @@
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Scene/SceneManager.hpp>
 #include <Lorenzo2D/Scene/GameObjectHandle.hpp>
-#include <Lorenzo2D/Tilemap/TileMap.hpp>
+#include <Lorenzo2D/Tilemap/Tilemap.hpp>
 
 #include <SFML/Graphics.hpp>    
 
@@ -606,7 +606,7 @@ private:
             "............................................................",
             "....................C.......................................",
             "..................######....................................",
-            ".......C....................................................",
+            ".......C.............E......................................",
             ".......######...............................................",
             "............................................................",
             "############################################################",
@@ -632,17 +632,47 @@ private:
 
     void setupAssets()
     {
-        bool fontLoaded = m_assets.loadFont("debug", "C:/Windows/Fonts/arial.ttf");
+        const std::filesystem::path assetRoot = L2D_ASSET_ROOT;
 
-        if (!fontLoaded)
+        std::vector<std::filesystem::path> fontCandidates =
         {
-            m_assets.loadFont("debug", "C:/Windows/Fonts/segoeui.ttf");
+            assetRoot / "fonts" / "DejaVuSans.ttf"
+        };
+
+#if defined(_WIN32)
+        fontCandidates.emplace_back("C:/Windows/Fonts/arial.ttf");
+        fontCandidates.emplace_back("C:/Windows/Fonts/segoeui.ttf");
+#elif defined(__APPLE__)
+        fontCandidates.emplace_back(
+            "/System/Library/Fonts/Supplemental/Arial.ttf"
+        );
+#else
+        fontCandidates.emplace_back(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        );
+        fontCandidates.emplace_back(
+            "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"
+        );
+#endif
+
+        for (const std::filesystem::path& fontPath : fontCandidates)
+        {
+            if (m_assets.loadFont("debug", fontPath.string()))
+                break;
         }
 
-        m_assets.loadTexture("player", "assets/textures/player.png", true);
+        m_assets.loadTexture(
+            "player",
+            (assetRoot / "textures" / "player.png").string(),
+            true
+        );
 
-        // Optioneel. Als dit bestand niet bestaat, is dat geen probleem.
-        m_assets.loadTexture("coin", "assets/textures/coin.png", true);
+        // Optional. Shape renderers are used when these files are unavailable.
+        m_assets.loadTexture(
+            "coin",
+            (assetRoot / "textures" / "coin.png").string(),
+            true
+        );
     }
 
     void setupDebugOverlay()
@@ -735,7 +765,7 @@ private:
             return;
         }
 
-        std::vector<std::unique_ptr<l2d::GameObject>>& gameObjects =
+        const std::vector<std::unique_ptr<l2d::GameObject>>& gameObjects =
             m_levelScene->gameObjects();
 
         for (std::size_t index = gameObjects.size(); index > 0; index--)

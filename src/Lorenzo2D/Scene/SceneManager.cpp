@@ -104,7 +104,7 @@ namespace l2d
 
     void SceneManager::clear()
     {
-        m_scenes.clear();
         m_activeScene = nullptr;
+        m_scenes.clear();
     }
 }

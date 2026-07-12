@@ -5,11 +5,22 @@
 
 namespace l2d
 {
+    namespace
+    {
+        float sanitizeRadius(float radius)
+        {
+            if (!std::isfinite(radius) || radius < 0.f)
+                return 0.f;
+
+            return radius;
+        }
+    }
+
     CircleCollider2D::CircleCollider2D(float radius)
         : Collider2D(ColliderType::Circle),
-        m_radius(radius)
+        m_radius(sanitizeRadius(radius))
     {
-        setOffset({ radius, radius });
+        setOffset({ m_radius, m_radius });
     }
 
     float CircleCollider2D::radius() const
@@ -19,8 +30,8 @@ namespace l2d
 
     void CircleCollider2D::setRadius(float radius)
     {
-        m_radius = radius;
-        setOffset({ radius, radius });
+        m_radius = sanitizeRadius(radius);
+        setOffset({ m_radius, m_radius });
     }
 
     sf::Vector2f CircleCollider2D::center() const

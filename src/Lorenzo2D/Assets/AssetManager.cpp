@@ -1,5 +1,7 @@
 #include <Lorenzo2D/Assets/AssetManager.hpp>
 
+#include <utility>
+
 namespace l2d
 {
     bool AssetManager::loadFont(const std::string& name, const std::string& filepath)

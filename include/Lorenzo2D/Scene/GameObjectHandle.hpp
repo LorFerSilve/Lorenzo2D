@@ -2,15 +2,24 @@
 
 #include "Lorenzo2D/ECS/GameObject.hpp"
 
+#include <memory>
+
 namespace l2d
 {
     class Scene;
+
+    namespace detail
+    {
+        struct SceneHandleState
+        {
+            Scene* scene = nullptr;
+        };
+    }
 
     class GameObjectHandle
     {
     public:
         GameObjectHandle();
-        GameObjectHandle(Scene* scene, GameObjectId id);
 
         GameObjectId id() const;
         GameObjectId getId() const;
@@ -23,7 +32,15 @@ namespace l2d
         void reset();
 
     private:
-        Scene* m_scene = nullptr;
+        GameObjectHandle(
+            const std::shared_ptr<detail::SceneHandleState>& sceneState,
+            GameObjectId id
+        );
+
+    private:
+        std::weak_ptr<detail::SceneHandleState> m_sceneState;
         GameObjectId m_id = InvalidGameObjectId;
+
+        friend class Scene;
     };
 }

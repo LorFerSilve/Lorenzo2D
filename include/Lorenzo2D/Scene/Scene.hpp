@@ -16,6 +16,12 @@ namespace l2d
     {
     public:
         explicit Scene(std::string name = "Scene");
+        ~Scene();
+
+        Scene(const Scene&) = delete;
+        Scene& operator=(const Scene&) = delete;
+        Scene(Scene&&) = delete;
+        Scene& operator=(Scene&&) = delete;
 
         const std::string& name() const;
         const std::string& getName() const;
@@ -47,7 +53,6 @@ namespace l2d
         std::size_t gameObjectCount() const;
         std::size_t activeGameObjectCount() const;
 
-        std::vector<std::unique_ptr<GameObject>>& gameObjects();
         const std::vector<std::unique_ptr<GameObject>>& gameObjects() const;
 
         void update(float deltaTime);
@@ -56,7 +61,18 @@ namespace l2d
         void clear();
 
     private:
+        void beginDispatch();
+        void endDispatch();
+        void destroyQueuedGameObjectsImmediately();
+
+    private:
         std::string m_name;
         std::vector<std::unique_ptr<GameObject>> m_gameObjects;
+
+        std::size_t m_dispatchDepth = 0;
+        bool m_destroySweepDeferred = false;
+        bool m_clearDeferred = false;
+
+        std::shared_ptr<detail::SceneHandleState> m_handleState;
     };
 }

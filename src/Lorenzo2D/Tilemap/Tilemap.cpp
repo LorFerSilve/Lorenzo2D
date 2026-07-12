@@ -1,4 +1,4 @@
-#include <Lorenzo2D/Tilemap/TileMap.hpp>
+#include <Lorenzo2D/Tilemap/Tilemap.hpp>
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
@@ -6,25 +6,69 @@
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <fstream>
 #include <string>
+#include <utility>
 
 namespace l2d
 {
     TileMap::TileMap()
         : m_tileSize(40.f, 40.f),
+        m_loadedTileSize(0.f, 0.f),
         m_solidTileColor(sf::Color::White),
         m_worldSize(0.f, 0.f)
     {
     }
 
+    TileMap::~TileMap()
+    {
+        unload();
+    }
+
+    TileMap::TileMap(TileMap&& other) noexcept
+        : m_tileSize(other.m_tileSize),
+        m_loadedTileSize(other.m_loadedTileSize),
+        m_solidTileColor(other.m_solidTileColor),
+        m_worldSize(other.m_worldSize),
+        m_layout(std::move(other.m_layout)),
+        m_generatedTiles(std::move(other.m_generatedTiles))
+    {
+        other.m_loadedTileSize = { 0.f, 0.f };
+        other.m_worldSize = { 0.f, 0.f };
+        other.m_layout.clear();
+        other.m_generatedTiles.clear();
+    }
+
+    TileMap& TileMap::operator=(TileMap&& other) noexcept
+    {
+        if (this == &other)
+            return *this;
+
+        unload();
+
+        m_tileSize = other.m_tileSize;
+        m_loadedTileSize = other.m_loadedTileSize;
+        m_solidTileColor = other.m_solidTileColor;
+        m_worldSize = other.m_worldSize;
+        m_layout = std::move(other.m_layout);
+        m_generatedTiles = std::move(other.m_generatedTiles);
+
+        other.m_loadedTileSize = { 0.f, 0.f };
+        other.m_worldSize = { 0.f, 0.f };
+        other.m_layout.clear();
+        other.m_generatedTiles.clear();
+
+        return *this;
+    }
+
     void TileMap::setTileSize(sf::Vector2f tileSize)
     {
-        if (tileSize.x <= 0.f)
+        if (!std::isfinite(tileSize.x) || tileSize.x <= 0.f)
             tileSize.x = 1.f;
 
-        if (tileSize.y <= 0.f)
+        if (!std::isfinite(tileSize.y) || tileSize.y <= 0.f)
             tileSize.y = 1.f;
 
         m_tileSize = tileSize;
@@ -33,6 +77,11 @@ namespace l2d
     const sf::Vector2f& TileMap::tileSize() const
     {
         return m_tileSize;
+    }
+
+    const sf::Vector2f& TileMap::loadedTileSize() const
+    {
+        return m_loadedTileSize;
     }
 
     void TileMap::setSolidTileColor(sf::Color color)
@@ -52,54 +101,79 @@ namespace l2d
         const std::string& objectPrefix
     )
     {
-        m_layout = layout;
+        Layout newLayout = layout;
+        const sf::Vector2f newLoadedTileSize = m_tileSize;
 
         std::size_t maxColumns = 0;
+        std::size_t solidTileCount = 0;
 
-        for (const std::string& row : m_layout)
+        for (const std::string& row : newLayout)
         {
             maxColumns = std::max(maxColumns, row.size());
+            solidTileCount += static_cast<std::size_t>(
+                std::count(row.begin(), row.end(), solidChar)
+            );
         }
 
-        m_worldSize =
+        const sf::Vector2f newWorldSize =
         {
-            static_cast<float>(maxColumns) * m_tileSize.x,
-            static_cast<float>(m_layout.size()) * m_tileSize.y
+            static_cast<float>(maxColumns) * newLoadedTileSize.x,
+            static_cast<float>(newLayout.size()) * newLoadedTileSize.y
         };
 
-        int tileIndex = 0;
+        std::vector<GameObjectHandle> newGeneratedTiles;
+        newGeneratedTiles.reserve(solidTileCount);
 
-        for (std::size_t row = 0; row < m_layout.size(); ++row)
+        std::size_t tileIndex = 0;
+
+        try
         {
-            for (std::size_t column = 0; column < m_layout[row].size(); ++column)
+            for (std::size_t row = 0; row < newLayout.size(); ++row)
             {
-                if (m_layout[row][column] != solidChar)
-                    continue;
-
-                const sf::Vector2f position =
+                for (std::size_t column = 0; column < newLayout[row].size(); ++column)
                 {
-                    static_cast<float>(column) * m_tileSize.x,
-                    static_cast<float>(row) * m_tileSize.y
-                };
+                    if (newLayout[row][column] != solidChar)
+                        continue;
 
-                GameObject& tile = scene.createGameObject(
-                    objectPrefix + "_" + std::to_string(tileIndex)
-                );
+                    const sf::Vector2f position =
+                    {
+                        static_cast<float>(column) * newLoadedTileSize.x,
+                        static_cast<float>(row) * newLoadedTileSize.y
+                    };
 
-                tile.transform.setPosition(position);
+                    GameObject& tile = scene.createGameObject(
+                        objectPrefix + "_" + std::to_string(tileIndex)
+                    );
 
-                tile.addComponent<RectangleRenderer>(
-                    m_tileSize,
-                    m_solidTileColor
-                );
+                    newGeneratedTiles.push_back(scene.createHandle(tile));
 
-                tile.addComponent<BoxCollider2D>(
-                    m_tileSize
-                );
+                    tile.transform.setPosition(position);
 
-                tileIndex++;
+                    tile.addComponent<RectangleRenderer>(
+                        newLoadedTileSize,
+                        m_solidTileColor
+                    );
+
+                    tile.addComponent<BoxCollider2D>(
+                        newLoadedTileSize
+                    );
+
+                    tileIndex++;
+                }
             }
         }
+        catch (...)
+        {
+            queueGeneratedTilesForDestruction(newGeneratedTiles);
+            throw;
+        }
+
+        queueGeneratedTilesForDestruction(m_generatedTiles);
+
+        m_layout = std::move(newLayout);
+        m_loadedTileSize = newLoadedTileSize;
+        m_worldSize = newWorldSize;
+        m_generatedTiles = std::move(newGeneratedTiles);
     }
 
     bool TileMap::loadFromFile(
@@ -118,6 +192,16 @@ namespace l2d
         return true;
     }
 
+    void TileMap::unload()
+    {
+        queueGeneratedTilesForDestruction(m_generatedTiles);
+
+        m_generatedTiles.clear();
+        m_layout.clear();
+        m_loadedTileSize = { 0.f, 0.f };
+        m_worldSize = { 0.f, 0.f };
+    }
+
     bool TileMap::findFirstTilePosition(
         char tileChar,
         sf::Vector2f& outPosition,
@@ -133,13 +217,13 @@ namespace l2d
 
                 outPosition =
                 {
-                    static_cast<float>(column) * m_tileSize.x,
-                    static_cast<float>(row) * m_tileSize.y
+                    static_cast<float>(column) * m_loadedTileSize.x,
+                    static_cast<float>(row) * m_loadedTileSize.y
                 };
 
                 if (centered)
                 {
-                    outPosition += m_tileSize * 0.5f;
+                    outPosition += m_loadedTileSize * 0.5f;
                 }
 
                 return true;
@@ -165,13 +249,13 @@ namespace l2d
 
                 sf::Vector2f position =
                 {
-                    static_cast<float>(column) * m_tileSize.x,
-                    static_cast<float>(row) * m_tileSize.y
+                    static_cast<float>(column) * m_loadedTileSize.x,
+                    static_cast<float>(row) * m_loadedTileSize.y
                 };
 
                 if (centered)
                 {
-                    position += m_tileSize * 0.5f;
+                    position += m_loadedTileSize * 0.5f;
                 }
 
                 positions.push_back(position);
@@ -208,12 +292,28 @@ namespace l2d
                 line.pop_back();
             }
 
-            if (!line.empty())
-            {
-                layout.push_back(line);
-            }
+            layout.push_back(line);
         }
 
+        if (file.bad())
+            return {};
+
         return layout;
+    }
+
+    void TileMap::queueGeneratedTilesForDestruction(
+        const std::vector<GameObjectHandle>& generatedTiles
+    ) const
+    {
+        for (const GameObjectHandle& handle : generatedTiles)
+        {
+            Scene* scene = handle.scene();
+            GameObject* tile = handle.get();
+
+            if (scene != nullptr && tile != nullptr)
+            {
+                scene->destroyGameObject(*tile);
+            }
+        }
     }
 }
