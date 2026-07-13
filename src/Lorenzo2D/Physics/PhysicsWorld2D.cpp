@@ -9,6 +9,8 @@
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
+#include "UniformGridBroadPhase2D.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -28,6 +30,8 @@ namespace l2d
         constexpr float DEFAULT_PENETRATION_SLOP = 0.01f;
         constexpr float DEFAULT_RESTITUTION_VELOCITY_THRESHOLD = 1.f;
         constexpr float DEFAULT_GROUNDED_NORMAL_THRESHOLD = 0.7f;
+        constexpr float DEFAULT_BROAD_PHASE_CELL_SIZE = 128.f;
+        constexpr std::uint32_t DEFAULT_BROAD_PHASE_MAX_CELLS_PER_PROXY = 256;
 
         struct PhysicsProxy2D
         {
@@ -54,6 +58,115 @@ namespace l2d
         bool isFinite(sf::Vector2f value)
         {
             return std::isfinite(value.x) && std::isfinite(value.y);
+        }
+
+        bool conservativeFloat(
+            double value,
+            bool lowerBound,
+            float& result
+        )
+        {
+            const double maximum = static_cast<double>(
+                std::numeric_limits<float>::max()
+            );
+
+            if (!std::isfinite(value) || value < -maximum || value > maximum)
+                return false;
+
+            result = static_cast<float>(value);
+            const double converted = static_cast<double>(result);
+            const float infinity = std::numeric_limits<float>::infinity();
+
+            if (lowerBound && converted > value)
+                result = std::nextafter(result, -infinity);
+            else if (!lowerBound && converted < value)
+                result = std::nextafter(result, infinity);
+
+            return std::isfinite(result);
+        }
+
+        bool colliderBounds(
+            const Collider2D& collider,
+            sf::Vector2f& minimum,
+            sf::Vector2f& maximum
+        )
+        {
+            if (collider.type() == ColliderType::Box)
+            {
+                const auto* box = dynamic_cast<const BoxCollider2D*>(
+                    &collider
+                );
+
+                if (box == nullptr)
+                    return false;
+
+                minimum = box->min();
+                maximum = box->max();
+            }
+            else if (collider.type() == ColliderType::Circle)
+            {
+                const auto* circle = dynamic_cast<const CircleCollider2D*>(
+                    &collider
+                );
+
+                if (circle == nullptr)
+                    return false;
+
+                const sf::Vector2f center = circle->center();
+                const double radius = circle->radius();
+                const double minimumX =
+                    static_cast<double>(center.x) - radius;
+                const double minimumY =
+                    static_cast<double>(center.y) - radius;
+                const double maximumX =
+                    static_cast<double>(center.x) + radius;
+                const double maximumY =
+                    static_cast<double>(center.y) + radius;
+
+                if (
+                    !isFinite(center) ||
+                    !std::isfinite(radius) ||
+                    !conservativeFloat(
+                        minimumX,
+                        true,
+                        minimum.x
+                    ) ||
+                    !conservativeFloat(
+                        minimumY,
+                        true,
+                        minimum.y
+                    ) ||
+                    !conservativeFloat(
+                        maximumX,
+                        false,
+                        maximum.x
+                    ) ||
+                    !conservativeFloat(
+                        maximumY,
+                        false,
+                        maximum.y
+                    )
+                )
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+
+            if (
+                !isFinite(minimum) ||
+                !isFinite(maximum) ||
+                minimum.x > maximum.x ||
+                minimum.y > maximum.y
+            )
+            {
+                return false;
+            }
+
+            return true;
         }
 
         sf::Vector2f effectiveVelocity(const PhysicsProxy2D& proxy)
@@ -312,6 +425,32 @@ namespace l2d
                 config.groundedNormalThreshold,
                 DEFAULT_GROUNDED_NORMAL_THRESHOLD
             );
+
+            switch (config.broadPhaseMode)
+            {
+            case PhysicsBroadPhaseMode2D::UniformGrid:
+            case PhysicsBroadPhaseMode2D::BruteForce:
+                break;
+            default:
+                config.broadPhaseMode =
+                    PhysicsBroadPhaseMode2D::UniformGrid;
+                break;
+            }
+
+            if (
+                !std::isfinite(config.broadPhaseCellSize) ||
+                config.broadPhaseCellSize <= 0.f
+            )
+            {
+                config.broadPhaseCellSize =
+                    DEFAULT_BROAD_PHASE_CELL_SIZE;
+            }
+
+            if (config.broadPhaseMaxCellsPerProxy == 0)
+            {
+                config.broadPhaseMaxCellsPerProxy =
+                    DEFAULT_BROAD_PHASE_MAX_CELLS_PER_PROXY;
+            }
 
             return config;
         }
@@ -601,6 +740,12 @@ namespace l2d
         m_config = sanitizeConfig(config);
     }
 
+    const PhysicsBroadPhaseStats2D&
+    PhysicsWorld2D::broadPhaseStats() const
+    {
+        return m_broadPhaseStats;
+    }
+
     const std::vector<PhysicsContact2D>& PhysicsWorld2D::contacts() const
     {
         return m_contacts;
@@ -635,6 +780,7 @@ namespace l2d
 
     void PhysicsWorld2D::reset()
     {
+        m_broadPhaseStats = PhysicsBroadPhaseStats2D{};
         m_contacts.clear();
         m_contactEvents.clear();
         m_contactSceneToken.reset();
@@ -667,6 +813,8 @@ namespace l2d
         resetPhysicsStates(scene);
         integrateRigidBodies(scene, deltaTime);
 
+        m_broadPhaseStats = PhysicsBroadPhaseStats2D{};
+
         std::vector<PhysicsProxy2D> proxies;
         proxies.reserve(scene.gameObjects().size());
 
@@ -692,19 +840,55 @@ namespace l2d
 
         std::sort(proxies.begin(), proxies.end(), proxyLess);
 
-        std::vector<PhysicsProxy2D*> movingProxies;
-        std::vector<PhysicsProxy2D*> staticProxies;
+        std::vector<detail::BroadPhaseProxy2D> broadPhaseProxies;
+        broadPhaseProxies.reserve(proxies.size());
 
-        movingProxies.reserve(proxies.size());
-        staticProxies.reserve(proxies.size());
-
-        for (PhysicsProxy2D& proxy : proxies)
+        for (const PhysicsProxy2D& proxy : proxies)
         {
-            if (hasMotion(proxy))
-                movingProxies.push_back(&proxy);
-            else
-                staticProxies.push_back(&proxy);
+            detail::BroadPhaseProxy2D broadPhaseProxy;
+            broadPhaseProxy.moving = hasMotion(proxy);
+
+            if (proxy.collider != nullptr)
+            {
+                broadPhaseProxy.boundsValid = colliderBounds(
+                    *proxy.collider,
+                    broadPhaseProxy.minimum,
+                    broadPhaseProxy.maximum
+                );
+            }
+
+            broadPhaseProxies.push_back(broadPhaseProxy);
         }
+
+        m_broadPhaseStats.proxyCount = broadPhaseProxies.size();
+        m_broadPhaseStats.bruteForcePairCount =
+            detail::countBruteForcePairs(broadPhaseProxies);
+
+        detail::BroadPhaseBuildResult2D broadPhaseResult;
+
+        if (
+            m_config.broadPhaseMode ==
+            PhysicsBroadPhaseMode2D::BruteForce
+        )
+        {
+            broadPhaseResult =
+                detail::buildBruteForcePairs(broadPhaseProxies);
+        }
+        else
+        {
+            broadPhaseResult = detail::buildUniformGridPairs(
+                broadPhaseProxies,
+                m_config.broadPhaseCellSize,
+                m_config.broadPhaseMaxCellsPerProxy
+            );
+        }
+
+        m_broadPhaseStats.occupiedCellCount =
+            broadPhaseResult.occupiedCellCount;
+        m_broadPhaseStats.fallbackProxyCount =
+            broadPhaseResult.fallbackProxyCount;
+        m_broadPhaseStats.candidatePairCount =
+            broadPhaseResult.pairs.size();
 
         std::vector<ContactConstraint2D> constraints;
 
@@ -731,6 +915,8 @@ namespace l2d
 
             if (!first->collider->canCollideWith(*second->collider))
                 return;
+
+            ++m_broadPhaseStats.narrowPhaseTestCount;
 
             CollisionManifold2D manifold;
 
@@ -823,24 +1009,9 @@ namespace l2d
             });
         };
 
-        for (std::size_t firstIndex = 0;
-            firstIndex < movingProxies.size();
-            ++firstIndex)
+        for (const detail::BroadPhasePair2D& pair : broadPhaseResult.pairs)
         {
-            for (std::size_t secondIndex = firstIndex + 1;
-                secondIndex < movingProxies.size();
-                ++secondIndex)
-            {
-                addPair(
-                    *movingProxies[firstIndex],
-                    *movingProxies[secondIndex]
-                );
-            }
-
-            for (PhysicsProxy2D* staticProxy : staticProxies)
-            {
-                addPair(*movingProxies[firstIndex], *staticProxy);
-            }
+            addPair(proxies[pair.first], proxies[pair.second]);
         }
 
         std::sort(m_contacts.begin(), m_contacts.end(), contactLess);

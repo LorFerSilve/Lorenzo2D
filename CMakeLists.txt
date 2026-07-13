@@ -71,6 +71,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Physics/PhysicsDebugRenderer2D.cpp
     src/Lorenzo2D/Physics/PhysicsWorld2D.cpp
     src/Lorenzo2D/Physics/RigidBody2D.cpp
+    src/Lorenzo2D/Physics/UniformGridBroadPhase2D.cpp
     src/Lorenzo2D/Renderer/Camera2D.cpp
     src/Lorenzo2D/Renderer/CircleRenderer.cpp
     src/Lorenzo2D/Renderer/DebugOverlay.cpp
