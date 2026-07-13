@@ -19,7 +19,9 @@ production-ready engine.
 - Circle and rectangle rendering plus texture-backed sprites
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
 - ASCII tilemap loading with generated render and collision objects
-- Basic rigid bodies, gravity, circle/box collision response, and debug drawing
+- Static, kinematic, and dynamic rigid bodies with configurable gravity
+- Circle/box collision manifolds, impulse response, friction, and restitution
+- Collision layers, sensors, contact events, and physics debug drawing
 - Named font and texture storage
 - Debug overlay and independently switchable world, physics, and UI layers
 - Headless regression tests for timing, transforms, scenes, physics, and tilemaps
@@ -117,6 +119,9 @@ cannot be copied or moved. Create object handles through `Scene::createHandle`,
 and mutate scene ownership only through `Scene` methods; `gameObjects()` exposes
 the collection for structurally read-only iteration.
 
+`PhysicsWorld2D` is also non-copyable and non-movable because each instance owns
+configuration, contact history, and contact-event state for its simulation.
+
 ## Simulation timing
 
 `Application` separates wall-clock frames from deterministic simulation ticks.
@@ -176,12 +181,71 @@ for smooth motion. Call `Transform::resetInterpolation()` after teleports,
 respawns, or other discontinuous movement to prevent a visible sweep from the
 old position.
 
+## Physics model
+
+Physics is advanced only by `PhysicsWorld2D::step`. The default world gravity
+is `(0, 980)`, matching the engine's positive-down Y axis, and a rigid body opts
+into gravity with `setUseGravity(true)`. A force accumulator persists until the
+next valid physics step in which its active body participates, and is cleared
+after that integration. A non-positive or non-finite delta time is a true no-op,
+including contact and force state.
+
+`RigidBody2D` defaults to `BodyType2D::Dynamic`. Dynamic bodies respond to
+forces, gravity, impulses, and collisions. Kinematic bodies move with their
+prescribed velocity and can push dynamic bodies, but have infinite effective
+mass. Static bodies neither move nor accept velocity. A collider without a
+rigid body is also treated as static, preserving the convenient level-geometry
+workflow used by the tilemap. `isGrounded()` is defined only for Dynamic bodies;
+Static and Kinematic bodies report false.
+
+The narrow phase supports circle-circle, circle-box, and axis-aligned box-box
+pairs. Exact tangency counts as contact. Collision response uses iterative
+normal and friction impulses plus positional correction; rotation, angular
+velocity, and transform scale do not participate. Solver behavior can be tuned
+through `PhysicsWorld2DConfig`, including iteration counts, penetration slop,
+correction strength, restitution threshold, and grounded-normal threshold.
+Phase 2 supports one collider per game object; when several are attached, only
+the first `Collider2D` component participates in world simulation. Exact,
+symmetric degenerate raw manifold queries, such as coincident shapes, use fixed
+tie axes for deterministic output; swapping the query arguments therefore need
+not reverse the normal in those otherwise directionless cases.
+
+Each collider has a `PhysicsMaterial2D`. Restitution and friction coefficients
+are sanitized to the range `[0, 1]`, with dynamic friction kept at or below
+static friction. A pair uses the greater restitution and the geometric mean of
+each friction coefficient. The zero-valued defaults preserve the earlier
+inelastic, frictionless behavior, including leaving tangential and separating
+velocity unchanged.
+
+`CollisionFilter2D` supplies category and mask bit fields. Two colliders are
+considered only when each collider's mask accepts the other's category.
+Sensors use the same filtering and manifold generation as solid colliders but
+never apply impulses or positional correction. In the sandbox, coins are
+sensors and are collected from contact events rather than overlap polling. To
+avoid static tile-pair spam, at least one object in a reported pair must have an
+active Dynamic or Kinematic body. The shape-specific `overlaps` helpers remain
+raw geometry queries and deliberately ignore activity, filters, and sensors.
+
+After each valid step, `contacts()` exposes the current deterministic contact
+list and `contactEvents()` reports `Begin`, `Stay`, and `End` transitions.
+Contacts contain stable object IDs, collider types, the manifold, and a sensor
+flag; `isTouching` provides a convenient ID-pair query. Consume these results in
+`onFixedPostSimulation`, before the following physics step replaces them. The
+world resets its contact history when switching to a different scene.
+`reset()` explicitly clears that history, contact events, and the associated
+scene, but cannot alter component flags because it has no scene to traverse.
+`reset(Scene&)` additionally clears `isColliding` on each object's first
+participating collider and clears rigid-body grounded flags in that scene.
+
+For existing code, the main migration points are that a newly added rigid body
+is dynamic by default, collider-only objects remain static, and integration is
+owned by the world's fixed simulation step rather than component update.
+
 ## Current limitations and next milestones
 
-- Physics currently resolves dynamic circles against axis-aligned static boxes.
-  Physics support for transform rotation/scale, circle-circle response, dynamic
-  boxes, continuous collision detection, and a spatial broad phase are future
-  work.
+- Physics shapes are axis-aligned and ignore transform rotation and scale. The
+  current pair search is quadratic; a spatial broad phase, continuous collision
+  detection, sleeping, joints, and angular dynamics are future work.
 - Every solid tile is currently an individual entity, renderer, and collider.
   Chunked rendering, camera culling, and merged static colliders are planned for
   larger maps.

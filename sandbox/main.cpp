@@ -9,6 +9,7 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
+#include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsDebugRenderer2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
@@ -27,6 +28,7 @@
 #include <SFML/Graphics.hpp>    
 
 #include <iomanip>
+#include <cstdint>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -50,6 +52,14 @@ namespace GameTags
     constexpr const char* Player = "Player";
     constexpr const char* Coin = "Coin";
     constexpr const char* Enemy = "Enemy";
+}
+
+namespace PhysicsLayers
+{
+    constexpr std::uint32_t World = 1u << 0u;
+    constexpr std::uint32_t Player = 1u << 1u;
+    constexpr std::uint32_t Enemy = 1u << 2u;
+    constexpr std::uint32_t Pickup = 1u << 3u;
 }
 
 class PlayerController : public l2d::Component
@@ -373,7 +383,13 @@ private:
         rigidBody.setUseGravity(true);
         rigidBody.setGravityScale(1.f);
 
-        player.addComponent<l2d::CircleCollider2D>(playerRadius);
+        l2d::CircleCollider2D& playerCollider =
+            player.addComponent<l2d::CircleCollider2D>(playerRadius);
+
+        playerCollider.setFilter({
+            PhysicsLayers::Player,
+            PhysicsLayers::World | PhysicsLayers::Pickup
+        });
 
         player.addComponent<CollisionColorDebug>();
 
@@ -425,7 +441,14 @@ private:
 
             coin.transform.setPosition(coinTopLeft);
 
-            coin.addComponent<l2d::CircleCollider2D>(coinRadius);
+            l2d::CircleCollider2D& coinCollider =
+                coin.addComponent<l2d::CircleCollider2D>(coinRadius);
+
+            coinCollider.setSensor(true);
+            coinCollider.setFilter({
+                PhysicsLayers::Pickup,
+                PhysicsLayers::Player
+            });
 
             if (const sf::Texture* coinTexture = m_assets.getTexture("coin"))
             {
@@ -484,7 +507,13 @@ private:
             rigidBody.setUseGravity(true);
             rigidBody.setGravityScale(1.f);
 
-            enemy.addComponent<l2d::CircleCollider2D>(enemyRadius);
+            l2d::CircleCollider2D& enemyCollider =
+                enemy.addComponent<l2d::CircleCollider2D>(enemyRadius);
+
+            enemyCollider.setFilter({
+                PhysicsLayers::Enemy,
+                PhysicsLayers::World
+            });
 
             enemy.addComponent<l2d::CircleRenderer>(
                 enemyRadius,
@@ -567,34 +596,31 @@ private:
         if (player == nullptr)
             return;
 
-        l2d::CircleCollider2D* playerCollider =
-            player->getComponent<l2d::CircleCollider2D>();
-
-        if (playerCollider == nullptr)
-            return;
-
-        const std::vector<l2d::GameObject*> activeCoins =
-            m_levelScene->findActiveGameObjectsByTag(GameTags::Coin);
-
-        for (l2d::GameObject* coin : activeCoins)
+        for (const l2d::PhysicsContactEvent2D& event :
+            m_physicsWorld.contactEvents())
         {
-            if (coin == nullptr)
+            if (event.phase != l2d::PhysicsContactPhase2D::Begin)
                 continue;
 
-            l2d::CircleCollider2D* coinCollider =
-                coin->getComponent<l2d::CircleCollider2D>();
+            const l2d::PhysicsContact2D& contact = event.contact;
+            l2d::GameObjectId otherObjectId = l2d::InvalidGameObjectId;
 
-            if (coinCollider == nullptr)
+            if (contact.firstObjectId == player->id())
+                otherObjectId = contact.secondObjectId;
+            else if (contact.secondObjectId == player->id())
+                otherObjectId = contact.firstObjectId;
+
+            l2d::GameObject* coin =
+                m_levelScene->findGameObjectById(otherObjectId);
+
+            if (coin == nullptr || !coin->hasTag(GameTags::Coin))
                 continue;
 
-            if (playerCollider->overlaps(*coinCollider))
-            {
-                m_lastDestroyedCoinHandle = m_levelScene->createHandle(*coin);
-                m_lastDestroyedCoinId = coin->id();
+            m_lastDestroyedCoinHandle = m_levelScene->createHandle(*coin);
+            m_lastDestroyedCoinId = coin->id();
 
-                m_levelScene->destroyGameObject(*coin);
-                m_collectedCoins++;
-            }
+            m_levelScene->destroyGameObject(*coin);
+            m_collectedCoins++;
         }
     }
 
@@ -799,26 +825,32 @@ private:
         const sf::Vector2f ownerPosition =
             gameObject.transform.interpolated(interpolationAlpha).position;
 
-        l2d::CircleCollider2D* circleCollider =
-            gameObject.getComponent<l2d::CircleCollider2D>();
+        l2d::Collider2D* collider =
+            gameObject.getComponent<l2d::Collider2D>();
 
-        if (circleCollider != nullptr)
+        if (collider == nullptr || !collider->isActive())
+            return false;
+
+        if (collider->type() == l2d::ColliderType::Circle)
         {
-            return isPointInsideCircleCollider(
-                point,
-                *circleCollider,
-                ownerPosition
-            );
+            if (auto* circle =
+                dynamic_cast<l2d::CircleCollider2D*>(collider))
+            {
+                return isPointInsideCircleCollider(
+                    point,
+                    *circle,
+                    ownerPosition
+                );
+            }
+
+            return false;
         }
 
-        l2d::BoxCollider2D* boxCollider =
-            gameObject.getComponent<l2d::BoxCollider2D>();
-
-        if (boxCollider != nullptr)
+        if (auto* box = dynamic_cast<l2d::BoxCollider2D*>(collider))
         {
             return isPointInsideBoxCollider(
                 point,
-                *boxCollider,
+                *box,
                 ownerPosition
             );
         }
@@ -995,6 +1027,8 @@ private:
         text << "Ticks this frame: " << l2d::Time::ticksThisFrame() << "\n";
         text << "Interpolation: " << l2d::Time::interpolationAlpha() << "\n";
         text << "Dropped ticks: " << l2d::Time::droppedTickCount() << "\n";
+        text << "Physics contacts: " << m_physicsWorld.contacts().size() << "\n";
+        text << "Contact events: " << m_physicsWorld.contactEvents().size() << "\n";
 
         if (player != nullptr)
         {

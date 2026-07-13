@@ -8,10 +8,20 @@ namespace l2d
 {
     class PhysicsWorld2D;
 
+    enum class BodyType2D
+    {
+        Static,
+        Kinematic,
+        Dynamic
+    };
+
     class RigidBody2D : public Component
     {
     public:
         RigidBody2D();
+
+        BodyType2D bodyType() const;
+        void setBodyType(BodyType2D bodyType);
 
         const sf::Vector2f& velocity() const;
         void setVelocity(sf::Vector2f velocity);
@@ -21,9 +31,12 @@ namespace l2d
         void setAcceleration(sf::Vector2f acceleration);
 
         void addForce(sf::Vector2f force);
+        void applyImpulse(sf::Vector2f impulse);
+        void clearForces();
 
         float mass() const;
         void setMass(float mass);
+        float inverseMass() const;
 
         bool useGravity() const;
         void setUseGravity(bool useGravity);
@@ -34,10 +47,12 @@ namespace l2d
         bool isGrounded() const;
 
     private:
-        void integrate(float deltaTime);
+        void integrate(float deltaTime, sf::Vector2f worldGravity);
         void setGrounded(bool grounded);
 
     private:
+        BodyType2D m_bodyType;
+
         sf::Vector2f m_velocity;
         sf::Vector2f m_acceleration;
         sf::Vector2f m_forceAccumulator;
