@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace l2d
@@ -67,6 +68,9 @@ namespace l2d
         void clear();
 
     private:
+        GameObject* findOwnedGameObjectById(GameObjectId id);
+        const GameObject* findOwnedGameObjectById(GameObjectId id) const;
+
         void beginDispatch();
         void endDispatch();
         void destroyQueuedGameObjectsImmediately();
@@ -76,6 +80,7 @@ namespace l2d
     private:
         std::string m_name;
         std::vector<std::unique_ptr<GameObject>> m_gameObjects;
+        std::unordered_map<GameObjectId, GameObject*> m_gameObjectsById;
 
         std::size_t m_dispatchDepth = 0;
         bool m_destroySweepDeferred = false;

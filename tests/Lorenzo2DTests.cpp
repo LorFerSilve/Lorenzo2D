@@ -278,6 +278,24 @@ namespace
         l2d::Scene* m_scene;
     };
 
+    class DestroyTargetOnDestruction final : public l2d::Component
+    {
+    public:
+        explicit DestroyTargetOnDestruction(l2d::GameObject& target)
+            : m_target(&target)
+        {
+        }
+
+        ~DestroyTargetOnDestruction() override
+        {
+            if (m_target != nullptr)
+                m_target->destroy();
+        }
+
+    private:
+        l2d::GameObject* m_target;
+    };
+
     class TransformSequenceComponent final : public l2d::Component
     {
     public:
@@ -754,21 +772,48 @@ namespace
         int shouldNotRun = 0;
         l2d::Scene clearingScene;
         l2d::GameObject& clearer = clearingScene.createGameObject("Clearer");
+        const l2d::GameObjectId clearerId = clearer.id();
+        const l2d::GameObjectHandle clearerHandle =
+            clearingScene.createHandle(clearer);
         clearer.addComponent<ClearSceneOnUpdate>(clearingScene);
         clearer.addComponent<CounterComponent>(shouldNotRun);
-        clearingScene.createGameObject("Later")
-            .addComponent<CounterComponent>(shouldNotRun);
+
+        l2d::GameObject& later =
+            clearingScene.createGameObject("Later");
+        const l2d::GameObjectId laterId = later.id();
+        const l2d::GameObjectHandle laterHandle =
+            clearingScene.createHandle(later);
+        later.addComponent<CounterComponent>(shouldNotRun);
 
         clearingScene.update(1.f / 60.f);
         L2D_REQUIRE(clearingScene.gameObjectCount() == 0);
         L2D_REQUIRE(shouldNotRun == 0);
+        L2D_REQUIRE(clearingScene.findGameObjectById(clearerId) == nullptr);
+        L2D_REQUIRE(clearingScene.findGameObjectById(laterId) == nullptr);
+        L2D_REQUIRE(!clearerHandle.isValid());
+        L2D_REQUIRE(!laterHandle.isValid());
+
+        l2d::GameObject& replacement =
+            clearingScene.createGameObject("Replacement");
+        L2D_REQUIRE(
+            clearingScene.findGameObjectById(replacement.id()) ==
+            &replacement
+        );
 
         l2d::Scene sweepingScene;
-        sweepingScene.createGameObject("SelfDestroyer")
-            .addComponent<DestroyAndSweepOnUpdate>(sweepingScene);
+        l2d::GameObject& selfDestroyer =
+            sweepingScene.createGameObject("SelfDestroyer");
+        const l2d::GameObjectId selfDestroyerId = selfDestroyer.id();
+        const l2d::GameObjectHandle selfDestroyerHandle =
+            sweepingScene.createHandle(selfDestroyer);
+        selfDestroyer.addComponent<DestroyAndSweepOnUpdate>(sweepingScene);
 
         sweepingScene.update(1.f / 60.f);
         L2D_REQUIRE(sweepingScene.gameObjectCount() == 0);
+        L2D_REQUIRE(
+            sweepingScene.findGameObjectById(selfDestroyerId) == nullptr
+        );
+        L2D_REQUIRE(!selfDestroyerHandle.isValid());
     }
 
     void testSceneManagerClearIsDeferredDuringDispatch()
@@ -937,6 +982,228 @@ namespace
         L2D_REQUIRE(!handle.isValid());
         L2D_REQUIRE(handle.get() == nullptr);
         L2D_REQUIRE(handle.scene() == nullptr);
+    }
+
+    void testSceneIdIndexTracksOwnedObjectLifetime()
+    {
+        constexpr std::size_t objectCount = 1024;
+
+        l2d::Scene scene;
+        std::vector<l2d::GameObjectId> ids;
+        std::vector<l2d::GameObject*> objects;
+        std::vector<l2d::GameObjectHandle> handles;
+
+        ids.reserve(objectCount);
+        objects.reserve(objectCount);
+        handles.reserve(objectCount);
+
+        for (std::size_t index = 0; index < objectCount; ++index)
+        {
+            l2d::GameObject& object = scene.createGameObject(
+                "Indexed_" + std::to_string(index)
+            );
+
+            ids.push_back(object.id());
+            objects.push_back(&object);
+            handles.push_back(scene.createHandle(object));
+        }
+
+        L2D_REQUIRE(scene.gameObjectCount() == objectCount);
+        L2D_REQUIRE(scene.gameObjects().size() == objectCount);
+        L2D_REQUIRE(
+            scene.findGameObjectById(l2d::InvalidGameObjectId) == nullptr
+        );
+
+        const l2d::Scene& constScene = scene;
+        L2D_REQUIRE(
+            constScene.findGameObjectById(l2d::InvalidGameObjectId) ==
+            nullptr
+        );
+
+        for (std::size_t index = 0; index < objectCount; ++index)
+        {
+            L2D_REQUIRE(scene.gameObjects()[index].get() == objects[index]);
+            L2D_REQUIRE(scene.findGameObjectById(ids[index]) == objects[index]);
+            L2D_REQUIRE(
+                constScene.findGameObjectById(ids[index]) == objects[index]
+            );
+            L2D_REQUIRE(handles[index].get() == objects[index]);
+            L2D_REQUIRE(
+                scene.createHandle(ids[index]).get() == objects[index]
+            );
+        }
+
+        l2d::GameObject standaloneObject("Standalone");
+        const l2d::GameObjectHandle standaloneHandle =
+            scene.createHandle(standaloneObject);
+
+        L2D_REQUIRE(!standaloneHandle.isValid());
+        L2D_REQUIRE(standaloneHandle.scene() == nullptr);
+        L2D_REQUIRE(
+            scene.findGameObjectById(standaloneObject.id()) == nullptr
+        );
+
+        scene.destroyGameObject(standaloneObject);
+        L2D_REQUIRE(!standaloneObject.isDestroyQueued());
+
+        l2d::Scene foreignScene;
+        l2d::GameObject& foreignObject =
+            foreignScene.createGameObject("Foreign");
+
+        L2D_REQUIRE(!scene.createHandle(foreignObject).isValid());
+        scene.destroyGameObject(foreignObject);
+        L2D_REQUIRE(!foreignObject.isDestroyQueued());
+        L2D_REQUIRE(
+            foreignScene.findGameObjectById(foreignObject.id()) ==
+            &foreignObject
+        );
+
+        std::vector<bool> queued(objectCount, false);
+        std::size_t queuedCount = 0;
+
+        for (std::size_t index = 0; index < objectCount; ++index)
+        {
+            if (index % 4 == 0)
+            {
+                objects[index]->destroy();
+            }
+            else if (index % 4 == 1)
+            {
+                scene.destroyGameObject(*objects[index]);
+            }
+            else
+            {
+                continue;
+            }
+
+            queued[index] = true;
+            ++queuedCount;
+        }
+
+        L2D_REQUIRE(scene.gameObjectCount() == objectCount);
+        L2D_REQUIRE(scene.destroyQueuedGameObjectCount() == queuedCount);
+
+        for (std::size_t index = 0; index < objectCount; ++index)
+        {
+            if (queued[index])
+            {
+                L2D_REQUIRE(scene.findGameObjectById(ids[index]) == nullptr);
+                L2D_REQUIRE(
+                    constScene.findGameObjectById(ids[index]) == nullptr
+                );
+                L2D_REQUIRE(!handles[index].isValid());
+                L2D_REQUIRE(!scene.createHandle(ids[index]).isValid());
+                L2D_REQUIRE(!scene.createHandle(*objects[index]).isValid());
+            }
+            else
+            {
+                L2D_REQUIRE(
+                    scene.findGameObjectById(ids[index]) == objects[index]
+                );
+                L2D_REQUIRE(handles[index].get() == objects[index]);
+            }
+        }
+
+        scene.destroyQueuedGameObjects();
+
+        L2D_REQUIRE(scene.gameObjectCount() == objectCount - queuedCount);
+        L2D_REQUIRE(scene.destroyQueuedGameObjectCount() == 0);
+
+        std::size_t survivorIndex = 0;
+
+        for (std::size_t index = 0; index < objectCount; ++index)
+        {
+            if (queued[index])
+            {
+                L2D_REQUIRE(scene.findGameObjectById(ids[index]) == nullptr);
+                L2D_REQUIRE(!handles[index].isValid());
+                continue;
+            }
+
+            L2D_REQUIRE(
+                scene.gameObjects()[survivorIndex].get() == objects[index]
+            );
+            L2D_REQUIRE(
+                constScene.findGameObjectById(ids[index]) == objects[index]
+            );
+            L2D_REQUIRE(handles[index].get() == objects[index]);
+            ++survivorIndex;
+        }
+
+        L2D_REQUIRE(survivorIndex == scene.gameObjectCount());
+
+        scene.clear();
+
+        L2D_REQUIRE(scene.gameObjectCount() == 0);
+
+        for (std::size_t index = 0; index < objectCount; ++index)
+        {
+            L2D_REQUIRE(scene.findGameObjectById(ids[index]) == nullptr);
+            L2D_REQUIRE(!handles[index].isValid());
+        }
+
+        l2d::GameObject& replacement =
+            scene.createGameObject("Replacement");
+        const l2d::GameObjectHandle replacementHandle =
+            scene.createHandle(replacement.id());
+
+        L2D_REQUIRE(scene.gameObjectCount() == 1);
+        L2D_REQUIRE(scene.findGameObjectById(replacement.id()) == &replacement);
+        L2D_REQUIRE(
+            constScene.findGameObjectById(replacement.id()) == &replacement
+        );
+        L2D_REQUIRE(replacementHandle.get() == &replacement);
+
+        for (const l2d::GameObjectHandle& handle : handles)
+        {
+            L2D_REQUIRE(!handle.isValid());
+        }
+    }
+
+    void testSceneIndexTracksObjectsQueuedDuringSweep()
+    {
+        l2d::Scene scene;
+        l2d::GameObject& first = scene.createGameObject("FirstRemoved");
+        l2d::GameObject& survivor = scene.createGameObject("Survivor");
+        l2d::GameObject& queuedByDestructor =
+            scene.createGameObject("QueuedByDestructor");
+
+        const l2d::GameObjectId firstId = first.id();
+        const l2d::GameObjectId survivorId = survivor.id();
+        const l2d::GameObjectId queuedId = queuedByDestructor.id();
+        const l2d::GameObjectHandle firstHandle = scene.createHandle(first);
+        const l2d::GameObjectHandle queuedHandle =
+            scene.createHandle(queuedByDestructor);
+
+        first.addComponent<DestroyTargetOnDestruction>(queuedByDestructor);
+        first.destroy();
+
+        scene.destroyQueuedGameObjects();
+
+        L2D_REQUIRE(scene.gameObjectCount() == 1);
+        L2D_REQUIRE(scene.findGameObjectById(firstId) == nullptr);
+        L2D_REQUIRE(scene.findGameObjectById(queuedId) == nullptr);
+        L2D_REQUIRE(scene.findGameObjectById(survivorId) == &survivor);
+        L2D_REQUIRE(!firstHandle.isValid());
+        L2D_REQUIRE(!queuedHandle.isValid());
+
+        constexpr std::size_t replacementCount = 128;
+
+        for (std::size_t index = 0; index < replacementCount; ++index)
+        {
+            l2d::GameObject& replacement = scene.createGameObject(
+                "ReplacementAfterSweep_" + std::to_string(index)
+            );
+
+            L2D_REQUIRE(replacement.id() != queuedId);
+            L2D_REQUIRE(scene.findGameObjectById(queuedId) == nullptr);
+            L2D_REQUIRE(!queuedHandle.isValid());
+            L2D_REQUIRE(
+                scene.findGameObjectById(replacement.id()) == &replacement
+            );
+        }
+
+        L2D_REQUIRE(scene.gameObjectCount() == replacementCount + 1);
     }
 
     void testQueuedObjectsAreNotReportedAsActive()
@@ -1412,6 +1679,10 @@ int main()
     runTest("fixed updates are non-reentrant",
         testFixedUpdateIsNonReentrant, failures);
     runTest("handles expire with their scene", testHandlesExpireWithTheirScene, failures);
+    runTest("scene ID index tracks owned object lifetime",
+        testSceneIdIndexTracksOwnedObjectLifetime, failures);
+    runTest("scene index tracks objects queued during sweep",
+        testSceneIndexTracksObjectsQueuedDuringSweep, failures);
     runTest("queued objects are not active", testQueuedObjectsAreNotReportedAsActive, failures);
     runTest("physics inputs are finite and valid", testPhysicsInputsAreFiniteAndValid, failures);
     runTest("physics integrates once per fixed tick", testPhysicsWorldIntegratesOncePerFixedTick, failures);

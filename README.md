@@ -117,7 +117,11 @@ request its own removal during an update.
 Identity-bearing `Component`, `GameObject`, `Scene`, and `SceneManager` objects
 cannot be copied or moved. Create object handles through `Scene::createHandle`,
 and mutate scene ownership only through `Scene` methods; `gameObjects()` exposes
-the collection for structurally read-only iteration.
+the collection for structurally read-only iteration. Scenes retain that stable
+creation order while maintaining a synchronized ID index, so ID lookup, handle
+resolution, and ownership checks are average constant time. Destroy-queued
+objects become unresolvable immediately and leave the index when they are
+physically removed.
 
 `SceneManager::clear()` is safe during an owned scene's update or render
 dispatch. It clears the active-scene selection immediately and releases scene
@@ -209,12 +213,32 @@ pairs. Exact tangency counts as contact. Collision response uses iterative
 normal and friction impulses plus positional correction; rotation, angular
 velocity, and transform scale do not participate. Solver behavior can be tuned
 through `PhysicsWorld2DConfig`, including iteration counts, penetration slop,
-correction strength, restitution threshold, and grounded-normal threshold.
-Phase 2 supports one collider per game object; when several are attached, only
-the first `Collider2D` component participates in world simulation. Exact,
-symmetric degenerate raw manifold queries, such as coincident shapes, use fixed
-tie axes for deterministic output; swapping the query arguments therefore need
-not reverse the normal in those otherwise directionless cases.
+correction strength, restitution threshold, grounded-normal threshold, and the
+broad-phase settings.
+
+The default broad phase places conservative collider bounds in a signed
+uniform grid with a cell size of `128`. It supports negative world coordinates,
+keeps maximum bounds inclusive so exact tangency is retained, removes duplicate
+pairs produced by multi-cell shapes, and sorts candidates before the narrow
+phase. `broadPhaseCellSize` tunes spatial resolution. A proxy that would occupy
+more than `broadPhaseMaxCellsPerProxy` cells, or whose bounds cannot be mapped
+safely, is tested through a bounded all-peer fallback instead of expanding an
+unbounded grid range. `PhysicsBroadPhaseMode2D::BruteForce` remains available
+for validation and unusually small worlds.
+
+`broadPhaseStats()` describes the most recent valid step. It reports proxy and
+occupied-cell counts, fallback proxies, the eligible all-pairs baseline, unique
+broad-phase candidates, and narrow-phase tests remaining after collision
+filtering. These counters make spatial tuning measurable without
+timing-dependent tests. An invalid-delta no-op preserves the previous counters;
+`reset()` and `reset(Scene&)` clear them.
+
+The current model supports one collider per game object; when several are
+attached, only the first `Collider2D` component participates in world
+simulation. Exact, symmetric degenerate raw manifold queries, such as coincident
+shapes, use fixed tie axes for deterministic output; swapping the query
+arguments therefore need not reverse the normal in those otherwise
+directionless cases.
 
 Each collider has a `PhysicsMaterial2D`. Restitution and friction coefficients
 are sanitized to the range `[0, 1]`, with dynamic friction kept at or below
@@ -249,12 +273,14 @@ owned by the world's fixed simulation step rather than component update.
 
 ## Current limitations and next milestones
 
-- Physics shapes are axis-aligned and ignore transform rotation and scale. The
-  current pair search is quadratic; a spatial broad phase, continuous collision
-  detection, sleeping, joints, and angular dynamics are future work.
+- Physics shapes are axis-aligned and ignore transform rotation and scale.
+  Dense single-cell scenes and fallback proxies can still approach quadratic
+  pair counts; continuous collision detection, sleeping, joints, and angular
+  dynamics are future work.
 - Every solid tile is currently an individual entity, renderer, and collider.
-  Chunked rendering, camera culling, and merged static colliders are planned for
-  larger maps.
+  The grid avoids unrelated pair tests, but per-tile proxy construction and
+  rendering remain; chunked rendering, camera culling, and merged static
+  colliders are planned for larger maps.
 - Render ordering is a fixed layer mask rather than a general render queue.
 - Fonts and textures are non-owning from the renderer's perspective; asset
   leases and hot reload need an explicit lifetime model.

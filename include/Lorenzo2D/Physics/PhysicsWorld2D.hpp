@@ -4,6 +4,7 @@
 
 #include <SFML/System/Vector2.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -12,6 +13,12 @@ namespace l2d
 {
     class Scene;
     class GameObject;
+
+    enum class PhysicsBroadPhaseMode2D
+    {
+        UniformGrid,
+        BruteForce
+    };
 
     struct PhysicsWorld2DConfig
     {
@@ -24,6 +31,21 @@ namespace l2d
         float penetrationSlop = 0.01f;
         float restitutionVelocityThreshold = 1.f;
         float groundedNormalThreshold = 0.7f;
+
+        PhysicsBroadPhaseMode2D broadPhaseMode =
+            PhysicsBroadPhaseMode2D::UniformGrid;
+        float broadPhaseCellSize = 128.f;
+        std::uint32_t broadPhaseMaxCellsPerProxy = 256;
+    };
+
+    struct PhysicsBroadPhaseStats2D
+    {
+        std::size_t proxyCount = 0;
+        std::size_t occupiedCellCount = 0;
+        std::size_t fallbackProxyCount = 0;
+        std::size_t bruteForcePairCount = 0;
+        std::size_t candidatePairCount = 0;
+        std::size_t narrowPhaseTestCount = 0;
     };
 
     class PhysicsWorld2D
@@ -39,6 +61,8 @@ namespace l2d
 
         const PhysicsWorld2DConfig& config() const;
         void setConfig(const PhysicsWorld2DConfig& config);
+
+        const PhysicsBroadPhaseStats2D& broadPhaseStats() const;
 
         const std::vector<PhysicsContact2D>& contacts() const;
         const std::vector<PhysicsContactEvent2D>& contactEvents() const;
@@ -63,6 +87,7 @@ namespace l2d
 
     private:
         PhysicsWorld2DConfig m_config;
+        PhysicsBroadPhaseStats2D m_broadPhaseStats;
 
         std::vector<PhysicsContact2D> m_contacts;
         std::vector<PhysicsContactEvent2D> m_contactEvents;
