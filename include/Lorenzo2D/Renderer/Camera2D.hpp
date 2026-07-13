@@ -15,14 +15,18 @@ namespace l2d
     public:
         explicit Camera2D(sf::Vector2f size = { 1280.f, 720.f });
 
+        // Nonfinite or out-of-domain coordinates are rejected.
         void setCenter(sf::Vector2f center);
         const sf::Vector2f& center() const;
 
         void move(sf::Vector2f offset); 
 
+        // Each axis is kept finite and positive. Extreme values are clamped
+        // so the effective SFML view remains invertible.
         void setSize(sf::Vector2f size);
         const sf::Vector2f& size() const;
 
+        // Zoom is kept finite, positive, and compatible with the base size.
         void setZoom(float zoom);
         float zoom() const;
 
@@ -31,6 +35,7 @@ namespace l2d
 
         void follow(sf::Vector2f target, float deltaTime);
 
+        // Invalid bounds are rejected without changing the current bounds.
         void setBounds(sf::Vector2f min, sf::Vector2f max);
         void clearBounds();
 

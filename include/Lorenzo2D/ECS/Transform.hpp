@@ -17,17 +17,24 @@ namespace l2d
     {
     public:
         Transform();
+        // A nonfinite position initializes the whole vector to zero.
         explicit Transform(sf::Vector2f position);
 
         const sf::Vector2f& position() const;
+        // Nonfinite vectors are rejected transactionally.
         void setPosition(sf::Vector2f position);
+        // Nonfinite offsets and unrepresentable sums are rejected.
         void move(sf::Vector2f offset);
 
         float rotation() const;
+        // Nonfinite angles are rejected.
         void setRotation(float rotation);
+        // Nonfinite angles and unrepresentable sums are rejected.
         void rotate(float angle);
 
         const sf::Vector2f& scale() const;
+        // Nonfinite vectors are rejected. Finite zero and negative scale
+        // remain valid for hiding and mirroring.
         void setScale(sf::Vector2f scale);
 
         TransformState interpolated(float alpha) const;

@@ -2,6 +2,8 @@
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
 
+#include "RendererNumeric.hpp"
+
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Angle.hpp>
 
@@ -53,6 +55,11 @@ namespace l2d
 
     void SpriteRenderer::setSize(sf::Vector2f size)
     {
+        size = {
+            renderer_detail::sanitizeNonNegative(size.x),
+            renderer_detail::sanitizeNonNegative(size.y)
+        };
+
         if (!m_texture)
             return;
 
@@ -101,8 +108,27 @@ namespace l2d
         const TransformState state =
             gameObject->transform.interpolated(interpolationAlpha);
 
+        const TransformState spriteState = {
+            state.position,
+            state.rotation,
+            {
+                m_sizeScale.x * state.scale.x,
+                m_sizeScale.y * state.scale.y
+            }
+        };
+
+        if (!renderer_detail::hasSafeTransformedBounds(
+            m_sprite.getLocalBounds(),
+            spriteState
+        ))
+        {
+            return;
+        }
+
         m_sprite.setPosition(state.position);
-        m_sprite.setRotation(sf::degrees(state.rotation));
+        m_sprite.setRotation(sf::degrees(
+            renderer_detail::normalizedRotationDegrees(state.rotation)
+        ));
 
         m_sprite.setScale(
             {

@@ -12,6 +12,8 @@ namespace l2d
     public:
         CircleRenderer(float radius = 50.f, sf::Color color = sf::Color::White);
 
+        // Nonfinite and negative radii become zero. Extreme finite radii are
+        // capped before SFML generates local vertices.
         void setRadius(float radius);
         float radius() const;
 

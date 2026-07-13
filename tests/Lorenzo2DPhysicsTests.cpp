@@ -1865,6 +1865,8 @@ namespace
 
     void testUniformGridFallbackAndStaticSuppression()
     {
+        const float maximum = std::numeric_limits<float>::max();
+
         l2d::PhysicsWorld2DConfig config = zeroGravityConfig();
         config.broadPhaseMode =
             l2d::PhysicsBroadPhaseMode2D::UniformGrid;
@@ -1898,15 +1900,16 @@ namespace
         BoxBody invalid = createBox(
             scene,
             "InvalidBoundsMover",
-            { std::numeric_limits<float>::infinity(), 0.f },
+            { maximum * 0.75f, 0.f },
             { 2.f, 2.f },
             true,
             l2d::BodyType2D::Kinematic
         );
+        invalid.collider.setOffset({ maximum * 0.75f, 0.f });
         CircleBody extreme = createCircle(
             scene,
             "ExtremeFiniteMover",
-            { std::numeric_limits<float>::max() * 0.25f, 0.f },
+            { maximum * 0.25f, 0.f },
             0.f,
             true,
             l2d::BodyType2D::Kinematic

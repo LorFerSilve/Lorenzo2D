@@ -2,9 +2,58 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace l2d
 {
+    namespace
+    {
+        bool isFinite(sf::Vector2f value)
+        {
+            return std::isfinite(value.x) && std::isfinite(value.y);
+        }
+
+        bool checkedFloat(double value, float& result)
+        {
+            const double maximum = static_cast<double>(
+                std::numeric_limits<float>::max()
+            );
+
+            if (!std::isfinite(value) || value < -maximum || value > maximum)
+                return false;
+
+            result = static_cast<float>(value);
+            return true;
+        }
+
+        float finiteFloat(double value)
+        {
+            const double maximum = static_cast<double>(
+                std::numeric_limits<float>::max()
+            );
+
+            value = std::clamp(value, -maximum, maximum);
+            return static_cast<float>(value);
+        }
+
+        float interpolate(float previous, float current, double alpha)
+        {
+            return finiteFloat(
+                static_cast<double>(previous) +
+                (static_cast<double>(current) -
+                    static_cast<double>(previous)) * alpha
+            );
+        }
+
+        sf::Vector2f initialPosition(sf::Vector2f position)
+        {
+            if (!isFinite(position))
+                return { 0.f, 0.f };
+
+            return position;
+        }
+    }
+
     Transform::Transform()
         : m_current(),
         m_previous(m_current)
@@ -12,7 +61,7 @@ namespace l2d
     }
 
     Transform::Transform(sf::Vector2f position)
-        : m_current{ position, 0.f, { 1.f, 1.f } },
+        : m_current{ initialPosition(position), 0.f, { 1.f, 1.f } },
         m_previous(m_current)
     {
     }
@@ -24,13 +73,37 @@ namespace l2d
 
     void Transform::setPosition(sf::Vector2f position)
     {
+        if (!isFinite(position))
+            return;
+
         m_current.position = position;
         synchronizePreviousBeforeFirstSnapshot();
     }
 
     void Transform::move(sf::Vector2f offset)
     {
-        m_current.position += offset;
+        if (!isFinite(offset))
+            return;
+
+        sf::Vector2f nextPosition;
+
+        if (
+            !checkedFloat(
+                static_cast<double>(m_current.position.x) +
+                    static_cast<double>(offset.x),
+                nextPosition.x
+            ) ||
+            !checkedFloat(
+                static_cast<double>(m_current.position.y) +
+                    static_cast<double>(offset.y),
+                nextPosition.y
+            )
+        )
+        {
+            return;
+        }
+
+        m_current.position = nextPosition;
         synchronizePreviousBeforeFirstSnapshot();
     }
 
@@ -41,13 +114,30 @@ namespace l2d
 
     void Transform::setRotation(float rotation)
     {
+        if (!std::isfinite(rotation))
+            return;
+
         m_current.rotation = rotation;
         synchronizePreviousBeforeFirstSnapshot();
     }
 
     void Transform::rotate(float angle)
     {
-        m_current.rotation += angle;
+        if (!std::isfinite(angle))
+            return;
+
+        float nextRotation = 0.f;
+
+        if (!checkedFloat(
+            static_cast<double>(m_current.rotation) +
+                static_cast<double>(angle),
+            nextRotation
+        ))
+        {
+            return;
+        }
+
+        m_current.rotation = nextRotation;
         synchronizePreviousBeforeFirstSnapshot();
     }
 
@@ -58,6 +148,9 @@ namespace l2d
 
     void Transform::setScale(sf::Vector2f scale)
     {
+        if (!isFinite(scale))
+            return;
+
         m_current.scale = scale;
         synchronizePreviousBeforeFirstSnapshot();
     }
@@ -78,17 +171,42 @@ namespace l2d
         if (alpha >= 1.f)
             return m_current;
 
-        const float rotationDelta = std::remainder(
-            m_current.rotation - m_previous.rotation,
-            360.f
+        const double interpolationAlpha = static_cast<double>(alpha);
+        const double rotationDelta = std::remainder(
+            static_cast<double>(m_current.rotation) -
+                static_cast<double>(m_previous.rotation),
+            360.0
         );
 
         return {
-            m_previous.position +
-                (m_current.position - m_previous.position) * alpha,
-            m_previous.rotation + rotationDelta * alpha,
-            m_previous.scale +
-                (m_current.scale - m_previous.scale) * alpha
+            {
+                interpolate(
+                    m_previous.position.x,
+                    m_current.position.x,
+                    interpolationAlpha
+                ),
+                interpolate(
+                    m_previous.position.y,
+                    m_current.position.y,
+                    interpolationAlpha
+                )
+            },
+            finiteFloat(
+                static_cast<double>(m_previous.rotation) +
+                rotationDelta * interpolationAlpha
+            ),
+            {
+                interpolate(
+                    m_previous.scale.x,
+                    m_current.scale.x,
+                    interpolationAlpha
+                ),
+                interpolate(
+                    m_previous.scale.y,
+                    m_current.scale.y,
+                    interpolationAlpha
+                )
+            }
         };
     }
 

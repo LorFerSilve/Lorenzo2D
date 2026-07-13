@@ -2,19 +2,32 @@
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
 
+#include "RendererNumeric.hpp"
+
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Angle.hpp>
+
+#include <algorithm>
+#include <limits>
 
 namespace l2d
 {
     CircleRenderer::CircleRenderer(float radius, sf::Color color)
     {
-        m_shape.setRadius(radius);
+        setRadius(radius);
         m_shape.setFillColor(color);
     }
 
     void CircleRenderer::setRadius(float radius)
     {
+        constexpr float maximumRadius =
+            std::numeric_limits<float>::max() / 4.f;
+
+        radius = std::min(
+            renderer_detail::sanitizeNonNegative(radius),
+            maximumRadius
+        );
+
         m_shape.setRadius(radius);
     }
 
@@ -51,8 +64,18 @@ namespace l2d
         const TransformState state =
             gameObject->transform.interpolated(interpolationAlpha);
 
+        if (!renderer_detail::hasSafeTransformedBounds(
+            m_shape.getLocalBounds(),
+            state
+        ))
+        {
+            return;
+        }
+
         m_shape.setPosition(state.position);
-        m_shape.setRotation(sf::degrees(state.rotation));
+        m_shape.setRotation(sf::degrees(
+            renderer_detail::normalizedRotationDegrees(state.rotation)
+        ));
         m_shape.setScale(state.scale);
 
         window.draw(m_shape);

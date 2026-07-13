@@ -35,8 +35,12 @@ namespace l2d
         bool hasFont() const;
 
         void setText(const std::string& text);
+        // Invalid or out-of-domain positions are rejected transactionally.
         void setPosition(sf::Vector2f position);
+        sf::Vector2f position() const;
+        // Character size is kept nonzero.
         void setCharacterSize(unsigned int size);
+        unsigned int characterSize() const;
         void setFillColor(sf::Color color);
 
         void render(sf::RenderWindow& window) const;

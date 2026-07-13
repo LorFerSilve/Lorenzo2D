@@ -19,6 +19,7 @@ namespace l2d
         bool setTexture(TextureHandle texture, bool resetRect = true);
         TextureHandle textureHandle() const;
 
+        // Each nonfinite or negative desired axis becomes zero.
         void setSize(sf::Vector2f size);
         const sf::Vector2f& sizeScale() const;
 

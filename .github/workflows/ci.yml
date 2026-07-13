@@ -57,6 +57,15 @@ jobs:
         if: runner.os == 'Windows'
         run: ctest --test-dir build -C Release --output-on-failure
 
-      - name: Run tests (Linux virtual display)
+      - name: Run headless tests (Linux without a display)
         if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum ctest --test-dir build -C Release --output-on-failure
+        run: |
+          unset DISPLAY
+          unset WAYLAND_DISPLAY
+          ctest --test-dir build -C Release --output-on-failure --no-tests=error -L headless
+
+      - name: Run display-backed tests (Linux virtual display)
+        if: runner.os == 'Linux'
+        run: >-
+          xvfb-run --auto-servernum
+          ctest --test-dir build -C Release --output-on-failure --no-tests=error -LE headless

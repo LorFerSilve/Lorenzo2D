@@ -146,4 +146,24 @@ if(L2D_BUILD_TESTS)
     l2d_enable_warnings(Lorenzo2DAssetTests)
 
     add_test(NAME Lorenzo2DAssetTests COMMAND Lorenzo2DAssetTests)
+
+    add_executable(
+        Lorenzo2DRendererTests
+        tests/Lorenzo2DRendererTests.cpp
+    )
+    target_link_libraries(
+        Lorenzo2DRendererTests
+        PRIVATE Lorenzo2D::Lorenzo2D
+    )
+    target_include_directories(
+        Lorenzo2DRendererTests
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/Lorenzo2D/Renderer
+    )
+    l2d_enable_warnings(Lorenzo2DRendererTests)
+
+    add_test(NAME Lorenzo2DRendererTests COMMAND Lorenzo2DRendererTests)
+    set_tests_properties(
+        Lorenzo2DRendererTests
+        PROPERTIES LABELS headless
+    )
 endif()

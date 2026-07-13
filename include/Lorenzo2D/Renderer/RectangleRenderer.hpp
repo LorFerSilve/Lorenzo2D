@@ -13,6 +13,8 @@ namespace l2d
     public:
         RectangleRenderer(sf::Vector2f size = { 100.f, 100.f }, sf::Color color = sf::Color::White);
 
+        // Each nonfinite or negative axis becomes zero. Mirroring remains a
+        // Transform scale concern rather than a negative geometry size.
         void setSize(sf::Vector2f size);
         sf::Vector2f size() const;
 
