@@ -297,7 +297,11 @@ namespace l2d
             {
                 GameObject* gameObject = m_gameObjects[index].get();
 
-                if (gameObject != nullptr && !gameObject->isDestroyQueued())
+                if (
+                    gameObject != nullptr &&
+                    gameObject->isActive() &&
+                    !gameObject->isDestroyQueued()
+                )
                 {
                     gameObject->m_fixedUpdateGeneration =
                         m_fixedUpdateGeneration;
@@ -314,7 +318,8 @@ namespace l2d
 
                 if (gameObject != nullptr &&
                     gameObject->isActive() &&
-                    !gameObject->isDestroyQueued())
+                    !gameObject->isDestroyQueued() &&
+                    isFixedStepParticipant(*gameObject))
                 {
                     gameObject->update(deltaTime);
                 }
