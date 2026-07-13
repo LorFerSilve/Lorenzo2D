@@ -630,6 +630,7 @@ private:
             return;
 
         m_tileMap.setTileSize({ 40.f, 40.f });
+        m_tileMap.setRenderChunkSize({ 16u, 16u });
         m_tileMap.setSolidTileColor(sf::Color::White);
 
         const std::filesystem::path levelPath =
@@ -1029,6 +1030,28 @@ private:
         text << "Dropped ticks: " << l2d::Time::droppedTickCount() << "\n";
         text << "Physics contacts: " << m_physicsWorld.contacts().size() << "\n";
         text << "Contact events: " << m_physicsWorld.contactEvents().size() << "\n";
+
+        const l2d::TileMapBuildStats& tileMapStats =
+            m_tileMap.buildStats();
+
+        text << "Tilemap: "
+            << tileMapStats.solidTileCount
+            << " solids, "
+            << tileMapStats.renderChunkCount
+            << " chunks, "
+            << tileMapStats.collisionRectangleCount
+            << " colliders\n";
+
+        const l2d::TileMapRenderStats tileMapRenderStats =
+            m_tileMap.lastRenderStats();
+
+        text << "Tilemap visible: "
+            << tileMapRenderStats.visibleChunkCount
+            << " / "
+            << tileMapRenderStats.chunkCount
+            << ", draws: "
+            << tileMapRenderStats.drawCallCount
+            << "\n";
 
         if (player != nullptr)
         {

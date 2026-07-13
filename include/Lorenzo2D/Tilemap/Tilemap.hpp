@@ -5,12 +5,39 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System/Vector2.hpp>
 
+#include <cstddef>
 #include <string>
 #include <vector>
+
+namespace sf
+{
+    class View;
+}
 
 namespace l2d
 {
     class Scene;
+
+    // Describes the currently loaded geometry, or zeros when unloaded.
+    struct TileMapBuildStats
+    {
+        std::size_t solidTileCount = 0;
+        std::size_t renderChunkCount = 0;
+        std::size_t collisionRectangleCount = 0;
+    };
+
+    // Describes the chunk work submitted for a view. A tile map batches each
+    // non-empty chunk into one draw call and skips chunks outside the view.
+    struct TileMapRenderStats
+    {
+        std::size_t chunkCount = 0;
+        std::size_t visibleChunkCount = 0;
+        std::size_t culledChunkCount = 0;
+        std::size_t solidTileCount = 0;
+        std::size_t submittedTileCount = 0;
+        std::size_t submittedVertexCount = 0;
+        std::size_t drawCallCount = 0;
+    };
 
     class TileMap
     {
@@ -27,15 +54,24 @@ namespace l2d
         TileMap& operator=(TileMap&& other) noexcept;
 
         // Configuration changes are applied by the next successful load.
-        // Existing generated tiles keep the size used when they were loaded.
+        // Existing geometry keeps the size used when it was loaded. Invalid
+        // dimensions become one; positive dimensions below 0.0001 are clamped.
         void setTileSize(sf::Vector2f tileSize);
         // Returns the configuration for the next load.
         const sf::Vector2f& tileSize() const;
         // Returns the size used by the current layout, or zero when unloaded.
         const sf::Vector2f& loadedTileSize() const;
 
+        // Render chunks are measured in tiles. Configuration changes apply to
+        // the next successful load and zero dimensions are sanitized to one.
+        void setRenderChunkSize(sf::Vector2u chunkSize);
+        const sf::Vector2u& renderChunkSize() const;
+        // Returns the chunk size used by the current layout, or zero when
+        // unloaded.
+        const sf::Vector2u& loadedRenderChunkSize() const;
+
         // Configuration changes are applied by the next successful load.
-        // Existing generated tiles keep the color used when they were loaded.
+        // Existing render geometry keeps the color used when it was loaded.
         void setSolidTileColor(sf::Color color);
         // Returns the configuration for the next load.
         sf::Color solidTileColor() const;
@@ -47,9 +83,9 @@ namespace l2d
             const std::string& objectPrefix = "Tile"
         );
 
-        // Queues generated tiles for destruction in their owning scenes. The
-        // scenes remove them when they next process their destruction queues.
-        // Expired scene/object handles are ignored, so this is safe and idempotent.
+        // Queues generated render and collision objects for destruction in
+        // their owning scenes. Expired handles are ignored, so this is safe
+        // and idempotent.
         void unload();
 
         bool loadFromFile(
@@ -73,19 +109,34 @@ namespace l2d
         const Layout& layout() const;
         const sf::Vector2f& worldSize() const;
 
+        const TileMapBuildStats& buildStats() const;
+
+        // Computes culling telemetry without drawing or creating a window.
+        TileMapRenderStats renderStatsForView(
+            const sf::View& view
+        ) const;
+
+        // Returns telemetry from the most recent actual render. It is empty
+        // until the current map has been rendered at least once.
+        TileMapRenderStats lastRenderStats() const;
+
     private:
         Layout readLayoutFromFile(const std::string& filepath) const;
-        void queueGeneratedTilesForDestruction(
-            const std::vector<GameObjectHandle>& generatedTiles
+        void queueGeneratedObjectsForDestruction(
+            const std::vector<GameObjectHandle>& generatedObjects
         ) const;
 
     private:
         sf::Vector2f m_tileSize;
         sf::Vector2f m_loadedTileSize;
+        sf::Vector2u m_renderChunkSize;
+        sf::Vector2u m_loadedRenderChunkSize;
         sf::Color m_solidTileColor;
         sf::Vector2f m_worldSize;
+        TileMapBuildStats m_buildStats;
 
         Layout m_layout;
-        std::vector<GameObjectHandle> m_generatedTiles;
+        std::vector<GameObjectHandle> m_generatedObjects;
+        GameObjectHandle m_renderObject;
     };
 }

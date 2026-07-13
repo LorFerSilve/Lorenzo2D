@@ -18,7 +18,7 @@ production-ready engine.
 - Scenes, scene switching, object queries, and lifetime-aware object handles
 - Circle and rectangle rendering plus texture-backed sprites
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
-- ASCII tilemap loading with generated render and collision objects
+- ASCII tilemap loading with chunked, view-culled rendering and merged collision geometry
 - Static, kinematic, and dynamic rigid bodies with configurable gravity
 - Circle/box collision manifolds, impulse response, friction, and restitution
 - Collision layers, sensors, contact events, and physics debug drawing
@@ -98,6 +98,45 @@ tile-sized cell:
 
 Rows may have different lengths, and blank rows are preserved. The map's world
 width is based on its longest row.
+
+### Tilemap scalability
+
+Solid tiles are rendered in non-empty chunks instead of one object and draw
+call per cell. Each solid tile contributes six triangle vertices to its
+chunk's batch. At render time, chunks outside a conservative bound for the
+active `sf::View` are culled, and each candidate-visible chunk is submitted
+with one draw call. Rotated views can retain extra chunks, but never discard a
+potentially visible one. This keeps draw submission close to the visible,
+occupied parts of a large map; the culling pass still evaluates every
+non-empty chunk.
+
+Render chunks default to `16 x 16` tiles. Call
+`TileMap::setRenderChunkSize()` before loading to configure the next load. Like
+the tile-size configuration, this is a next-load setting: an already loaded
+map keeps its snapshot, available through `loadedRenderChunkSize()`, until the
+next successful load. Zero chunk dimensions are sanitized to one.
+Positive tile dimensions below the collider precision floor (`0.0001`) are
+clamped so rendered cells and their collision geometry remain aligned.
+Loads whose tile dimensions and layout would overflow finite world coordinates
+or collapse cell/collider boundaries are rejected before the current map or
+its generated objects are changed.
+
+Collision geometry is independent of render chunks. A deterministic greedy
+pass merges adjacent solid cells into larger collider-only rectangles across
+the whole layout, including across chunk boundaries. Collider-only objects are
+static in the physics world, so dense floors and walls require far fewer
+physics proxies than one collider per tile.
+
+`TileMap::buildStats()` reports solid tiles, non-empty render chunks, and merged
+collision rectangles from the current successful load. For rendering,
+`renderStatsForView()` conservatively predicts visible/culled chunks,
+submitted tiles and vertices, and draw calls without opening a window;
+`lastRenderStats()` reports the same counters from the most recent real render.
+
+The generated game-object topology, object names, and physics contact object
+IDs are implementation details. They may change after a reload or as batching
+and merging evolve; gameplay code should not use them as persistent tile
+identity.
 
 ## Source layout
 
@@ -277,10 +316,9 @@ owned by the world's fixed simulation step rather than component update.
   Dense single-cell scenes and fallback proxies can still approach quadratic
   pair counts; continuous collision detection, sleeping, joints, and angular
   dynamics are future work.
-- Every solid tile is currently an individual entity, renderer, and collider.
-  The grid avoids unrelated pair tests, but per-tile proxy construction and
-  rendering remain; chunked rendering, camera culling, and merged static
-  colliders are planned for larger maps.
+- Tilemap chunks rebuild as a whole when a layout changes; incremental chunk
+  editing, streamed regions, textured tilesets, and animated tiles remain
+  future work.
 - Render ordering is a fixed layer mask rather than a general render queue.
 - Fonts and textures are non-owning from the renderer's perspective; asset
   leases and hot reload need an explicit lifetime model.
