@@ -119,6 +119,10 @@ cannot be copied or moved. Create object handles through `Scene::createHandle`,
 and mutate scene ownership only through `Scene` methods; `gameObjects()` exposes
 the collection for structurally read-only iteration.
 
+`SceneManager::clear()` is safe during an owned scene's update or render
+dispatch. It clears the active-scene selection immediately and releases scene
+ownership after the outermost dispatch returns.
+
 `PhysicsWorld2D` is also non-copyable and non-movable because each instance owns
 configuration, contact history, and contact-event state for its simulation.
 
@@ -143,9 +147,11 @@ The callback order for each frame is:
 Call `Scene::fixedUpdate` from `onFixedPreSimulation`; the retained
 `Scene::update` name is a compatibility alias for the same fixed-update path.
 Rigid bodies no longer integrate during component updates, so each fixed tick
-must call `PhysicsWorld2D::step` from `onFixedSimulation`. Objects created while
-a scene is running its fixed callbacks join component and physics processing on
-the following fixed tick, keeping both phases on the same participant set.
+must call `PhysicsWorld2D::step` from `onFixedSimulation`. Objects created or
+activated while a scene is running its fixed callbacks join component and
+physics processing on the following fixed tick, keeping both phases on the same
+participant set. A fixed update is non-reentrant for a given scene; a recursive
+call made during that scene's active fixed tick is ignored.
 
 Keyboard and mouse pressed/released edges are frame-scoped. The value remains
 visible to every fixed tick in that frame, so one-shot gameplay actions must be
