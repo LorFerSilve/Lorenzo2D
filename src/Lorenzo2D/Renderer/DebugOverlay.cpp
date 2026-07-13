@@ -2,10 +2,22 @@
 
 #include <SFML/Graphics/RenderWindow.hpp>
 
+#include <memory>
+#include <utility>
+
 namespace l2d
 {
+    namespace
+    {
+        FontHandle makeEmptyFontHandle()
+        {
+            return FontHandle(std::make_shared<sf::Font>());
+        }
+    }
+
     DebugOverlay::DebugOverlay()
-        : m_text(m_ownedFont),
+        : m_font(makeEmptyFontHandle()),
+        m_text(*m_font),
         m_hasFont(false)
     {
         m_text.setString("");
@@ -16,20 +28,40 @@ namespace l2d
 
     bool DebugOverlay::loadFontFromFile(const std::string& filepath)
     {
-        m_hasFont = m_ownedFont.openFromFile(filepath);
+        std::shared_ptr<sf::Font> font = std::make_shared<sf::Font>();
 
-        if (m_hasFont)
-        {
-            m_text.setFont(m_ownedFont);
-        }
+        if (!font->openFromFile(filepath))
+            return false;
 
-        return m_hasFont;
+        return setFont(FontHandle(std::move(font)));
     }
 
-    void DebugOverlay::setFont(const sf::Font& font)
+    bool DebugOverlay::setFont(FontHandle font)
     {
-        m_text.setFont(font);
+        if (!font)
+            return false;
+
+        // Rebind the text before releasing the lease for its old font.
+        m_text.setFont(*font);
+        m_font = std::move(font);
         m_hasFont = true;
+        return true;
+    }
+
+    FontHandle DebugOverlay::fontHandle() const
+    {
+        if (!m_hasFont)
+            return {};
+
+        return m_font;
+    }
+
+    void DebugOverlay::clearFont()
+    {
+        FontHandle emptyFont = makeEmptyFontHandle();
+        m_text.setFont(*emptyFont);
+        m_font = std::move(emptyFont);
+        m_hasFont = false;
     }
 
     bool DebugOverlay::hasFont() const

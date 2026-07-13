@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Lorenzo2D/Assets/AssetHandle.hpp>
+
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Text.hpp>
@@ -19,8 +21,16 @@ namespace l2d
     public:
         DebugOverlay();
 
+        DebugOverlay(const DebugOverlay&) = delete;
+        DebugOverlay& operator=(const DebugOverlay&) = delete;
+        DebugOverlay(DebugOverlay&&) = delete;
+        DebugOverlay& operator=(DebugOverlay&&) = delete;
+
         bool loadFontFromFile(const std::string& filepath);
-        void setFont(const sf::Font& font);
+        // Invalid handles are rejected without changing the current binding.
+        bool setFont(FontHandle font);
+        FontHandle fontHandle() const;
+        void clearFont();
 
         bool hasFont() const;
 
@@ -32,7 +42,8 @@ namespace l2d
         void render(sf::RenderWindow& window) const;
 
     private:
-        sf::Font m_ownedFont;
+        // The lease must outlive the SFML drawable that borrows from it.
+        FontHandle m_font;
         sf::Text m_text;
 
         bool m_hasFont;

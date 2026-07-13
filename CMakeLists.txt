@@ -134,4 +134,16 @@ if(L2D_BUILD_TESTS)
     l2d_enable_warnings(Lorenzo2DPhysicsTests)
 
     add_test(NAME Lorenzo2DPhysicsTests COMMAND Lorenzo2DPhysicsTests)
+
+    add_executable(
+        Lorenzo2DAssetTests
+        tests/Lorenzo2DAssetTests.cpp
+    )
+    target_link_libraries(
+        Lorenzo2DAssetTests
+        PRIVATE Lorenzo2D::Lorenzo2D
+    )
+    l2d_enable_warnings(Lorenzo2DAssetTests)
+
+    add_test(NAME Lorenzo2DAssetTests COMMAND Lorenzo2DAssetTests)
 endif()

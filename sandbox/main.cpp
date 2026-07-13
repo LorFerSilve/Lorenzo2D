@@ -393,13 +393,13 @@ private:
 
         player.addComponent<CollisionColorDebug>();
 
-        const sf::Texture* playerTexture =
+        const l2d::TextureHandle playerTexture =
             m_assets.getTexture("player");
 
-        if (playerTexture != nullptr)
+        if (playerTexture)
         {
             l2d::SpriteRenderer& spriteRenderer =
-                player.addComponent<l2d::SpriteRenderer>(*playerTexture);
+                player.addComponent<l2d::SpriteRenderer>(playerTexture);
 
             spriteRenderer.setSize({ playerDiameter, playerDiameter });
         }
@@ -450,10 +450,13 @@ private:
                 PhysicsLayers::Player
             });
 
-            if (const sf::Texture* coinTexture = m_assets.getTexture("coin"))
+            const l2d::TextureHandle coinTexture =
+                m_assets.getTexture("coin");
+
+            if (coinTexture)
             {
                 l2d::SpriteRenderer& spriteRenderer =
-                    coin.addComponent<l2d::SpriteRenderer>(*coinTexture);
+                    coin.addComponent<l2d::SpriteRenderer>(coinTexture);
 
                 spriteRenderer.setSize({ coinDiameter, coinDiameter });
             }
@@ -739,9 +742,11 @@ private:
 
     void setupDebugOverlay()
     {
-        if (const sf::Font* font = m_assets.getFont("debug"))
+        const l2d::FontHandle font = m_assets.getFont("debug");
+
+        if (font)
         {
-            m_debugOverlay.setFont(*font);
+            m_debugOverlay.setFont(font);
         }
 
         m_debugOverlay.setPosition({ 10.f, 10.f });

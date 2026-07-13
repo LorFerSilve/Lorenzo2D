@@ -5,24 +5,55 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Angle.hpp>
 
+#include <stdexcept>
+#include <utility>
+
 namespace l2d
 {
-    SpriteRenderer::SpriteRenderer(const sf::Texture& texture)
-        : m_texture(&texture),
-        m_sprite(texture),
+    namespace
+    {
+        const sf::Texture& requireTexture(const TextureHandle& texture)
+        {
+            if (!texture)
+            {
+                throw std::invalid_argument(
+                    "SpriteRenderer requires a valid texture handle."
+                );
+            }
+
+            return *texture;
+        }
+    }
+
+    SpriteRenderer::SpriteRenderer(TextureHandle texture)
+        : m_texture(std::move(texture)),
+        m_sprite(requireTexture(m_texture)),
         m_sizeScale(1.f, 1.f)
     {
     }
 
-    void SpriteRenderer::setTexture(const sf::Texture& texture, bool resetRect)
+    bool SpriteRenderer::setTexture(
+        TextureHandle texture,
+        bool resetRect
+    )
     {
-        m_texture = &texture;
-        m_sprite.setTexture(texture, resetRect);
+        if (!texture)
+            return false;
+
+        // Rebind the sprite before releasing the lease for its old texture.
+        m_sprite.setTexture(*texture, resetRect);
+        m_texture = std::move(texture);
+        return true;
+    }
+
+    TextureHandle SpriteRenderer::textureHandle() const
+    {
+        return m_texture;
     }
 
     void SpriteRenderer::setSize(sf::Vector2f size)
     {
-        if (m_texture == nullptr)
+        if (!m_texture)
             return;
 
         const sf::Vector2u textureSize = m_texture->getSize();
