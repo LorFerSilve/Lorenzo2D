@@ -1,5 +1,7 @@
 #include <Lorenzo2D/Renderer/DebugOverlay.hpp>
 
+#include "RendererNumeric.hpp"
+
 #include <SFML/Graphics/RenderWindow.hpp>
 
 #include <memory>
@@ -76,12 +78,28 @@ namespace l2d
 
     void DebugOverlay::setPosition(sf::Vector2f position)
     {
+        if (!renderer_detail::isSafeDrawablePosition(position))
+            return;
+
         m_text.setPosition(position);
+    }
+
+    sf::Vector2f DebugOverlay::position() const
+    {
+        return m_text.getPosition();
     }
 
     void DebugOverlay::setCharacterSize(unsigned int size)
     {
+        if (size == 0u)
+            size = 1u;
+
         m_text.setCharacterSize(size);
+    }
+
+    unsigned int DebugOverlay::characterSize() const
+    {
+        return m_text.getCharacterSize();
     }
 
     void DebugOverlay::setFillColor(sf::Color color)

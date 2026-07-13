@@ -25,7 +25,8 @@ production-ready engine.
 - Lifetime-safe read-only font and texture handles with transactional named
   storage
 - Debug overlay and independently switchable world, physics, and UI layers
-- Headless regression tests for timing, transforms, scenes, physics, and tilemaps
+- Regression tests for timing, transforms, scenes, camera and renderer numeric
+  contracts, assets, physics, and tilemaps
 
 ## Requirements
 
@@ -41,7 +42,7 @@ first configure:
 
 ```sh
 sudo apt-get update
-sudo apt-get install xorg-dev libharfbuzz-dev libfreetype-dev \
+sudo apt-get install xorg-dev xauth xvfb libharfbuzz-dev libfreetype-dev \
   libgl1-mesa-dev libegl1-mesa-dev libudev-dev
 ```
 
@@ -59,6 +60,13 @@ ctest --test-dir build -C Debug --output-on-failure
 
 The sandbox executable is written to `build/bin`. Disable it for a test- or
 library-only build with `-DL2D_BUILD_SANDBOX=OFF`.
+
+`Lorenzo2DRendererTests` exercises the camera, transform, and renderer numeric
+contracts without creating a window, graphics context, or GPU-backed texture.
+It is a genuinely headless target and can run on Linux with display environment
+variables unset. The remaining Linux suite runs under Xvfb because asset tests
+exercise SFML graphics resources; prefix the full `ctest` command with
+`xvfb-run --auto-servernum` on a machine without a display server.
 
 Useful configuration options:
 
@@ -178,7 +186,7 @@ include/Lorenzo2D/  Public engine headers
 src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
 assets/             Text levels and optional runtime assets
-tests/              Headless regression tests
+tests/              Regression tests
 ```
 
 The public engine is separated into `Core`, `ECS`, `Scene`, `Renderer`,
@@ -262,6 +270,31 @@ current state, creating the usual one-fixed-tick presentation latency in return
 for smooth motion. Call `Transform::resetInterpolation()` after teleports,
 respawns, or other discontinuous movement to prevent a visible sweep from the
 old position.
+
+## Camera and renderer numeric contract
+
+`Camera2D` keeps its base and effective view extents finite and strictly
+positive, and keeps zoom within its supported positive range. Invalid camera
+coordinates, movement offsets, bounds, follow targets, and time deltas are
+rejected transactionally, so they cannot replace the last valid state. Finite
+reversed bounds are normalized. Camera-controller zoom limits and step factors
+are likewise sanitized before they can reach the camera.
+
+Follow smoothing and bounds calculations use widened intermediate arithmetic.
+This keeps small follow steps stable and prevents otherwise valid extreme
+coordinates from overflowing during interpolation, midpoint, or extent
+calculations. Transform interpolation uses the same widened approach while
+retaining shortest-angle rotation. Nonfinite transform mutations are rejected;
+finite zero and negative scale remain supported for hiding and mirroring.
+
+Circle radii and rectangle or sprite dimensions are stored as finite,
+nonnegative values. Invalid dimensions collapse only the affected dimension to
+zero rather than passing NaN or infinity into SFML. Before drawing, renderers
+validate the complete transformed local bounds, including translation,
+normalized rotation, scale, and the active sprite texture rectangle. Physics
+debug outlines use the same conservative coordinate domain. If a derived draw
+state leaves that domain, the draw is skipped without poisoning the drawable's
+retained state.
 
 ## Physics model
 
@@ -358,6 +391,9 @@ owned by the world's fixed simulation step rather than component update.
   tracking, and background loading remain future work.
 - The sandbox is still a single integration example. Smaller examples and more
   subsystem tests should be added as APIs stabilize.
+- Distribution packaging and CMake install/export rules, sanitizer-enabled CI,
+  and a project license are not yet provided; these remain future release
+  hardening milestones.
 
 These constraints are kept explicit so future changes can improve one contract
 at a time without hiding unsupported behavior.

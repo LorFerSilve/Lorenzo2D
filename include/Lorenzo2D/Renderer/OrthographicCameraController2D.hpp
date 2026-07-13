@@ -21,11 +21,18 @@ namespace l2d
         void setZoomEnabled(bool enabled);
         bool isZoomEnabled() const;
 
+        // The current zoom is immediately clamped into the sanitized range.
         void setZoomLimits(float minZoom, float maxZoom);
+        // Reported limits are capped to what the camera's current size can
+        // represent safely.
         float minZoom() const;
         float maxZoom() const;
 
+        // Nonfinite or nonpositive factors use the default values. Positive
+        // factors retain their historic semantics, including inverted zoom.
         void setZoomStepFactors(float zoomInFactor, float zoomOutFactor);
+        float zoomInFactor() const;
+        float zoomOutFactor() const;
 
         void setResizeEnabled(bool enabled);
         bool isResizeEnabled() const;
