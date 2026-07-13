@@ -1,4 +1,5 @@
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
+#include <Lorenzo2D/Physics/CollisionManifold2D.hpp>
 
 #include <cmath>
 
@@ -58,15 +59,7 @@ namespace l2d
 
     bool BoxCollider2D::overlaps(const BoxCollider2D& other) const
     {
-        const sf::Vector2f aMin = min();
-        const sf::Vector2f aMax = max();
-
-        const sf::Vector2f bMin = other.min();
-        const sf::Vector2f bMax = other.max();
-
-        return aMin.x < bMax.x &&
-            aMax.x > bMin.x &&
-            aMin.y < bMax.y &&
-            aMax.y > bMin.y;
+        CollisionManifold2D manifold;
+        return computeCollisionManifold(*this, other, manifold);
     }
 }

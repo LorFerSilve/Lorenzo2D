@@ -67,6 +67,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Physics/BoxCollider2D.cpp
     src/Lorenzo2D/Physics/CircleCollider2D.cpp
     src/Lorenzo2D/Physics/Collider2D.cpp
+    src/Lorenzo2D/Physics/CollisionManifold2D.cpp
     src/Lorenzo2D/Physics/PhysicsDebugRenderer2D.cpp
     src/Lorenzo2D/Physics/PhysicsWorld2D.cpp
     src/Lorenzo2D/Physics/RigidBody2D.cpp
@@ -120,4 +121,16 @@ if(L2D_BUILD_TESTS)
     l2d_enable_warnings(Lorenzo2DTests)
 
     add_test(NAME Lorenzo2DTests COMMAND Lorenzo2DTests)
+
+    add_executable(
+        Lorenzo2DPhysicsTests
+        tests/Lorenzo2DPhysicsTests.cpp
+    )
+    target_link_libraries(
+        Lorenzo2DPhysicsTests
+        PRIVATE Lorenzo2D::Lorenzo2D
+    )
+    l2d_enable_warnings(Lorenzo2DPhysicsTests)
+
+    add_test(NAME Lorenzo2DPhysicsTests COMMAND Lorenzo2DPhysicsTests)
 endif()

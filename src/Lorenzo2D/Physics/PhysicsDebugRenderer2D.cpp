@@ -3,6 +3,7 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
+#include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include <SFML/Graphics/CircleShape.hpp>
@@ -17,7 +18,8 @@ namespace l2d
         : m_enabled(true),
         m_outlineThickness(2.f),
         m_defaultColor(sf::Color::Cyan),
-        m_collidingColor(sf::Color::Red)
+        m_collidingColor(sf::Color::Red),
+        m_sensorColor(sf::Color::Yellow)
     {
     }
 
@@ -64,6 +66,16 @@ namespace l2d
         return m_collidingColor;
     }
 
+    void PhysicsDebugRenderer2D::setSensorColor(sf::Color color)
+    {
+        m_sensorColor = color;
+    }
+
+    sf::Color PhysicsDebugRenderer2D::sensorColor() const
+    {
+        return m_sensorColor;
+    }
+
     void PhysicsDebugRenderer2D::render(
         Scene& scene,
         sf::RenderWindow& window
@@ -101,27 +113,26 @@ namespace l2d
     {
         const sf::Vector2f ownerPosition =
             gameObject.transform.interpolated(interpolationAlpha).position;
+        const Collider2D* collider =
+            gameObject.getComponent<Collider2D>();
 
-        if (
-            const BoxCollider2D* boxCollider =
-                gameObject.getComponent<BoxCollider2D>()
-        )
+        if (collider == nullptr || !collider->isActive())
+            return;
+
+        if (collider->type() == ColliderType::Box)
         {
-            if (boxCollider->isActive())
+            if (const auto* box = dynamic_cast<const BoxCollider2D*>(collider))
             {
-                renderBoxCollider(*boxCollider, ownerPosition, window);
+                renderBoxCollider(*box, ownerPosition, window);
             }
+
+            return;
         }
 
-        if (
-            const CircleCollider2D* circleCollider =
-                gameObject.getComponent<CircleCollider2D>()
-        )
+        if (const auto* circle =
+            dynamic_cast<const CircleCollider2D*>(collider))
         {
-            if (circleCollider->isActive())
-            {
-                renderCircleCollider(*circleCollider, ownerPosition, window);
-            }
+            renderCircleCollider(*circle, ownerPosition, window);
         }
     }
 
@@ -139,7 +150,9 @@ namespace l2d
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(m_outlineThickness);
 
-        if (collider.isColliding())
+        if (collider.isSensor())
+            shape.setOutlineColor(m_sensorColor);
+        else if (collider.isColliding())
             shape.setOutlineColor(m_collidingColor);
         else
             shape.setOutlineColor(m_defaultColor);
@@ -168,7 +181,9 @@ namespace l2d
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(m_outlineThickness);
 
-        if (collider.isColliding())
+        if (collider.isSensor())
+            shape.setOutlineColor(m_sensorColor);
+        else if (collider.isColliding())
             shape.setOutlineColor(m_collidingColor);
         else
             shape.setOutlineColor(m_defaultColor);

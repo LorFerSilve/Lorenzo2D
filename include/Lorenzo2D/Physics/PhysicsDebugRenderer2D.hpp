@@ -32,6 +32,9 @@ namespace l2d
         void setCollidingColor(sf::Color color);
         sf::Color collidingColor() const;
 
+        void setSensorColor(sf::Color color);
+        sf::Color sensorColor() const;
+
         void render(Scene& scene, sf::RenderWindow& window) const;
         void render(
             Scene& scene,
@@ -62,5 +65,6 @@ namespace l2d
 
         sf::Color m_defaultColor;
         sf::Color m_collidingColor;
+        sf::Color m_sensorColor;
     };
 }
