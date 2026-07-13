@@ -48,7 +48,14 @@ namespace l2d
         void clear();
 
     private:
+        void beginDispatch();
+        void endDispatch();
+
+    private:
         std::vector<std::unique_ptr<Scene>> m_scenes;
         Scene* m_activeScene = nullptr;
+
+        std::size_t m_dispatchDepth = 0;
+        bool m_clearDeferred = false;
     };
 }
