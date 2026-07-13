@@ -1,22 +1,547 @@
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
 
+#include <Lorenzo2D/ECS/Component.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
-#include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
+
+#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/Vertex.hpp>
+#include <SFML/Graphics/VertexArray.hpp>
+#include <SFML/Graphics/View.hpp>
+#include <SFML/System/Angle.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <fstream>
+#include <limits>
+#include <map>
+#include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace l2d
 {
+    namespace
+    {
+        constexpr std::size_t VERTICES_PER_TILE = 6;
+        constexpr float MIN_TILE_DIMENSION = 0.0001f;
+
+        struct Bounds
+        {
+            float left = 0.f;
+            float top = 0.f;
+            float right = 0.f;
+            float bottom = 0.f;
+        };
+
+        struct RenderChunk
+        {
+            sf::VertexArray vertices;
+            Bounds worldBounds;
+            std::size_t tileCount = 0;
+
+            RenderChunk(
+                sf::VertexArray&& chunkVertices,
+                Bounds bounds,
+                std::size_t count
+            )
+                : vertices(std::move(chunkVertices)),
+                worldBounds(bounds),
+                tileCount(count)
+            {
+            }
+        };
+
+        struct RenderChunkBuilder
+        {
+            sf::VertexArray vertices{ sf::PrimitiveType::Triangles };
+            Bounds worldBounds;
+            std::size_t tileCount = 0;
+        };
+
+        struct CollisionRectangle
+        {
+            std::size_t column = 0;
+            std::size_t row = 0;
+            std::size_t width = 0;
+            std::size_t height = 0;
+        };
+
+        struct CollisionGeometry
+        {
+            sf::Vector2f position;
+            sf::Vector2f size;
+        };
+
+        struct CullingArea
+        {
+            Bounds bounds;
+            bool enabled = false;
+        };
+
+        bool isFinite(float value)
+        {
+            return std::isfinite(value);
+        }
+
+        bool isFinite(const Bounds& bounds)
+        {
+            return isFinite(bounds.left) &&
+                isFinite(bounds.top) &&
+                isFinite(bounds.right) &&
+                isFinite(bounds.bottom);
+        }
+
+        float checkedTileExtent(
+            std::size_t tileCount,
+            float tileDimension
+        )
+        {
+            const long double extent =
+                static_cast<long double>(tileCount) *
+                static_cast<long double>(tileDimension);
+            const long double maximum = static_cast<long double>(
+                std::numeric_limits<float>::max()
+            );
+
+            if (!std::isfinite(extent) || extent > maximum)
+            {
+                throw std::overflow_error(
+                    "Tile map geometry exceeds the finite coordinate range."
+                );
+            }
+
+            const float result = static_cast<float>(extent);
+
+            if (!isFinite(result))
+            {
+                throw std::overflow_error(
+                    "Tile map geometry exceeds the finite coordinate range."
+                );
+            }
+
+            return result;
+        }
+
+        CullingArea makeCullingArea(const sf::View& view)
+        {
+            const sf::Vector2f center = view.getCenter();
+            const sf::Vector2f size = view.getSize();
+            const float rotation = view.getRotation().asRadians();
+
+            if (
+                !isFinite(center.x) ||
+                !isFinite(center.y) ||
+                !isFinite(size.x) ||
+                !isFinite(size.y) ||
+                !isFinite(rotation) ||
+                size.x <= 0.f ||
+                size.y <= 0.f
+            )
+            {
+                return {};
+            }
+
+            const float halfWidth = size.x * 0.5f;
+            const float halfHeight = size.y * 0.5f;
+            const float cosine = std::abs(std::cos(rotation));
+            const float sine = std::abs(std::sin(rotation));
+            const float horizontalExtent =
+                cosine * halfWidth + sine * halfHeight;
+            const float verticalExtent =
+                sine * halfWidth + cosine * halfHeight;
+
+            CullingArea area;
+            area.bounds = {
+                center.x - horizontalExtent,
+                center.y - verticalExtent,
+                center.x + horizontalExtent,
+                center.y + verticalExtent
+            };
+            area.enabled = isFinite(area.bounds);
+            return area;
+        }
+
+        bool intersects(const Bounds& first, const Bounds& second)
+        {
+            // Treat touching edges as visible. The extra boundary draw is
+            // preferable to a one-frame pop caused by floating-point drift.
+            return first.left <= second.right &&
+                first.right >= second.left &&
+                first.top <= second.bottom &&
+                first.bottom >= second.top;
+        }
+
+        bool isVisible(
+            const RenderChunk& chunk,
+            const CullingArea& cullingArea
+        )
+        {
+            if (!cullingArea.enabled)
+                return true;
+
+            return intersects(chunk.worldBounds, cullingArea.bounds);
+        }
+
+        void appendVertex(
+            sf::VertexArray& vertices,
+            sf::Vector2f position,
+            sf::Color color
+        )
+        {
+            sf::Vertex vertex;
+            vertex.position = position;
+            vertex.color = color;
+            vertices.append(vertex);
+        }
+
+        void appendTile(
+            RenderChunkBuilder& chunk,
+            std::size_t column,
+            std::size_t row,
+            sf::Vector2f tileSize,
+            sf::Color color
+        )
+        {
+            const float left = checkedTileExtent(column, tileSize.x);
+            const float top = checkedTileExtent(row, tileSize.y);
+            const float right = checkedTileExtent(column + 1u, tileSize.x);
+            const float bottom = checkedTileExtent(row + 1u, tileSize.y);
+
+            if (right <= left || bottom <= top)
+            {
+                throw std::overflow_error(
+                    "Tile map cells are too small for their world coordinates."
+                );
+            }
+
+            appendVertex(chunk.vertices, { left, top }, color);
+            appendVertex(chunk.vertices, { left, bottom }, color);
+            appendVertex(chunk.vertices, { right, bottom }, color);
+            appendVertex(chunk.vertices, { left, top }, color);
+            appendVertex(chunk.vertices, { right, bottom }, color);
+            appendVertex(chunk.vertices, { right, top }, color);
+
+            if (chunk.tileCount == 0)
+            {
+                chunk.worldBounds = { left, top, right, bottom };
+            }
+            else
+            {
+                chunk.worldBounds.left =
+                    std::min(chunk.worldBounds.left, left);
+                chunk.worldBounds.top =
+                    std::min(chunk.worldBounds.top, top);
+                chunk.worldBounds.right =
+                    std::max(chunk.worldBounds.right, right);
+                chunk.worldBounds.bottom =
+                    std::max(chunk.worldBounds.bottom, bottom);
+            }
+
+            chunk.tileCount++;
+        }
+
+        std::vector<RenderChunk> buildRenderChunks(
+            const TileMap::Layout& layout,
+            char solidChar,
+            sf::Vector2f tileSize,
+            sf::Vector2u chunkSize,
+            sf::Color color
+        )
+        {
+            using ChunkCoordinate = std::pair<std::size_t, std::size_t>;
+            std::map<ChunkCoordinate, RenderChunkBuilder> builders;
+
+            for (std::size_t row = 0; row < layout.size(); ++row)
+            {
+                for (std::size_t column = 0; column < layout[row].size(); ++column)
+                {
+                    if (layout[row][column] != solidChar)
+                        continue;
+
+                    const ChunkCoordinate coordinate =
+                    {
+                        row / static_cast<std::size_t>(chunkSize.y),
+                        column / static_cast<std::size_t>(chunkSize.x)
+                    };
+
+                    appendTile(
+                        builders[coordinate],
+                        column,
+                        row,
+                        tileSize,
+                        color
+                    );
+                }
+            }
+
+            std::vector<RenderChunk> chunks;
+            chunks.reserve(builders.size());
+
+            for (auto& entry : builders)
+            {
+                RenderChunkBuilder& builder = entry.second;
+                chunks.emplace_back(
+                    std::move(builder.vertices),
+                    builder.worldBounds,
+                    builder.tileCount
+                );
+            }
+
+            return chunks;
+        }
+
+        std::vector<CollisionRectangle> buildCollisionRectangles(
+            const TileMap::Layout& layout,
+            char solidChar
+        )
+        {
+            std::vector<std::vector<bool>> consumed;
+            consumed.reserve(layout.size());
+
+            for (const std::string& row : layout)
+            {
+                consumed.emplace_back(row.size(), false);
+            }
+
+            std::vector<CollisionRectangle> rectangles;
+
+            for (std::size_t row = 0; row < layout.size(); ++row)
+            {
+                for (std::size_t column = 0; column < layout[row].size(); ++column)
+                {
+                    if (
+                        layout[row][column] != solidChar ||
+                        consumed[row][column]
+                    )
+                    {
+                        continue;
+                    }
+
+                    std::size_t width = 0;
+
+                    while (
+                        column + width < layout[row].size() &&
+                        layout[row][column + width] == solidChar &&
+                        !consumed[row][column + width]
+                    )
+                    {
+                        width++;
+                    }
+
+                    std::size_t height = 1;
+
+                    while (row + height < layout.size())
+                    {
+                        bool canExtend = true;
+
+                        for (std::size_t offset = 0; offset < width; ++offset)
+                        {
+                            const std::size_t candidateColumn = column + offset;
+
+                            if (
+                                candidateColumn >= layout[row + height].size() ||
+                                layout[row + height][candidateColumn] != solidChar ||
+                                consumed[row + height][candidateColumn]
+                            )
+                            {
+                                canExtend = false;
+                                break;
+                            }
+                        }
+
+                        if (!canExtend)
+                            break;
+
+                        height++;
+                    }
+
+                    for (
+                        std::size_t consumedRow = row;
+                        consumedRow < row + height;
+                        ++consumedRow
+                    )
+                    {
+                        for (
+                            std::size_t consumedColumn = column;
+                            consumedColumn < column + width;
+                            ++consumedColumn
+                        )
+                        {
+                            consumed[consumedRow][consumedColumn] = true;
+                        }
+                    }
+
+                    rectangles.push_back({ column, row, width, height });
+                }
+            }
+
+            return rectangles;
+        }
+
+        std::vector<CollisionGeometry> buildCollisionGeometry(
+            const std::vector<CollisionRectangle>& rectangles,
+            sf::Vector2f tileSize
+        )
+        {
+            std::vector<CollisionGeometry> geometry;
+            geometry.reserve(rectangles.size());
+
+            for (const CollisionRectangle& rectangle : rectangles)
+            {
+                CollisionGeometry item;
+                const float right = checkedTileExtent(
+                    rectangle.column + rectangle.width,
+                    tileSize.x
+                );
+                const float bottom = checkedTileExtent(
+                    rectangle.row + rectangle.height,
+                    tileSize.y
+                );
+                item.position =
+                {
+                    checkedTileExtent(rectangle.column, tileSize.x),
+                    checkedTileExtent(rectangle.row, tileSize.y)
+                };
+                item.size =
+                {
+                    right - item.position.x,
+                    bottom - item.position.y
+                };
+
+                const sf::Vector2f maximum = item.position + item.size;
+
+                if (
+                    !isFinite(item.size.x) ||
+                    !isFinite(item.size.y) ||
+                    item.size.x < MIN_TILE_DIMENSION ||
+                    item.size.y < MIN_TILE_DIMENSION ||
+                    maximum.x != right ||
+                    maximum.y != bottom
+                )
+                {
+                    throw std::overflow_error(
+                        "Tile map collision geometry cannot be represented "
+                        "without gaps."
+                    );
+                }
+
+                geometry.push_back(item);
+            }
+
+            return geometry;
+        }
+
+        class TileMapRenderComponent final : public Component
+        {
+        public:
+            TileMapRenderComponent(
+                std::vector<RenderChunk>&& chunks,
+                std::size_t solidTileCount
+            )
+                : m_chunks(std::move(chunks)),
+                m_solidTileCount(solidTileCount)
+            {
+            }
+
+            TileMapRenderStats statsForView(
+                const sf::View& view
+            ) const
+            {
+                const CullingArea cullingArea = makeCullingArea(view);
+
+                TileMapRenderStats stats = baseStats();
+
+                for (const RenderChunk& chunk : m_chunks)
+                {
+                    if (
+                        isVisible(chunk, cullingArea)
+                    )
+                    {
+                        addVisibleChunk(stats, chunk);
+                    }
+                    else
+                    {
+                        stats.culledChunkCount++;
+                    }
+                }
+
+                return stats;
+            }
+
+            TileMapRenderStats lastRenderStats() const
+            {
+                return m_lastRenderStats;
+            }
+
+            void onRender(sf::RenderWindow& window) override
+            {
+                onRender(window, 1.f);
+            }
+
+            void onRender(
+                sf::RenderWindow& window,
+                float interpolationAlpha
+            ) override
+            {
+                (void)interpolationAlpha;
+                const CullingArea cullingArea = makeCullingArea(window.getView());
+
+                TileMapRenderStats stats = baseStats();
+
+                for (const RenderChunk& chunk : m_chunks)
+                {
+                    if (
+                        !isVisible(chunk, cullingArea)
+                    )
+                    {
+                        stats.culledChunkCount++;
+                        continue;
+                    }
+
+                    window.draw(chunk.vertices);
+                    addVisibleChunk(stats, chunk);
+                }
+
+                m_lastRenderStats = stats;
+            }
+
+        private:
+            TileMapRenderStats baseStats() const
+            {
+                TileMapRenderStats stats;
+                stats.chunkCount = m_chunks.size();
+                stats.solidTileCount = m_solidTileCount;
+                return stats;
+            }
+
+            static void addVisibleChunk(
+                TileMapRenderStats& stats,
+                const RenderChunk& chunk
+            )
+            {
+                stats.visibleChunkCount++;
+                stats.submittedTileCount += chunk.tileCount;
+                stats.submittedVertexCount +=
+                    chunk.tileCount * VERTICES_PER_TILE;
+                stats.drawCallCount++;
+            }
+
+        private:
+            std::vector<RenderChunk> m_chunks;
+            std::size_t m_solidTileCount = 0;
+            TileMapRenderStats m_lastRenderStats;
+        };
+    }
+
     TileMap::TileMap()
         : m_tileSize(40.f, 40.f),
         m_loadedTileSize(0.f, 0.f),
+        m_renderChunkSize(16u, 16u),
+        m_loadedRenderChunkSize(0u, 0u),
         m_solidTileColor(sf::Color::White),
         m_worldSize(0.f, 0.f)
     {
@@ -30,15 +555,22 @@ namespace l2d
     TileMap::TileMap(TileMap&& other) noexcept
         : m_tileSize(other.m_tileSize),
         m_loadedTileSize(other.m_loadedTileSize),
+        m_renderChunkSize(other.m_renderChunkSize),
+        m_loadedRenderChunkSize(other.m_loadedRenderChunkSize),
         m_solidTileColor(other.m_solidTileColor),
         m_worldSize(other.m_worldSize),
+        m_buildStats(other.m_buildStats),
         m_layout(std::move(other.m_layout)),
-        m_generatedTiles(std::move(other.m_generatedTiles))
+        m_generatedObjects(std::move(other.m_generatedObjects)),
+        m_renderObject(std::move(other.m_renderObject))
     {
         other.m_loadedTileSize = { 0.f, 0.f };
+        other.m_loadedRenderChunkSize = { 0u, 0u };
         other.m_worldSize = { 0.f, 0.f };
+        other.m_buildStats = {};
         other.m_layout.clear();
-        other.m_generatedTiles.clear();
+        other.m_generatedObjects.clear();
+        other.m_renderObject.reset();
     }
 
     TileMap& TileMap::operator=(TileMap&& other) noexcept
@@ -50,15 +582,22 @@ namespace l2d
 
         m_tileSize = other.m_tileSize;
         m_loadedTileSize = other.m_loadedTileSize;
+        m_renderChunkSize = other.m_renderChunkSize;
+        m_loadedRenderChunkSize = other.m_loadedRenderChunkSize;
         m_solidTileColor = other.m_solidTileColor;
         m_worldSize = other.m_worldSize;
+        m_buildStats = other.m_buildStats;
         m_layout = std::move(other.m_layout);
-        m_generatedTiles = std::move(other.m_generatedTiles);
+        m_generatedObjects = std::move(other.m_generatedObjects);
+        m_renderObject = std::move(other.m_renderObject);
 
         other.m_loadedTileSize = { 0.f, 0.f };
+        other.m_loadedRenderChunkSize = { 0u, 0u };
         other.m_worldSize = { 0.f, 0.f };
+        other.m_buildStats = {};
         other.m_layout.clear();
-        other.m_generatedTiles.clear();
+        other.m_generatedObjects.clear();
+        other.m_renderObject.reset();
 
         return *this;
     }
@@ -67,9 +606,13 @@ namespace l2d
     {
         if (!std::isfinite(tileSize.x) || tileSize.x <= 0.f)
             tileSize.x = 1.f;
+        else if (tileSize.x < MIN_TILE_DIMENSION)
+            tileSize.x = MIN_TILE_DIMENSION;
 
         if (!std::isfinite(tileSize.y) || tileSize.y <= 0.f)
             tileSize.y = 1.f;
+        else if (tileSize.y < MIN_TILE_DIMENSION)
+            tileSize.y = MIN_TILE_DIMENSION;
 
         m_tileSize = tileSize;
     }
@@ -82,6 +625,27 @@ namespace l2d
     const sf::Vector2f& TileMap::loadedTileSize() const
     {
         return m_loadedTileSize;
+    }
+
+    void TileMap::setRenderChunkSize(sf::Vector2u chunkSize)
+    {
+        if (chunkSize.x == 0u)
+            chunkSize.x = 1u;
+
+        if (chunkSize.y == 0u)
+            chunkSize.y = 1u;
+
+        m_renderChunkSize = chunkSize;
+    }
+
+    const sf::Vector2u& TileMap::renderChunkSize() const
+    {
+        return m_renderChunkSize;
+    }
+
+    const sf::Vector2u& TileMap::loadedRenderChunkSize() const
+    {
+        return m_loadedRenderChunkSize;
     }
 
     void TileMap::setSolidTileColor(sf::Color color)
@@ -103,6 +667,7 @@ namespace l2d
     {
         Layout newLayout = layout;
         const sf::Vector2f newLoadedTileSize = m_tileSize;
+        const sf::Vector2u newLoadedRenderChunkSize = m_renderChunkSize;
 
         std::size_t maxColumns = 0;
         std::size_t solidTileCount = 0;
@@ -110,70 +675,115 @@ namespace l2d
         for (const std::string& row : newLayout)
         {
             maxColumns = std::max(maxColumns, row.size());
-            solidTileCount += static_cast<std::size_t>(
+            const std::size_t rowSolidTileCount = static_cast<std::size_t>(
                 std::count(row.begin(), row.end(), solidChar)
+            );
+
+            if (
+                rowSolidTileCount >
+                std::numeric_limits<std::size_t>::max() - solidTileCount
+            )
+            {
+                throw std::length_error(
+                    "Tile map contains too many solid tiles."
+                );
+            }
+
+            solidTileCount += rowSolidTileCount;
+        }
+
+        if (
+            solidTileCount >
+            std::numeric_limits<std::size_t>::max() / VERTICES_PER_TILE
+        )
+        {
+            throw std::length_error(
+                "Tile map contains too many solid tiles to render."
             );
         }
 
         const sf::Vector2f newWorldSize =
         {
-            static_cast<float>(maxColumns) * newLoadedTileSize.x,
-            static_cast<float>(newLayout.size()) * newLoadedTileSize.y
+            checkedTileExtent(maxColumns, newLoadedTileSize.x),
+            checkedTileExtent(newLayout.size(), newLoadedTileSize.y)
         };
 
-        std::vector<GameObjectHandle> newGeneratedTiles;
-        newGeneratedTiles.reserve(solidTileCount);
+        std::vector<RenderChunk> renderChunks = buildRenderChunks(
+            newLayout,
+            solidChar,
+            newLoadedTileSize,
+            newLoadedRenderChunkSize,
+            m_solidTileColor
+        );
+        const std::vector<CollisionRectangle> collisionRectangles =
+            buildCollisionRectangles(newLayout, solidChar);
+        const std::vector<CollisionGeometry> collisionGeometry =
+            buildCollisionGeometry(
+                collisionRectangles,
+                newLoadedTileSize
+            );
 
-        std::size_t tileIndex = 0;
+        TileMapBuildStats newBuildStats;
+        newBuildStats.solidTileCount = solidTileCount;
+        newBuildStats.renderChunkCount = renderChunks.size();
+        newBuildStats.collisionRectangleCount =
+            collisionRectangles.size();
+
+        std::vector<GameObjectHandle> newGeneratedObjects;
+        newGeneratedObjects.reserve(
+            collisionRectangles.size() + (renderChunks.empty() ? 0u : 1u)
+        );
+        GameObjectHandle newRenderObject;
 
         try
         {
-            for (std::size_t row = 0; row < newLayout.size(); ++row)
+            if (!renderChunks.empty())
             {
-                for (std::size_t column = 0; column < newLayout[row].size(); ++column)
-                {
-                    if (newLayout[row][column] != solidChar)
-                        continue;
+                GameObject& renderObject = scene.createGameObject(
+                    objectPrefix + "_Render"
+                );
+                newRenderObject = scene.createHandle(renderObject);
+                newGeneratedObjects.push_back(newRenderObject);
+                renderObject.addComponent<TileMapRenderComponent>(
+                    std::move(renderChunks),
+                    solidTileCount
+                );
+            }
 
-                    const sf::Vector2f position =
-                    {
-                        static_cast<float>(column) * newLoadedTileSize.x,
-                        static_cast<float>(row) * newLoadedTileSize.y
-                    };
+            for (
+                std::size_t index = 0;
+                index < collisionRectangles.size();
+                ++index
+            )
+            {
+                const CollisionGeometry& geometry =
+                    collisionGeometry[index];
 
-                    GameObject& tile = scene.createGameObject(
-                        objectPrefix + "_" + std::to_string(tileIndex)
-                    );
-
-                    newGeneratedTiles.push_back(scene.createHandle(tile));
-
-                    tile.transform.setPosition(position);
-
-                    tile.addComponent<RectangleRenderer>(
-                        newLoadedTileSize,
-                        m_solidTileColor
-                    );
-
-                    tile.addComponent<BoxCollider2D>(
-                        newLoadedTileSize
-                    );
-
-                    tileIndex++;
-                }
+                GameObject& collisionObject = scene.createGameObject(
+                    objectPrefix + "_Collision_" + std::to_string(index)
+                );
+                newGeneratedObjects.push_back(
+                    scene.createHandle(collisionObject)
+                );
+                collisionObject.transform.setPosition(geometry.position);
+                collisionObject.addComponent<BoxCollider2D>(geometry.size);
             }
         }
         catch (...)
         {
-            queueGeneratedTilesForDestruction(newGeneratedTiles);
+            queueGeneratedObjectsForDestruction(newGeneratedObjects);
             throw;
         }
 
-        queueGeneratedTilesForDestruction(m_generatedTiles);
+        queueGeneratedObjectsForDestruction(m_generatedObjects);
 
         m_layout = std::move(newLayout);
         m_loadedTileSize = newLoadedTileSize;
+        m_loadedRenderChunkSize = newLoadedRenderChunkSize;
         m_worldSize = newWorldSize;
-        m_generatedTiles = std::move(newGeneratedTiles);
+        m_buildStats = newBuildStats;
+        m_generatedObjects = std::move(newGeneratedObjects);
+        m_renderObject = std::move(newRenderObject);
     }
 
     bool TileMap::loadFromFile(
@@ -194,12 +804,15 @@ namespace l2d
 
     void TileMap::unload()
     {
-        queueGeneratedTilesForDestruction(m_generatedTiles);
+        queueGeneratedObjectsForDestruction(m_generatedObjects);
 
-        m_generatedTiles.clear();
+        m_generatedObjects.clear();
+        m_renderObject.reset();
         m_layout.clear();
         m_loadedTileSize = { 0.f, 0.f };
+        m_loadedRenderChunkSize = { 0u, 0u };
         m_worldSize = { 0.f, 0.f };
+        m_buildStats = {};
     }
 
     bool TileMap::findFirstTilePosition(
@@ -275,7 +888,48 @@ namespace l2d
         return m_worldSize;
     }
 
-    TileMap::Layout TileMap::readLayoutFromFile(const std::string& filepath) const
+    const TileMapBuildStats& TileMap::buildStats() const
+    {
+        return m_buildStats;
+    }
+
+    TileMapRenderStats TileMap::renderStatsForView(
+        const sf::View& view
+    ) const
+    {
+        GameObject* renderObject = m_renderObject.get();
+
+        if (renderObject == nullptr)
+            return {};
+
+        const TileMapRenderComponent* renderer =
+            renderObject->getComponent<TileMapRenderComponent>();
+
+        if (renderer == nullptr)
+            return {};
+
+        return renderer->statsForView(view);
+    }
+
+    TileMapRenderStats TileMap::lastRenderStats() const
+    {
+        GameObject* renderObject = m_renderObject.get();
+
+        if (renderObject == nullptr)
+            return {};
+
+        const TileMapRenderComponent* renderer =
+            renderObject->getComponent<TileMapRenderComponent>();
+
+        if (renderer == nullptr)
+            return {};
+
+        return renderer->lastRenderStats();
+    }
+
+    TileMap::Layout TileMap::readLayoutFromFile(
+        const std::string& filepath
+    ) const
     {
         std::ifstream file(filepath);
 
@@ -301,18 +955,18 @@ namespace l2d
         return layout;
     }
 
-    void TileMap::queueGeneratedTilesForDestruction(
-        const std::vector<GameObjectHandle>& generatedTiles
+    void TileMap::queueGeneratedObjectsForDestruction(
+        const std::vector<GameObjectHandle>& generatedObjects
     ) const
     {
-        for (const GameObjectHandle& handle : generatedTiles)
+        for (const GameObjectHandle& handle : generatedObjects)
         {
             Scene* scene = handle.scene();
-            GameObject* tile = handle.get();
+            GameObject* gameObject = handle.get();
 
-            if (scene != nullptr && tile != nullptr)
+            if (scene != nullptr && gameObject != nullptr)
             {
-                scene->destroyGameObject(*tile);
+                scene->destroyGameObject(*gameObject);
             }
         }
     }
