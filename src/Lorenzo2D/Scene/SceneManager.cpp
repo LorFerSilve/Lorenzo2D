@@ -68,10 +68,24 @@ namespace l2d
 
     void SceneManager::fixedUpdate(float deltaTime)
     {
-        if (m_activeScene == nullptr)
+        Scene* activeScene = m_activeScene;
+
+        if (activeScene == nullptr)
             return;
 
-        m_activeScene->fixedUpdate(deltaTime);
+        beginDispatch();
+
+        try
+        {
+            activeScene->fixedUpdate(deltaTime);
+        }
+        catch (...)
+        {
+            endDispatch();
+            throw;
+        }
+
+        endDispatch();
     }
 
     void SceneManager::update(float deltaTime)
@@ -89,10 +103,24 @@ namespace l2d
         float interpolationAlpha
     )
     {
-        if (m_activeScene == nullptr)
+        Scene* activeScene = m_activeScene;
+
+        if (activeScene == nullptr)
             return;
 
-        m_activeScene->render(window, interpolationAlpha);
+        beginDispatch();
+
+        try
+        {
+            activeScene->render(window, interpolationAlpha);
+        }
+        catch (...)
+        {
+            endDispatch();
+            throw;
+        }
+
+        endDispatch();
     }
 
     void SceneManager::destroyQueuedGameObjects()
@@ -118,6 +146,36 @@ namespace l2d
     void SceneManager::clear()
     {
         m_activeScene = nullptr;
+
+        if (m_dispatchDepth > 0)
+        {
+            for (const std::unique_ptr<Scene>& scene : m_scenes)
+            {
+                if (scene != nullptr)
+                    scene->clear();
+            }
+
+            m_clearDeferred = true;
+            return;
+        }
+
+        m_clearDeferred = false;
+        m_scenes.clear();
+    }
+
+    void SceneManager::beginDispatch()
+    {
+        ++m_dispatchDepth;
+    }
+
+    void SceneManager::endDispatch()
+    {
+        --m_dispatchDepth;
+
+        if (m_dispatchDepth > 0 || !m_clearDeferred)
+            return;
+
+        m_clearDeferred = false;
         m_scenes.clear();
     }
 }
