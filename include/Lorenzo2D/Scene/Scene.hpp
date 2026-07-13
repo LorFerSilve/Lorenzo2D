@@ -14,6 +14,7 @@
 namespace l2d
 {
     class PhysicsWorld2D;
+    class SceneManager;
 
     class Scene
     {
@@ -79,10 +80,13 @@ namespace l2d
         std::size_t m_dispatchDepth = 0;
         bool m_destroySweepDeferred = false;
         bool m_clearDeferred = false;
+        bool m_fixedUpdateInProgress = false;
         std::uint64_t m_fixedUpdateGeneration = 0;
 
         std::shared_ptr<detail::SceneHandleState> m_handleState;
+        SceneManager* m_ownerManager = nullptr;
 
         friend class PhysicsWorld2D;
+        friend class SceneManager;
     };
 }

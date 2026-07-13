@@ -5,6 +5,7 @@ namespace l2d
     Scene& SceneManager::createScene(const std::string& name)
     {
         std::unique_ptr<Scene> scene = std::make_unique<Scene>(name);
+        scene->m_ownerManager = this;
 
         Scene& reference = *scene;
 
@@ -176,6 +177,7 @@ namespace l2d
             return;
 
         m_clearDeferred = false;
+        m_activeScene = nullptr;
         m_scenes.clear();
     }
 }

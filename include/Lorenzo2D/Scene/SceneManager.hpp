@@ -57,5 +57,7 @@ namespace l2d
 
         std::size_t m_dispatchDepth = 0;
         bool m_clearDeferred = false;
+
+        friend class Scene;
     };
 }

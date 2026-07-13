@@ -194,6 +194,26 @@ namespace
         l2d::SceneManager* m_sceneManager;
     };
 
+    class ClearAndCreateSceneOnUpdate final : public l2d::Component
+    {
+    public:
+        explicit ClearAndCreateSceneOnUpdate(
+            l2d::SceneManager& sceneManager
+        )
+            : m_sceneManager(&sceneManager)
+        {
+        }
+
+        void onUpdate(float) override
+        {
+            m_sceneManager->clear();
+            m_sceneManager->createScene("Replacement");
+        }
+
+    private:
+        l2d::SceneManager* m_sceneManager;
+    };
+
     class ActivateObjectOnce final : public l2d::Component
     {
     public:
@@ -214,6 +234,28 @@ namespace
     private:
         l2d::GameObject* m_target;
         bool m_activated = false;
+    };
+
+    class ReenterFixedUpdateOnce final : public l2d::Component
+    {
+    public:
+        explicit ReenterFixedUpdateOnce(l2d::Scene& scene)
+            : m_scene(&scene)
+        {
+        }
+
+        void onUpdate(float deltaTime) override
+        {
+            if (m_reentered)
+                return;
+
+            m_reentered = true;
+            m_scene->fixedUpdate(deltaTime);
+        }
+
+    private:
+        l2d::Scene* m_scene;
+        bool m_reentered = false;
     };
 
     class DestroyAndSweepOnUpdate final : public l2d::Component
@@ -754,6 +796,39 @@ namespace
         L2D_REQUIRE(!handle.isValid());
     }
 
+    void testDeferredManagerClearResetsReplacementActiveScene()
+    {
+        l2d::SceneManager sceneManager;
+        l2d::Scene& scene = sceneManager.createScene("Active");
+
+        scene.createGameObject("ManagerClearer")
+            .addComponent<ClearAndCreateSceneOnUpdate>(sceneManager);
+
+        sceneManager.fixedUpdate(1.f / 60.f);
+
+        L2D_REQUIRE(sceneManager.sceneCount() == 0);
+        L2D_REQUIRE(sceneManager.activeScene() == nullptr);
+
+        sceneManager.fixedUpdate(1.f / 60.f);
+    }
+
+    void testManagerClearIsSafeDuringDirectSceneDispatch()
+    {
+        l2d::SceneManager sceneManager;
+        l2d::Scene& scene = sceneManager.createScene("Active");
+        l2d::GameObject& clearer =
+            scene.createGameObject("ManagerClearer");
+        const l2d::GameObjectHandle handle = scene.createHandle(clearer);
+
+        clearer.addComponent<ClearSceneManagerOnUpdate>(sceneManager);
+
+        scene.fixedUpdate(1.f / 60.f);
+
+        L2D_REQUIRE(sceneManager.sceneCount() == 0);
+        L2D_REQUIRE(sceneManager.activeScene() == nullptr);
+        L2D_REQUIRE(!handle.isValid());
+    }
+
     void testActivationJoinsFixedPhasesOnTheNextTick()
     {
         for (bool activatorFirst : { false, true })
@@ -805,6 +880,44 @@ namespace
                 5.f
             ));
         }
+    }
+
+    void testFixedUpdateIsNonReentrant()
+    {
+        l2d::Scene scene;
+        l2d::PhysicsWorld2D world;
+        l2d::GameObject& activator =
+            scene.createGameObject("Activator");
+        l2d::GameObject& target = scene.createGameObject("Target");
+        int targetUpdates = 0;
+
+        target.setActive(false);
+        target.addComponent<CounterComponent>(targetUpdates);
+        l2d::RigidBody2D& body =
+            target.addComponent<l2d::RigidBody2D>();
+        body.setVelocity({ 10.f, 0.f });
+
+        activator.addComponent<ActivateObjectOnce>(target);
+        activator.addComponent<ReenterFixedUpdateOnce>(scene);
+
+        scene.fixedUpdate(0.5f);
+        world.step(scene, 0.5f);
+
+        L2D_REQUIRE(target.isActive());
+        L2D_REQUIRE(targetUpdates == 0);
+        L2D_REQUIRE(approximatelyEqual(
+            target.transform.position().x,
+            0.f
+        ));
+
+        scene.fixedUpdate(0.5f);
+        world.step(scene, 0.5f);
+
+        L2D_REQUIRE(targetUpdates == 1);
+        L2D_REQUIRE(approximatelyEqual(
+            target.transform.position().x,
+            5.f
+        ));
     }
 
     void testHandlesExpireWithTheirScene()
@@ -1291,7 +1404,13 @@ int main()
     runTest("deactivation stops remaining components", testDeactivationStopsRemainingComponents, failures);
     runTest("scene mutation and deferred clear are safe", testSceneMutationAndDeferredClearAreSafe, failures);
     runTest("scene manager clear is dispatch-safe", testSceneManagerClearIsDeferredDuringDispatch, failures);
+    runTest("deferred manager clear resets replacement active scene",
+        testDeferredManagerClearResetsReplacementActiveScene, failures);
+    runTest("manager clear is safe during direct scene dispatch",
+        testManagerClearIsSafeDuringDirectSceneDispatch, failures);
     runTest("activation joins all fixed phases next tick", testActivationJoinsFixedPhasesOnTheNextTick, failures);
+    runTest("fixed updates are non-reentrant",
+        testFixedUpdateIsNonReentrant, failures);
     runTest("handles expire with their scene", testHandlesExpireWithTheirScene, failures);
     runTest("queued objects are not active", testQueuedObjectsAreNotReportedAsActive, failures);
     runTest("physics inputs are finite and valid", testPhysicsInputsAreFiniteAndValid, failures);

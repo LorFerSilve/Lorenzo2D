@@ -1,5 +1,7 @@
 #include "Lorenzo2D/Scene/Scene.hpp"
 
+#include "Lorenzo2D/Scene/SceneManager.hpp"
+
 #include <algorithm>
 #include <limits>
 #include <utility>
@@ -285,6 +287,10 @@ namespace l2d
 
     void Scene::fixedUpdate(float deltaTime)
     {
+        if (m_fixedUpdateInProgress)
+            return;
+
+        m_fixedUpdateInProgress = true;
         beginDispatch();
 
         try
@@ -327,10 +333,12 @@ namespace l2d
         }
         catch (...)
         {
+            m_fixedUpdateInProgress = false;
             endDispatch();
             throw;
         }
 
+        m_fixedUpdateInProgress = false;
         endDispatch();
     }
 
@@ -426,6 +434,9 @@ namespace l2d
 
     void Scene::beginDispatch()
     {
+        if (m_ownerManager != nullptr)
+            m_ownerManager->beginDispatch();
+
         m_dispatchDepth++;
     }
 
@@ -434,20 +445,28 @@ namespace l2d
         m_dispatchDepth--;
 
         if (m_dispatchDepth > 0)
+        {
+            if (m_ownerManager != nullptr)
+                m_ownerManager->endDispatch();
+
             return;
+        }
 
         if (m_clearDeferred)
         {
             m_clearDeferred = false;
             m_destroySweepDeferred = false;
             m_gameObjects.clear();
-            return;
         }
-
-        if (m_destroySweepDeferred)
+        else if (m_destroySweepDeferred)
         {
             m_destroySweepDeferred = false;
             destroyQueuedGameObjectsImmediately();
         }
+
+        SceneManager* ownerManager = m_ownerManager;
+
+        if (ownerManager != nullptr)
+            ownerManager->endDispatch();
     }
 }
