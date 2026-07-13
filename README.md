@@ -22,7 +22,8 @@ production-ready engine.
 - Static, kinematic, and dynamic rigid bodies with configurable gravity
 - Circle/box collision manifolds, impulse response, friction, and restitution
 - Collision layers, sensors, contact events, and physics debug drawing
-- Named font and texture storage
+- Lifetime-safe read-only font and texture handles with transactional named
+  storage
 - Debug overlay and independently switchable world, physics, and UI layers
 - Headless regression tests for timing, transforms, scenes, physics, and tilemaps
 
@@ -137,6 +138,38 @@ The generated game-object topology, object names, and physics contact object
 IDs are implementation details. They may change after a reload or as batching
 and merging evolve; gameplay code should not use them as persistent tile
 identity.
+
+## Asset lifetime
+
+`FontHandle` and `TextureHandle` are shared leases that provide read-only access
+to SFML assets. Copying a handle shares ownership of the same published asset
+generation; a default or missing handle is empty and can be checked before
+dereferencing. The asset remains alive until the registry and every copied
+handle have released it.
+
+`AssetManager` provides matching `load`, `store`, `get`, `unload`, `count`, and
+`clear` operations for named fonts and textures. `loadFont()` and
+`loadTexture()` publish a new asset only after the complete file load succeeds.
+`storeFont()` and `storeTexture()` register an existing non-empty handle, while
+`getFont()` and `getTexture()` return an empty handle when the name is absent.
+The `has` and `count` queries describe only the manager's current registry.
+
+Loading or storing under an existing name replaces that registry entry with a
+new published generation. Handles acquired earlier continue to own the previous
+generation, and later `get` calls acquire the replacement. A failed file load
+or an attempt to store an empty handle leaves the current entry unchanged.
+Similarly, unloading a name, clearing a registry, or destroying the manager
+releases only registry ownership; outstanding handles remain valid.
+
+`SpriteRenderer` retains its `TextureHandle`, and `DebugOverlay` retains its
+`FontHandle`, for as long as SFML borrows the corresponding resource. Rebinding
+either renderer rejects an empty handle without disturbing its current asset.
+This prevents manager operations from leaving renderer-owned SFML drawables
+with dangling texture or font pointers.
+
+Automatic hot reload and file watching are deliberately deferred. Replacing a
+named asset does not silently update renderers that hold an older snapshot;
+acquire the new handle and explicitly rebind each renderer that should use it.
 
 ## Source layout
 
@@ -320,8 +353,9 @@ owned by the world's fixed simulation step rather than component update.
   editing, streamed regions, textured tilesets, and animated tiles remain
   future work.
 - Render ordering is a fixed layer mask rather than a general render queue.
-- Fonts and textures are non-owning from the renderer's perspective; asset
-  leases and hot reload need an explicit lifetime model.
+- Asset handles provide lifetime-safe, read-only access to published
+  generations, but automatic file watching, hot reload propagation, dependency
+  tracking, and background loading remain future work.
 - The sandbox is still a single integration example. Smaller examples and more
   subsystem tests should be added as APIs stabilize.
 

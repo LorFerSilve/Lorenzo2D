@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Lorenzo2D/Assets/AssetHandle.hpp>
 #include <Lorenzo2D/ECS/Component.hpp>
 
 #include <SFML/Graphics/Color.hpp>
@@ -12,9 +13,11 @@ namespace l2d
     class SpriteRenderer : public Component
     {
     public:
-        explicit SpriteRenderer(const sf::Texture& texture);
+        explicit SpriteRenderer(TextureHandle texture);
 
-        void setTexture(const sf::Texture& texture, bool resetRect = true);
+        // Invalid handles are rejected without changing the current binding.
+        bool setTexture(TextureHandle texture, bool resetRect = true);
+        TextureHandle textureHandle() const;
 
         void setSize(sf::Vector2f size);
         const sf::Vector2f& sizeScale() const;
@@ -29,7 +32,8 @@ namespace l2d
         ) override;
 
     private:
-        const sf::Texture* m_texture;
+        // The lease must outlive the SFML drawable that borrows from it.
+        TextureHandle m_texture;
         sf::Sprite m_sprite;
 
         sf::Vector2f m_sizeScale;
