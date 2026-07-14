@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <type_traits>
 #include <utility>
 
 namespace l2d::test
@@ -28,6 +29,62 @@ namespace l2d::test
         {
             return "(" + formatValue(value.x) + ", " +
                 formatValue(value.y) + ")";
+        }
+
+        template <typename Left, typename Right>
+        constexpr bool valuesEqual(const Left& left, const Right& right)
+        {
+            using LeftValue = std::remove_cv_t<std::remove_reference_t<Left>>;
+            using RightValue = std::remove_cv_t<std::remove_reference_t<Right>>;
+
+            if constexpr (
+                std::is_integral_v<LeftValue> &&
+                std::is_integral_v<RightValue> &&
+                !std::is_same_v<LeftValue, bool> &&
+                !std::is_same_v<RightValue, bool>
+            )
+            {
+                if constexpr (
+                    std::is_signed_v<LeftValue> ==
+                    std::is_signed_v<RightValue>
+                )
+                {
+                    return left == right;
+                }
+                else if constexpr (std::is_signed_v<LeftValue>)
+                {
+                    if (left < 0)
+                        return false;
+
+                    using UnsignedLeft = std::make_unsigned_t<LeftValue>;
+                    using UnsignedRight = std::make_unsigned_t<RightValue>;
+                    using CommonUnsigned =
+                        std::common_type_t<UnsignedLeft, UnsignedRight>;
+
+                    return static_cast<CommonUnsigned>(
+                        static_cast<UnsignedLeft>(left)
+                    ) == static_cast<CommonUnsigned>(right);
+                }
+                else
+                {
+                    if (right < 0)
+                        return false;
+
+                    using UnsignedLeft = std::make_unsigned_t<LeftValue>;
+                    using UnsignedRight = std::make_unsigned_t<RightValue>;
+                    using CommonUnsigned =
+                        std::common_type_t<UnsignedLeft, UnsignedRight>;
+
+                    return static_cast<CommonUnsigned>(left) ==
+                        static_cast<CommonUnsigned>(
+                            static_cast<UnsignedRight>(right)
+                        );
+                }
+            }
+            else
+            {
+                return left == right;
+            }
         }
 
         template <typename Actual, typename Expected, typename Epsilon>
@@ -69,7 +126,7 @@ namespace l2d::test
         int line
     )
     {
-        if (actual == expected)
+        if (detail::valuesEqual(actual, expected))
             return;
 
         throw std::runtime_error(
