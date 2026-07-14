@@ -275,6 +275,27 @@ if(L2D_INSTALL)
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 
+    get_target_property(
+        l2d_sfml_graphics_target
+        SFML::Graphics
+        ALIASED_TARGET
+    )
+    if(NOT l2d_sfml_graphics_target)
+        set(l2d_sfml_graphics_target SFML::Graphics)
+    endif()
+
+    get_target_property(
+        l2d_sfml_graphics_type
+        ${l2d_sfml_graphics_target}
+        TYPE
+    )
+
+    if(l2d_sfml_graphics_type STREQUAL "STATIC_LIBRARY")
+        set(L2D_PACKAGE_USES_STATIC_SFML ON)
+    else()
+        set(L2D_PACKAGE_USES_STATIC_SFML OFF)
+    endif()
+
     set(L2D_PACKAGE_INSTALL_DIRECTORY
         "${CMAKE_INSTALL_LIBDIR}/cmake/Lorenzo2D"
     )
