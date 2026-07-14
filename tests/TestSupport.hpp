@@ -5,13 +5,108 @@
 #include <filesystem>
 #include <iostream>
 #include <random>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <type_traits>
 #include <utility>
 
 namespace l2d::test
 {
+    namespace detail
+    {
+        template <typename Value>
+        std::string formatValue(const Value& value)
+        {
+            std::ostringstream stream;
+            stream << std::boolalpha << value;
+            return stream.str();
+        }
+
+        template <typename Vector>
+        std::string formatVector2(const Vector& value)
+        {
+            return "(" + formatValue(value.x) + ", " +
+                formatValue(value.y) + ")";
+        }
+
+        template <typename Left, typename Right>
+        constexpr bool valuesEqual(const Left& left, const Right& right)
+        {
+            using LeftValue = std::remove_cv_t<std::remove_reference_t<Left>>;
+            using RightValue = std::remove_cv_t<std::remove_reference_t<Right>>;
+
+            if constexpr (
+                std::is_integral_v<LeftValue> &&
+                std::is_integral_v<RightValue> &&
+                !std::is_same_v<LeftValue, bool> &&
+                !std::is_same_v<RightValue, bool>
+            )
+            {
+                if constexpr (
+                    std::is_signed_v<LeftValue> ==
+                    std::is_signed_v<RightValue>
+                )
+                {
+                    return left == right;
+                }
+                else if constexpr (std::is_signed_v<LeftValue>)
+                {
+                    if (left < 0)
+                        return false;
+
+                    using UnsignedLeft = std::make_unsigned_t<LeftValue>;
+                    using UnsignedRight = std::make_unsigned_t<RightValue>;
+                    using CommonUnsigned =
+                        std::common_type_t<UnsignedLeft, UnsignedRight>;
+
+                    return static_cast<CommonUnsigned>(
+                        static_cast<UnsignedLeft>(left)
+                    ) == static_cast<CommonUnsigned>(right);
+                }
+                else
+                {
+                    if (right < 0)
+                        return false;
+
+                    using UnsignedLeft = std::make_unsigned_t<LeftValue>;
+                    using UnsignedRight = std::make_unsigned_t<RightValue>;
+                    using CommonUnsigned =
+                        std::common_type_t<UnsignedLeft, UnsignedRight>;
+
+                    return static_cast<CommonUnsigned>(left) ==
+                        static_cast<CommonUnsigned>(
+                            static_cast<UnsignedRight>(right)
+                        );
+                }
+            }
+            else
+            {
+                return left == right;
+            }
+        }
+
+        template <typename Actual, typename Expected, typename Epsilon>
+        [[noreturn]] void throwApproximateFailure(
+            const Actual& actual,
+            const Expected& expected,
+            const Epsilon& epsilon,
+            const char* actualExpression,
+            const char* expectedExpression,
+            int line
+        )
+        {
+            throw std::runtime_error(
+                "line " + std::to_string(line) + ": expected " +
+                actualExpression + " ~= " + expectedExpression +
+                " (actual: " + formatValue(actual) +
+                ", expected: " + formatValue(expected) +
+                ", epsilon: " + formatValue(epsilon) + ")"
+            );
+        }
+    }
+
     inline void require(bool condition, const char* expression, int line)
     {
         if (condition)
@@ -19,6 +114,26 @@ namespace l2d::test
 
         throw std::runtime_error(
             "line " + std::to_string(line) + ": " + expression
+        );
+    }
+
+    template <typename Actual, typename Expected>
+    void requireEqual(
+        const Actual& actual,
+        const Expected& expected,
+        const char* actualExpression,
+        const char* expectedExpression,
+        int line
+    )
+    {
+        if (detail::valuesEqual(actual, expected))
+            return;
+
+        throw std::runtime_error(
+            "line " + std::to_string(line) + ": expected " +
+            actualExpression + " == " + expectedExpression +
+            " (actual: " + detail::formatValue(actual) +
+            ", expected: " + detail::formatValue(expected) + ")"
         );
     }
 
@@ -38,6 +153,83 @@ namespace l2d::test
     )
     {
         return std::fabs(left - right) <= epsilon;
+    }
+
+    inline void requireApproximatelyEqual(
+        float actual,
+        float expected,
+        float epsilon,
+        const char* actualExpression,
+        const char* expectedExpression,
+        int line
+    )
+    {
+        if (approximatelyEqual(actual, expected, epsilon))
+            return;
+
+        detail::throwApproximateFailure(
+            actual,
+            expected,
+            epsilon,
+            actualExpression,
+            expectedExpression,
+            line
+        );
+    }
+
+    inline void requireApproximatelyEqual(
+        double actual,
+        double expected,
+        double epsilon,
+        const char* actualExpression,
+        const char* expectedExpression,
+        int line
+    )
+    {
+        if (approximatelyEqual(actual, expected, epsilon))
+            return;
+
+        detail::throwApproximateFailure(
+            actual,
+            expected,
+            epsilon,
+            actualExpression,
+            expectedExpression,
+            line
+        );
+    }
+
+    template <typename Vector, typename Epsilon>
+    bool approximatelyEqual2D(
+        const Vector& left,
+        const Vector& right,
+        Epsilon epsilon
+    )
+    {
+        return approximatelyEqual(left.x, right.x, epsilon) &&
+            approximatelyEqual(left.y, right.y, epsilon);
+    }
+
+    template <typename Vector, typename Epsilon>
+    void requireApproximatelyEqual2D(
+        const Vector& actual,
+        const Vector& expected,
+        Epsilon epsilon,
+        const char* actualExpression,
+        const char* expectedExpression,
+        int line
+    )
+    {
+        if (approximatelyEqual2D(actual, expected, epsilon))
+            return;
+
+        throw std::runtime_error(
+            "line " + std::to_string(line) + ": expected " +
+            actualExpression + " ~= " + expectedExpression +
+            " (actual: " + detail::formatVector2(actual) +
+            ", expected: " + detail::formatVector2(expected) +
+            ", epsilon: " + detail::formatValue(epsilon) + ")"
+        );
     }
 
     class TemporaryFile final
@@ -99,3 +291,32 @@ namespace l2d::test
 
 #define L2D_REQUIRE(expression) \
     ::l2d::test::require(static_cast<bool>(expression), #expression, __LINE__)
+
+#define L2D_REQUIRE_EQUAL(actual, expected) \
+    ::l2d::test::requireEqual( \
+        (actual), \
+        (expected), \
+        #actual, \
+        #expected, \
+        __LINE__ \
+    )
+
+#define L2D_REQUIRE_APPROX(actual, expected, epsilon) \
+    ::l2d::test::requireApproximatelyEqual( \
+        (actual), \
+        (expected), \
+        (epsilon), \
+        #actual, \
+        #expected, \
+        __LINE__ \
+    )
+
+#define L2D_REQUIRE_APPROX_2D(actual, expected, epsilon) \
+    ::l2d::test::requireApproximatelyEqual2D( \
+        (actual), \
+        (expected), \
+        (epsilon), \
+        #actual, \
+        #expected, \
+        __LINE__ \
+    )

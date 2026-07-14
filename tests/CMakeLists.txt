@@ -74,6 +74,13 @@ function(l2d_add_regression_test target)
     )
 endfunction()
 
+l2d_add_regression_test(
+    Lorenzo2DTestSupportTests
+    SOURCE TestSupportTests.cpp
+    LABELS headless core test-support
+    TIMEOUT 30
+)
+
 # The former broad regression executable is split by subsystem so a failure maps
 # directly to a focused source file and CTest target.
 l2d_add_regression_test(
