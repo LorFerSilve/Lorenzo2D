@@ -6,27 +6,16 @@
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
-#include <iostream>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
 
+#include "TestSupport.hpp"
+
 namespace
 {
-    void require(bool condition, const char* expression, int line)
-    {
-        if (condition)
-            return;
-
-        throw std::runtime_error(
-            "line " + std::to_string(line) + ": " + expression
-        );
-    }
-
-#define L2D_REQUIRE(expression) \
-    require(static_cast<bool>(expression), #expression, __LINE__)
+    using l2d::test::runTest;
 
     struct TrackedAsset
     {
@@ -386,21 +375,6 @@ namespace
         L2D_REQUIRE(replaced);
     }
 
-    template <typename Function>
-    void runTest(const char* name, Function&& function, int& failures)
-    {
-        try
-        {
-            function();
-            std::cout << "[PASS] " << name << '\n';
-        }
-        catch (const std::exception& exception)
-        {
-            ++failures;
-            std::cerr << "[FAIL] " << name << ": " << exception.what()
-                << '\n';
-        }
-    }
 }
 
 int main()
