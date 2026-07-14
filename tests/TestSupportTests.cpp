@@ -1,5 +1,6 @@
 #include "TestSupport.hpp"
 
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -61,6 +62,31 @@ namespace
             message,
             "line 17: expected actualCount == expectedCount "
             "(actual: 3, expected: 4)"
+        );
+    }
+
+    void testRequireEqualHandlesMixedIntegralSigns()
+    {
+        const std::size_t actualCount = 3;
+        L2D_REQUIRE_EQUAL(actualCount, 3);
+
+        const std::string message = captureFailure(
+            []()
+            {
+                l2d::test::requireEqual(
+                    std::size_t{ 0 },
+                    -1,
+                    "actualCount",
+                    "expectedCount",
+                    19
+                );
+            }
+        );
+
+        L2D_REQUIRE_EQUAL(
+            message,
+            "line 19: expected actualCount == expectedCount "
+            "(actual: 0, expected: -1)"
         );
     }
 
@@ -170,6 +196,11 @@ int main()
     runTest(
         "requireEqual reports expressions and values",
         testRequireEqualReportsExpressionsAndValues,
+        failures
+    );
+    runTest(
+        "requireEqual handles mixed integral signs",
+        testRequireEqualHandlesMixedIntegralSigns,
         failures
     );
     runTest(
