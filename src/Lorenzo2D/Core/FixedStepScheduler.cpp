@@ -168,11 +168,19 @@ namespace l2d
             frame.rawDeltaTime,
             m_config.maximumFrameDeltaTime
         );
+        frame.clampedFrameTime = std::max(
+            0.0,
+            frame.rawDeltaTime - frame.frameDeltaTime
+        );
 
         m_frameCount = saturatingAdd(m_frameCount, std::uint64_t{ 1 });
         m_realElapsedTime = saturatingAdd(
             m_realElapsedTime,
             frame.rawDeltaTime
+        );
+        m_clampedFrameTime = saturatingAdd(
+            m_clampedFrameTime,
+            frame.clampedFrameTime
         );
 
         m_accumulator = saturatingAdd(
@@ -259,6 +267,7 @@ namespace l2d
 
         m_droppedTickCount = 0;
         m_droppedSimulationTime = 0.0;
+        m_clampedFrameTime = 0.0;
 
         m_realElapsedTime = 0.0;
         m_simulationTime = 0.0;
@@ -292,6 +301,11 @@ namespace l2d
     double FixedStepScheduler::droppedSimulationTime() const
     {
         return m_droppedSimulationTime;
+    }
+
+    double FixedStepScheduler::clampedFrameTime() const
+    {
+        return m_clampedFrameTime;
     }
 
     double FixedStepScheduler::realElapsedTime() const

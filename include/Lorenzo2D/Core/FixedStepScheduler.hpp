@@ -15,6 +15,7 @@ namespace l2d
     {
         double rawDeltaTime = 0.0;
         double frameDeltaTime = 0.0;
+        double clampedFrameTime = 0.0;
 
         std::uint32_t ticksToRun = 0;
         std::uint64_t droppedTicks = 0;
@@ -45,6 +46,10 @@ namespace l2d
         std::uint64_t droppedTickCount() const;
         double droppedSimulationTime() const;
 
+        // Accumulated wall-clock time rejected by maximumFrameDeltaTime before
+        // fixed ticks are selected. This is separate from dropped whole ticks.
+        double clampedFrameTime() const;
+
         double realElapsedTime() const;
 
         // Advances by the ticks scheduled through FixedStepFrame::ticksToRun.
@@ -60,6 +65,7 @@ namespace l2d
 
         std::uint64_t m_droppedTickCount = 0;
         double m_droppedSimulationTime = 0.0;
+        double m_clampedFrameTime = 0.0;
 
         double m_realElapsedTime = 0.0;
         double m_simulationTime = 0.0;
