@@ -1,5 +1,7 @@
 #include <Lorenzo2D/ECS/Component.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
+#include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
+#include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Scene/GameObjectHandle.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Scene/SceneManager.hpp>
