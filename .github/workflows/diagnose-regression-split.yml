@@ -1,0 +1,61 @@
+name: Diagnose regression split
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    name: Capture compiler diagnostics
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install Linux graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            xorg-dev \
+            libharfbuzz-dev \
+            libfreetype-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libudev-dev
+
+      - name: Configure
+        run: >-
+          cmake -S . -B build-diagnose
+          -DCMAKE_BUILD_TYPE=Debug
+          -DL2D_BUILD_SANDBOX=ON
+          -DL2D_BUILD_TESTS=ON
+          -DL2D_WARNINGS_AS_ERRORS=ON
+
+      - name: Build and capture diagnostics
+        id: build
+        shell: bash
+        run: |
+          set +e
+          cmake --build build-diagnose --parallel 1 > build.log 2>&1
+          status=$?
+          grep -n -E "error:|fatal error:|FAILED:|undefined reference" \
+            build.log > diagnosis.txt || true
+          printf '\n--- final build output ---\n' >> diagnosis.txt
+          tail -n 120 build.log >> diagnosis.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-split-diagnostics
+          path: diagnosis.txt
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Preserve build failure
+        if: steps.build.outputs.status != '0'
+        run: exit 1
