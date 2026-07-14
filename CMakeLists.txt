@@ -124,6 +124,21 @@ if(L2D_BUILD_TESTS)
     add_test(NAME Lorenzo2DTests COMMAND Lorenzo2DTests)
 
     add_executable(
+        Lorenzo2DTimingAccountingTests
+        tests/Lorenzo2DTimingAccountingTests.cpp
+    )
+    target_link_libraries(
+        Lorenzo2DTimingAccountingTests
+        PRIVATE Lorenzo2D::Lorenzo2D
+    )
+    l2d_enable_warnings(Lorenzo2DTimingAccountingTests)
+
+    add_test(
+        NAME Lorenzo2DTimingAccountingTests
+        COMMAND Lorenzo2DTimingAccountingTests
+    )
+
+    add_executable(
         Lorenzo2DPhysicsTests
         tests/Lorenzo2DPhysicsTests.cpp
     )
