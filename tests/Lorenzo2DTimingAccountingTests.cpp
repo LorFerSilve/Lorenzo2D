@@ -6,8 +6,9 @@
 
 namespace
 {
-    using l2d::test::approximatelyEqual;
     using l2d::test::runTest;
+
+    constexpr double kTimingEpsilon = 0.000000001;
 
     void testFrameClampIsReportedSeparatelyFromDroppedTicks()
     {
@@ -20,27 +21,64 @@ namespace
 
         const l2d::FixedStepFrame stalledFrame = scheduler.advance(1.0625);
 
-        L2D_REQUIRE(approximatelyEqual(stalledFrame.rawDeltaTime, 1.0625));
-        L2D_REQUIRE(approximatelyEqual(stalledFrame.frameDeltaTime, 0.6875));
-        L2D_REQUIRE(approximatelyEqual(stalledFrame.clampedFrameTime, 0.375));
-        L2D_REQUIRE(stalledFrame.ticksToRun == 3);
-        L2D_REQUIRE(stalledFrame.droppedTicks == 2);
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(
+            stalledFrame.rawDeltaTime,
+            1.0625,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            stalledFrame.frameDeltaTime,
+            0.6875,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            stalledFrame.clampedFrameTime,
+            0.375,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_EQUAL(stalledFrame.ticksToRun, 3);
+        L2D_REQUIRE_EQUAL(stalledFrame.droppedTicks, 2);
+        L2D_REQUIRE_APPROX(
             stalledFrame.droppedSimulationTime,
-            0.25
-        ));
+            0.25,
+            kTimingEpsilon
+        );
 
         const l2d::FixedStepFrame recoveredFrame = scheduler.advance(0.0625);
 
-        L2D_REQUIRE(approximatelyEqual(recoveredFrame.clampedFrameTime, 0.0));
-        L2D_REQUIRE(recoveredFrame.ticksToRun == 1);
-        L2D_REQUIRE(recoveredFrame.droppedTicks == 0);
+        L2D_REQUIRE_APPROX(
+            recoveredFrame.clampedFrameTime,
+            0.0,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_EQUAL(recoveredFrame.ticksToRun, 1);
+        L2D_REQUIRE_EQUAL(recoveredFrame.droppedTicks, 0);
 
-        L2D_REQUIRE(approximatelyEqual(scheduler.clampedFrameTime(), 0.375));
-        L2D_REQUIRE(approximatelyEqual(scheduler.realElapsedTime(), 1.125));
-        L2D_REQUIRE(approximatelyEqual(scheduler.simulationTime(), 0.5));
-        L2D_REQUIRE(approximatelyEqual(scheduler.droppedSimulationTime(), 0.25));
-        L2D_REQUIRE(approximatelyEqual(scheduler.accumulator(), 0.0));
+        L2D_REQUIRE_APPROX(
+            scheduler.clampedFrameTime(),
+            0.375,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            scheduler.realElapsedTime(),
+            1.125,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            scheduler.simulationTime(),
+            0.5,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            scheduler.droppedSimulationTime(),
+            0.25,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            scheduler.accumulator(),
+            0.0,
+            kTimingEpsilon
+        );
 
         const double accountedTime =
             scheduler.simulationTime() +
@@ -48,10 +86,11 @@ namespace
             scheduler.clampedFrameTime() +
             scheduler.accumulator();
 
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(
             accountedTime,
-            scheduler.realElapsedTime()
-        ));
+            scheduler.realElapsedTime(),
+            kTimingEpsilon
+        );
     }
 
     void testInvalidFrameDeltasDoNotCreateClampTelemetry()
@@ -63,9 +102,21 @@ namespace
             std::numeric_limits<double>::infinity()
         );
 
-        L2D_REQUIRE(approximatelyEqual(negativeFrame.clampedFrameTime, 0.0));
-        L2D_REQUIRE(approximatelyEqual(infiniteFrame.clampedFrameTime, 0.0));
-        L2D_REQUIRE(approximatelyEqual(scheduler.clampedFrameTime(), 0.0));
+        L2D_REQUIRE_APPROX(
+            negativeFrame.clampedFrameTime,
+            0.0,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            infiniteFrame.clampedFrameTime,
+            0.0,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            scheduler.clampedFrameTime(),
+            0.0,
+            kTimingEpsilon
+        );
     }
 
     void testResetClearsClampTelemetry()
@@ -80,10 +131,26 @@ namespace
 
         scheduler.reset();
 
-        L2D_REQUIRE(approximatelyEqual(scheduler.clampedFrameTime(), 0.0));
-        L2D_REQUIRE(approximatelyEqual(scheduler.realElapsedTime(), 0.0));
-        L2D_REQUIRE(approximatelyEqual(scheduler.simulationTime(), 0.0));
-        L2D_REQUIRE(approximatelyEqual(scheduler.accumulator(), 0.0));
+        L2D_REQUIRE_APPROX(
+            scheduler.clampedFrameTime(),
+            0.0,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            scheduler.realElapsedTime(),
+            0.0,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            scheduler.simulationTime(),
+            0.0,
+            kTimingEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            scheduler.accumulator(),
+            0.0,
+            kTimingEpsilon
+        );
     }
 }
 
