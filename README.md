@@ -61,21 +61,85 @@ ctest --test-dir build -C Debug --output-on-failure
 The sandbox executable is written to `build/bin`. Disable it for a test- or
 library-only build with `-DL2D_BUILD_SANDBOX=OFF`.
 
-`Lorenzo2DRendererTests` exercises the camera, transform, and renderer numeric
-contracts without creating a window, graphics context, or GPU-backed texture.
-It is a genuinely headless target and can run on Linux with display environment
-variables unset. The remaining Linux suite runs under Xvfb because asset tests
-exercise SFML graphics resources; prefix the full `ctest` command with
-`xvfb-run --auto-servernum` on a machine without a display server.
+`Lorenzo2DRendererTests` and `Lorenzo2DTimingAccountingTests` are explicitly
+labeled `headless` and can run on Linux with `DISPLAY` and `WAYLAND_DISPLAY`
+unset. The remaining Linux suite runs under Xvfb because the asset tests
+exercise SFML graphics resources:
+
+```sh
+xvfb-run --auto-servernum \
+  ctest --test-dir build -C Debug --output-on-failure
+```
 
 Useful configuration options:
 
-| Option | Default | Purpose |
-| --- | --- | --- |
-| `L2D_BUILD_SANDBOX` | `ON` | Build the interactive sandbox |
-| `L2D_BUILD_TESTS` | `ON` | Build and register regression tests |
-| `L2D_USE_SYSTEM_SFML` | `OFF` | Use an installed SFML package |
-| `L2D_WARNINGS_AS_ERRORS` | `OFF` | Promote engine, sandbox, and test warnings to errors |
+| Option | Top-level default | Dependency-mode default | Purpose |
+| --- | --- | --- | --- |
+| `L2D_BUILD_SANDBOX` | `ON` | `OFF` | Build the interactive sandbox |
+| `L2D_BUILD_TESTS` | `ON` | `OFF` | Build and register regression tests |
+| `L2D_USE_SYSTEM_SFML` | `OFF` | `OFF` | Use an installed SFML package |
+| `L2D_WARNINGS_AS_ERRORS` | `OFF` | `OFF` | Promote first-party warnings to errors |
+| `L2D_ENABLE_ASAN` | `OFF` | `OFF` | Enable AddressSanitizer on GCC, Clang, or AppleClang |
+| `L2D_ENABLE_UBSAN` | `OFF` | `OFF` | Enable UndefinedBehaviorSanitizer on GCC, Clang, or AppleClang |
+| `L2D_INSTALL` | `ON` | `OFF` | Generate install and CMake package export rules |
+
+AddressSanitizer and UndefinedBehaviorSanitizer may be enabled independently or
+together on supported compilers. The options instrument the engine, sandbox,
+and regression executables and add the corresponding link flags. Unsupported
+compiler combinations fail during configuration instead of silently producing
+an uninstrumented build.
+
+```sh
+cmake -S . -B build-sanitize \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DL2D_BUILD_SANDBOX=ON \
+  -DL2D_BUILD_TESTS=ON \
+  -DL2D_ENABLE_ASAN=ON \
+  -DL2D_ENABLE_UBSAN=ON
+cmake --build build-sanitize --parallel
+```
+
+### Use as a CMake dependency
+
+When Lorenzo2D is added with `add_subdirectory` or FetchContent, its sandbox,
+regression tests, and install rules default to `OFF`. The parent project retains
+control of those targets and of any pre-existing SFML cache choices.
+
+```cmake
+add_subdirectory(external/Lorenzo2D)
+
+target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
+```
+
+A parent may explicitly enable any Lorenzo2D option before adding the
+subdirectory. The public target propagates the C++17 requirement, public include
+path, and `SFML::Graphics` dependency.
+
+### Install and consume the package
+
+A top-level build generates conventional install and package-export rules:
+
+```sh
+cmake -S . -B build-package \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DL2D_BUILD_SANDBOX=OFF \
+  -DL2D_BUILD_TESTS=OFF \
+  -DCMAKE_INSTALL_PREFIX=/path/to/prefix
+cmake --build build-package --parallel
+cmake --install build-package
+```
+
+The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
+SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
+
+```cmake
+find_package(Lorenzo2D 0.1 CONFIG REQUIRED)
+target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
+```
+
+The selected installation prefix must also make an SFML 3.1 CMake package
+available, either in the same prefix or through the consumer's
+`CMAKE_PREFIX_PATH`.
 
 ## Sandbox controls
 
@@ -186,7 +250,8 @@ include/Lorenzo2D/  Public engine headers
 src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
 assets/             Text levels and optional runtime assets
-tests/              Regression tests
+tests/              Regression and consumer integration tests
+cmake/              Installed-package configuration templates
 ```
 
 The public engine is separated into `Core`, `ECS`, `Scene`, `Renderer`,
@@ -242,27 +307,48 @@ visible to every fixed tick in that frame, so one-shot gameplay actions must be
 buffered in `onFrameStart` and consumed only once by fixed simulation. The
 sandbox uses this pattern for jumping.
 
-The timing values deliberately describe different clocks:
+The timing values deliberately describe different clocks and accounting
+categories:
 
 | Value | Meaning |
 | --- | --- |
-| `Time::rawDeltaTime()` | Sanitized wall-clock duration of the frame |
-| `Time::frameDeltaTime()` / `deltaTime()` | Raw delta clamped by `maximumFrameDeltaTime` |
-| `Time::fixedDeltaTime()` | Constant delta supplied to every fixed tick |
-| `Time::realElapsedTime()` | Accumulated raw wall-clock time |
-| `Time::elapsedTime()` | Accumulated clamped frame time |
-| `Time::simulationTime()` | Time represented by completed fixed ticks |
+| `Time::rawDeltaTime()` | Sanitized wall-clock duration presented to the current frame |
+| `Time::frameDeltaTime()` / `deltaTime()` | Current raw delta after the `maximumFrameDeltaTime` clamp |
+| `Time::fixedDeltaTime()` | Constant delta supplied to every completed fixed tick |
+| `Time::realElapsedTime()` | Cumulative sanitized raw wall-clock time |
+| `Time::elapsedTime()` | Cumulative clamped frame time admitted to the fixed-step accumulator |
+| `Time::simulationTime()` | Cumulative time represented by completed fixed ticks |
+| `Time::clampedFrameTime()` | Cumulative wall-clock time rejected by the initial frame clamp |
+| `Time::droppedTickCount()` | Cumulative whole fixed ticks discarded after the per-frame catch-up cap |
+| `Time::droppedSimulationTime()` | Cumulative simulation duration represented by those discarded whole ticks |
+| `FixedStepScheduler::accumulator()` | Remaining admitted fractional simulation time retained for interpolation and the next frame |
 
-`frameCount`, `tickCount`, `ticksThisFrame`, `droppedTickCount`, and
-`droppedSimulationTime` expose the corresponding counters. FPS is calculated
-from raw wall-clock time rather than the clamped simulation budget.
+`frameCount`, `tickCount`, and `ticksThisFrame` expose the corresponding frame
+and completed-tick counters. FPS is calculated from raw wall-clock time rather
+than the clamped simulation budget.
 
 To prevent a long stall from causing a spiral of death, raw frame time is first
-clamped and only `maximumTicksPerFrame` ticks may execute. Whole ticks still
-left in the clamped accumulator are dropped and counted; the fractional
-remainder is retained for interpolation and the next frame. Time removed by the
-initial raw-frame clamp is visible through the difference between raw and frame
-delta, but is not counted as dropped simulation ticks.
+clamped and only `maximumTicksPerFrame` ticks may execute. `clampedFrameTime`
+accounts for time rejected by that initial wall-clock clamp. Whole fixed ticks
+still left after the execution cap are counted separately by `droppedTickCount`
+and `droppedSimulationTime`. The fractional accumulator remainder is never
+reported as a dropped tick and is retained for interpolation and the next
+frame.
+
+Within floating-point tolerance, the cumulative accounting invariants are:
+
+```text
+real elapsed time = elapsed clamped time + frame-clamped wall-clock time
+elapsed clamped time = completed simulation time
+                     + dropped simulation time
+                     + accumulator remainder
+```
+
+For an individual scheduler frame, `rawDeltaTime` equals `frameDeltaTime` plus
+that frame's `clampedFrameTime`. These categories are intentionally distinct:
+frame-clamped wall-clock time never becomes fixed-step work, while dropped
+simulation time was admitted to the accumulator but discarded as whole ticks
+because the catch-up limit had already been reached.
 
 Rendering samples between each transform's previous and current fixed state.
 An alpha of zero selects the previous state and an alpha of one selects the
@@ -391,9 +477,9 @@ owned by the world's fixed simulation step rather than component update.
   tracking, and background loading remain future work.
 - The sandbox is still a single integration example. Smaller examples and more
   subsystem tests should be added as APIs stabilize.
-- Distribution packaging and CMake install/export rules, sanitizer-enabled CI,
-  and a project license are not yet provided; these remain future release
-  hardening milestones.
+- Regression sources still use a lightweight first-party harness. Extracting
+  shared support and splitting the broad core suite remain maintainability work.
+- A project license is not yet provided and requires an explicit owner choice.
 
 These constraints are kept explicit so future changes can improve one contract
 at a time without hiding unsupported behavior.
