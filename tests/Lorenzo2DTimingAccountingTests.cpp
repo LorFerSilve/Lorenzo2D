@@ -1,34 +1,13 @@
 #include <Lorenzo2D/Core/FixedStepScheduler.hpp>
 
-#include <cmath>
-#include <iostream>
 #include <limits>
-#include <stdexcept>
-#include <string>
+
+#include "TestSupport.hpp"
 
 namespace
 {
-    void require(bool condition, const char* expression, int line)
-    {
-        if (condition)
-            return;
-
-        throw std::runtime_error(
-            "line " + std::to_string(line) + ": " + expression
-        );
-    }
-
-#define L2D_REQUIRE(expression) \
-    require(static_cast<bool>(expression), #expression, __LINE__)
-
-    bool approximatelyEqual(
-        double left,
-        double right,
-        double epsilon = 0.000000001
-    )
-    {
-        return std::fabs(left - right) <= epsilon;
-    }
+    using l2d::test::approximatelyEqual;
+    using l2d::test::runTest;
 
     void testFrameClampIsReportedSeparatelyFromDroppedTicks()
     {
@@ -110,16 +89,27 @@ namespace
 
 int main()
 {
-    try
+    int failures = 0;
+
+    runTest(
+        "frame clamp is reported separately from dropped ticks",
+        testFrameClampIsReportedSeparatelyFromDroppedTicks,
+        failures
+    );
+    runTest(
+        "invalid frame deltas do not create clamp telemetry",
+        testInvalidFrameDeltasDoNotCreateClampTelemetry,
+        failures
+    );
+    runTest(
+        "reset clears clamp telemetry",
+        testResetClearsClampTelemetry,
+        failures
+    );
+
+    if (failures != 0)
     {
-        testFrameClampIsReportedSeparatelyFromDroppedTicks();
-        testInvalidFrameDeltasDoNotCreateClampTelemetry();
-        testResetClearsClampTelemetry();
-    }
-    catch (const std::exception& exception)
-    {
-        std::cerr << "Lorenzo2D timing accounting tests failed: "
-            << exception.what() << '\n';
+        std::cerr << failures << " timing accounting test(s) failed.\n";
         return 1;
     }
 

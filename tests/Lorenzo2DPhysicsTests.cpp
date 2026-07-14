@@ -11,29 +11,18 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <iostream>
 #include <limits>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "TestSupport.hpp"
+
 namespace
 {
-    void require(bool condition, const char* expression, int line)
-    {
-        if (condition)
-            return;
-
-        throw std::runtime_error(
-            "line " + std::to_string(line) + ": " + expression
-        );
-    }
-
-#define L2D_REQUIRE(expression) \
-    require(static_cast<bool>(expression), #expression, __LINE__)
+    using l2d::test::runTest;
 
     bool approximatelyEqual(
         float left,
@@ -41,7 +30,7 @@ namespace
         float epsilon = 0.001f
     )
     {
-        return std::fabs(left - right) <= epsilon;
+        return l2d::test::approximatelyEqual(left, right, epsilon);
     }
 
     bool approximatelyEqual(
@@ -2330,20 +2319,6 @@ namespace
         );
     }
 
-    template <typename Function>
-    void runTest(const char* name, Function&& function, int& failures)
-    {
-        try
-        {
-            std::forward<Function>(function)();
-            std::cout << "[PASS] " << name << '\n';
-        }
-        catch (const std::exception& exception)
-        {
-            ++failures;
-            std::cerr << "[FAIL] " << name << ": " << exception.what() << '\n';
-        }
-    }
 }
 
 int main()

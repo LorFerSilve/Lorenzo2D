@@ -1,10 +1,11 @@
 # Lorenzo2D regression tests
 
-The regression executables use a small first-party harness. The four suites
-extracted from the former broad source share assertion, approximate-comparison,
-temporary-file, and named-test execution support through `TestSupport.hpp`.
-Target creation, compiler warnings, sanitizer instrumentation, CTest
-registration, labels, and timeouts are centralized in `tests/CMakeLists.txt`.
+The regression executables use a small first-party harness. All eight suites
+share assertion and named-test execution support through `TestSupport.hpp`.
+Scalar approximate comparisons and temporary-file cleanup are also centralized
+there for suites that need them. Target creation, compiler warnings, sanitizer
+instrumentation, CTest registration, labels, and timeouts are centralized in
+`tests/CMakeLists.txt`.
 
 ## Suites
 
@@ -33,13 +34,11 @@ narrowest applicable suite or to a new focused executable.
 - `runTest` for named pass/fail reporting without aborting the remaining suite;
 - `TemporaryFile`, which removes its generated file during destruction.
 
+Every first-party regression executable uses the shared assertion and runner.
 Subsystem-specific fixtures and comparison policies remain in their owning
-source file. The pre-existing timing-accounting, physics, asset, and renderer
-executables retain their local harness code in this limited cycle; migrating
-those large focused sources can be done independently without coupling it to the
-broad-suite split. Physics and renderer vector comparisons also deliberately
-retain their existing local tolerances instead of being hidden in a global
-utility.
+source file. In particular, physics keeps its established `0.001f` tolerance
+and physics/renderer retain vector overloads that delegate their scalar work to
+the shared implementation.
 
 ## Runtime partition labels
 

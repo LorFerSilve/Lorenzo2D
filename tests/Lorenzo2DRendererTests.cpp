@@ -11,6 +11,7 @@
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include "RendererNumeric.hpp"
+#include "TestSupport.hpp"
 
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Transform.hpp>
@@ -20,35 +21,14 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <limits>
-#include <stdexcept>
 #include <string>
 #include <utility>
 
 namespace
 {
-    void require(bool condition, const char* expression, int line)
-    {
-        if (condition)
-            return;
-
-        throw std::runtime_error(
-            "line " + std::to_string(line) + ": " + expression
-        );
-    }
-
-#define L2D_REQUIRE(expression) \
-    require(static_cast<bool>(expression), #expression, __LINE__)
-
-    bool approximatelyEqual(
-        float left,
-        float right,
-        float epsilon = 0.0001f
-    )
-    {
-        return std::fabs(left - right) <= epsilon;
-    }
+    using l2d::test::approximatelyEqual;
+    using l2d::test::runTest;
 
     bool approximatelyEqual(
         sf::Vector2f left,
@@ -635,20 +615,6 @@ namespace
         L2D_REQUIRE(layers.isLayerEnabled(l2d::RenderLayer2D::UI));
     }
 
-    template <typename Function>
-    void runTest(const char* name, Function&& function, int& failures)
-    {
-        try
-        {
-            std::forward<Function>(function)();
-            std::cout << "[PASS] " << name << '\n';
-        }
-        catch (const std::exception& exception)
-        {
-            ++failures;
-            std::cerr << "[FAIL] " << name << ": " << exception.what() << '\n';
-        }
-    }
 }
 
 int main()
