@@ -1,16 +1,20 @@
 name: Apply specialized test harness migration
 
 on:
-  push:
+  pull_request:
     branches:
-      - improve/unify-specialized-test-harnesses
+      - master
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: ${{ hashFiles('.cycle13.patch.gz.b64') != '' }}
+    if: ${{ github.head_ref == 'improve/unify-specialized-test-harnesses' && hashFiles('.cycle13.patch.gz.b64') != '' }}
     runs-on: ubuntu-24.04
     steps:
       - name: Check out branch
