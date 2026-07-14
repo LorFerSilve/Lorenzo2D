@@ -115,7 +115,7 @@ jobs:
             --no-tests=error \
             -L headless
 
-      - name: Run display-backed tests (Linux virtual display)
+      - name: Run Xvfb-partitioned tests (Linux virtual display)
         if: runner.os == 'Linux'
         run: >-
           xvfb-run --auto-servernum
@@ -123,7 +123,7 @@ jobs:
           -C ${{ matrix.build_type }}
           --output-on-failure
           --no-tests=error
-          -LE headless
+          -L xvfb
 
   consumer-integration:
     name: Linux GCC consumer integration
