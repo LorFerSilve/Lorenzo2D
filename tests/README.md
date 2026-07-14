@@ -1,16 +1,17 @@
 # Lorenzo2D regression tests
 
-The regression executables use a small first-party harness. All eight suites
+The regression executables use a small first-party harness. All nine suites
 share assertion and named-test execution support through `TestSupport.hpp`.
-Scalar approximate comparisons and temporary-file cleanup are also centralized
-there for suites that need them. Target creation, compiler warnings, sanitizer
-instrumentation, CTest registration, labels, and timeouts are centralized in
-`tests/CMakeLists.txt`.
+Value-rich equality and approximate assertions, scalar and explicit-epsilon 2D
+comparisons, and temporary-file cleanup are centralized there. Target creation,
+compiler warnings, sanitizer instrumentation, CTest registration, labels, and
+timeouts are centralized in `tests/CMakeLists.txt`.
 
 ## Suites
 
 | Target | Primary coverage | Runtime partition | Timeout |
 | --- | --- | --- | --- |
+| `Lorenzo2DTestSupportTests` | Harness diagnostics, explicit tolerances, 2D comparison, and temporary-file cleanup | `headless` | 30 s |
 | `Lorenzo2DCoreTimingTests` | Identity contracts, fixed-step scheduling, and transform interpolation | `headless` | 60 s |
 | `Lorenzo2DEcsSceneTests` | Component mutation, activation, scene dispatch, handles, indexing, and deferred destruction | `headless` | 90 s |
 | `Lorenzo2DPhysicsIntegrationTests` | Scene-to-physics fixed-tick participation and render-cadence independence | `headless` | 90 s |
@@ -30,15 +31,25 @@ narrowest applicable suite or to a new focused executable.
 `TestSupport.hpp` provides:
 
 - `L2D_REQUIRE` with the existing line-based failure message;
+- `L2D_REQUIRE_EQUAL`, which reports both expressions and values;
+- `L2D_REQUIRE_APPROX`, which reports values and the caller-supplied epsilon;
+- `L2D_REQUIRE_APPROX_2D`, which compares `x` and `y` components with an
+  explicit epsilon and reports both vectors;
 - scalar `approximatelyEqual` overloads for `float` and `double`;
+- `approximatelyEqual2D` for vector-like values with `x` and `y` members;
 - `runTest` for named pass/fail reporting without aborting the remaining suite;
 - `TemporaryFile`, which removes its generated file during destruction.
 
+`Lorenzo2DTestSupportTests` directly verifies the harness failure messages,
+explicit-epsilon behavior, 2D component comparison, and temporary-file cleanup.
+The original `L2D_REQUIRE` output remains unchanged for compatibility.
+
 Every first-party regression executable uses the shared assertion and runner.
-Subsystem-specific fixtures and comparison policies remain in their owning
-source file. In particular, physics keeps its established `0.001f` tolerance
-and physics/renderer retain vector overloads that delegate their scalar work to
-the shared implementation.
+Subsystem-specific fixtures and tolerance choices remain in their owning source
+file. No approximate assertion selects an implicit subsystem tolerance:
+callers must provide it explicitly. Physics therefore retains its established
+`0.001f` policy, renderer retains `0.0001f`, and timing accounting uses
+`0.000000001`.
 
 ## Runtime partition labels
 
@@ -48,13 +59,14 @@ Every regression executable must declare exactly one runtime label:
 - `xvfb`: CI executes the suite through Xvfb on Linux.
 
 Only `Lorenzo2DAssetTests` currently uses the Xvfb partition because it
-constructs SFML texture and font resources. The focused core, ECS, physics,
+constructs SFML texture and font resources. The harness, core, ECS, physics,
 tilemap, timing, and renderer suites contain no window, graphics-context,
 texture, or font construction and are executed with display variables removed.
 
-Subsystem labels such as `timing`, `ecs`, `scene`, `physics`, `tilemap`,
-`assets`, and `renderer` support focused local runs. A suite may have several
-subsystem labels, but it must still have exactly one runtime partition label.
+Subsystem labels such as `test-support`, `timing`, `ecs`, `scene`, `physics`,
+`tilemap`, `assets`, and `renderer` support focused local runs. A suite may have
+several subsystem labels, but it must still have exactly one runtime partition
+label.
 
 ## Common commands
 
@@ -99,6 +111,8 @@ Register new executables through `l2d_add_regression_test` in
   internal implementation contract.
 
 New focused suites should use `TestSupport.hpp` for the common harness instead
-of copying assertion or test-runner implementations. Do not weaken assertions,
-disable warnings, or move a test to `headless` merely to reduce CI setup. A
-runtime-partition change must pass the actual no-display CI execution.
+of copying assertion or test-runner implementations. Prefer value-rich
+assertions when the compared values are streamable, and always pass subsystem
+tolerances explicitly. Do not weaken assertions, disable warnings, or move a
+test to `headless` merely to reduce CI setup. A runtime-partition change must
+pass the actual no-display CI execution.
