@@ -19,10 +19,36 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Windows MSVC
+          - name: Windows MSVC Release
             os: windows-2025
-          - name: Linux GCC
+            build_type: Release
+            asan: "OFF"
+            ubsan: "OFF"
+          - name: Linux GCC Release
             os: ubuntu-24.04
+            build_type: Release
+            cc: gcc
+            cxx: g++
+            asan: "OFF"
+            ubsan: "OFF"
+          - name: Linux Clang Debug
+            os: ubuntu-24.04
+            build_type: Debug
+            cc: clang
+            cxx: clang++
+            asan: "OFF"
+            ubsan: "OFF"
+          - name: Linux Clang ASan UBSan
+            os: ubuntu-24.04
+            build_type: Debug
+            cc: clang
+            cxx: clang++
+            asan: "ON"
+            ubsan: "ON"
+
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:strict_init_order=1:check_initialization_order=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
 
     steps:
       - name: Check out repository
@@ -42,30 +68,153 @@ jobs:
             libegl1-mesa-dev \
             libudev-dev
 
-      - name: Configure
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
         run: >-
           cmake -S . -B build
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DL2D_BUILD_SANDBOX=ON
           -DL2D_BUILD_TESTS=ON
           -DL2D_WARNINGS_AS_ERRORS=ON
+          -DL2D_ENABLE_ASAN=${{ matrix.asan }}
+          -DL2D_ENABLE_UBSAN=${{ matrix.ubsan }}
+
+      - name: Configure (Linux)
+        if: runner.os == 'Linux'
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: >-
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DL2D_BUILD_SANDBOX=ON
+          -DL2D_BUILD_TESTS=ON
+          -DL2D_WARNINGS_AS_ERRORS=ON
+          -DL2D_ENABLE_ASAN=${{ matrix.asan }}
+          -DL2D_ENABLE_UBSAN=${{ matrix.ubsan }}
 
       - name: Build engine, sandbox, and tests
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel
 
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
-        run: ctest --test-dir build -C Release --output-on-failure
+        run: >-
+          ctest --test-dir build
+          -C ${{ matrix.build_type }}
+          --output-on-failure
+          --no-tests=error
 
       - name: Run headless tests (Linux without a display)
         if: runner.os == 'Linux'
         run: |
           unset DISPLAY
           unset WAYLAND_DISPLAY
-          ctest --test-dir build -C Release --output-on-failure --no-tests=error -L headless
+          ctest --test-dir build \
+            -C ${{ matrix.build_type }} \
+            --output-on-failure \
+            --no-tests=error \
+            -L headless
 
       - name: Run display-backed tests (Linux virtual display)
         if: runner.os == 'Linux'
         run: >-
           xvfb-run --auto-servernum
-          ctest --test-dir build -C Release --output-on-failure --no-tests=error -LE headless
+          ctest --test-dir build
+          -C ${{ matrix.build_type }}
+          --output-on-failure
+          --no-tests=error
+          -LE headless
+
+  consumer-integration:
+    name: Linux GCC consumer integration
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install Linux graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            xorg-dev \
+            libharfbuzz-dev \
+            libfreetype-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libudev-dev
+
+      - name: Configure as an add_subdirectory dependency
+        run: >-
+          cmake
+          -S tests/consumers/subproject
+          -B build-subproject-consumer
+          -DCMAKE_BUILD_TYPE=Release
+          -DL2D_SOURCE_DIR=${{ github.workspace }}
+          -DL2D_WARNINGS_AS_ERRORS=ON
+
+      - name: Build and run subproject consumer
+        run: |
+          cmake --build build-subproject-consumer --parallel
+          ctest --test-dir build-subproject-consumer \
+            --output-on-failure \
+            --no-tests=error
+
+      - name: Configure installable Lorenzo2D package
+        run: >-
+          cmake -S . -B build-package
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+          -DL2D_BUILD_SANDBOX=OFF
+          -DL2D_BUILD_TESTS=OFF
+          -DL2D_WARNINGS_AS_ERRORS=ON
+          -DL2D_INSTALL=ON
+
+      - name: Build Lorenzo2D package
+        run: cmake --build build-package --parallel
+
+      - name: Configure installable SFML dependency
+        run: >-
+          cmake
+          -S build-package/_deps/sfml-src
+          -B build-sfml-package
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+          -DSFML_BUILD_AUDIO=OFF
+          -DSFML_BUILD_NETWORK=OFF
+          -DSFML_BUILD_EXAMPLES=OFF
+          -DSFML_BUILD_TEST_SUITE=OFF
+
+      - name: Install SFML and Lorenzo2D
+        run: |
+          cmake --build build-sfml-package --parallel
+          cmake --install build-sfml-package
+          cmake --install build-package
+
+      - name: Inspect installed package
+        run: |
+          test -f install/lib/libLorenzo2D.a
+          test -f install/include/Lorenzo2D/ECS/Transform.hpp
+          test -f install/lib/cmake/Lorenzo2D/Lorenzo2DConfig.cmake
+          test -f install/lib/cmake/Lorenzo2D/Lorenzo2DTargets.cmake
+          find install/lib/cmake/Lorenzo2D -maxdepth 1 -type f -print
+          if grep -R --include='*.cmake' -F "${{ github.workspace }}" \
+              install/lib/cmake/Lorenzo2D; then
+            echo "Installed Lorenzo2D package contains a source-tree path"
+            exit 1
+          fi
+
+      - name: Configure installed-package consumer
+        run: >-
+          cmake
+          -S tests/consumers/package
+          -B build-package-consumer
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
+
+      - name: Build and run installed-package consumer
+        run: |
+          cmake --build build-package-consumer --parallel
+          ctest --test-dir build-package-consumer \
+            --output-on-failure \
+            --no-tests=error
