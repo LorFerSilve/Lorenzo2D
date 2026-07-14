@@ -74,14 +74,34 @@ function(l2d_add_regression_test target)
     )
 endfunction()
 
-# The broad suite retains its existing coverage and executable name. New
-# subsystem-specific regressions should normally go into a focused suite rather
-# than making this legacy integration target broader.
+# The former broad regression executable is split by subsystem so a failure maps
+# directly to a focused source file and CTest target.
 l2d_add_regression_test(
-    Lorenzo2DTests
-    SOURCE Lorenzo2DTests.cpp
-    LABELS xvfb core timing ecs scene physics tilemap integration
-    TIMEOUT 180
+    Lorenzo2DCoreTimingTests
+    SOURCE Lorenzo2DCoreTimingTests.cpp
+    LABELS headless core timing ecs
+    TIMEOUT 60
+)
+
+l2d_add_regression_test(
+    Lorenzo2DEcsSceneTests
+    SOURCE Lorenzo2DEcsSceneTests.cpp
+    LABELS headless ecs scene
+    TIMEOUT 90
+)
+
+l2d_add_regression_test(
+    Lorenzo2DPhysicsIntegrationTests
+    SOURCE Lorenzo2DPhysicsIntegrationTests.cpp
+    LABELS headless physics ecs scene timing integration
+    TIMEOUT 90
+)
+
+l2d_add_regression_test(
+    Lorenzo2DTilemapTests
+    SOURCE Lorenzo2DTilemapTests.cpp
+    LABELS headless tilemap physics renderer
+    TIMEOUT 90
 )
 
 l2d_add_regression_test(
@@ -94,7 +114,7 @@ l2d_add_regression_test(
 l2d_add_regression_test(
     Lorenzo2DPhysicsTests
     SOURCE Lorenzo2DPhysicsTests.cpp
-    LABELS xvfb physics tilemap
+    LABELS headless physics tilemap
     TIMEOUT 180
 )
 
