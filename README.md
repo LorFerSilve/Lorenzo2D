@@ -477,8 +477,9 @@ owned by the world's fixed simulation step rather than component update.
   tracking, and background loading remain future work.
 - The sandbox is still a single integration example. Smaller examples and more
   subsystem tests should be added as APIs stabilize.
-- Regression sources still use a lightweight first-party harness. Extracting
-  shared support and splitting the broad core suite remain maintainability work.
+- Regression sources use a lightweight first-party harness with shared support
+  and focused subsystem executables. More data-driven cases and richer failure
+  context can be added as the suite grows.
 - A project license is not yet provided and requires an explicit owner choice.
 
 These constraints are kept explicit so future changes can improve one contract
