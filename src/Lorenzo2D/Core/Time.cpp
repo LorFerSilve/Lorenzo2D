@@ -65,6 +65,7 @@ namespace l2d
 
     std::uint64_t Time::s_droppedTickCount = 0;
     double Time::s_droppedSimulationTime = 0.0;
+    double Time::s_clampedFrameTime = 0.0;
 
     float Time::rawDeltaTime()
     {
@@ -141,6 +142,11 @@ namespace l2d
         return s_droppedSimulationTime;
     }
 
+    double Time::clampedFrameTime()
+    {
+        return s_clampedFrameTime;
+    }
+
     void Time::reset(double fixedDeltaTime)
     {
         float callbackFixedDeltaTime = static_cast<float>(fixedDeltaTime);
@@ -176,6 +182,7 @@ namespace l2d
 
         s_droppedTickCount = 0;
         s_droppedSimulationTime = 0.0;
+        s_clampedFrameTime = 0.0;
     }
 
     void Time::beginFrame(double rawDeltaTime, double frameDeltaTime)
@@ -236,7 +243,8 @@ namespace l2d
     void Time::endFrame(
         double interpolationAlpha,
         std::uint64_t droppedTicks,
-        double droppedSimulationTime
+        double droppedSimulationTime,
+        double clampedFrameTime
     )
     {
         interpolationAlpha = sanitizeNonNegative(interpolationAlpha);
@@ -256,6 +264,11 @@ namespace l2d
         s_droppedSimulationTime = saturatingAdd(
             s_droppedSimulationTime,
             sanitizeNonNegative(droppedSimulationTime)
+        );
+
+        s_clampedFrameTime = saturatingAdd(
+            s_clampedFrameTime,
+            sanitizeNonNegative(clampedFrameTime)
         );
     }
 }
