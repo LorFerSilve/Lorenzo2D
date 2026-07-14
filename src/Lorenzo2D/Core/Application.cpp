@@ -134,7 +134,8 @@ namespace l2d
                     frame.droppedSimulationTime,
                     abandonedTicks,
                     m_fixedStepScheduler.config().fixedDeltaTime
-                )
+                ),
+                frame.clampedFrameTime
             );
 
             if (shouldClose())
