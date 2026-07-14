@@ -1,0 +1,54 @@
+name: Apply regression include fix
+
+on:
+  push:
+    branches:
+      - improve/split-regression-suites
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    name: Add direct physics includes
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out cycle branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Add required direct includes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("tests/Lorenzo2DEcsSceneTests.cpp")
+          text = path.read_text()
+          anchor = "#include <Lorenzo2D/ECS/GameObject.hpp>\n"
+          addition = (
+              anchor
+              + "#include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>\n"
+              + "#include <Lorenzo2D/Physics/RigidBody2D.hpp>\n"
+          )
+
+          if "#include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>" not in text:
+              if anchor not in text:
+                  raise SystemExit("Expected GameObject include anchor was not found")
+              text = text.replace(anchor, addition, 1)
+              path.write_text(text)
+          PY
+
+      - name: Remove diagnostic bootstrap workflows
+        run: |
+          rm -f .github/workflows/diagnose-regression-split.yml
+          rm -f .github/workflows/apply-regression-include-fix.yml
+
+      - name: Commit include correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add direct physics includes to ECS scene tests"
+          git push origin HEAD:improve/split-regression-suites
