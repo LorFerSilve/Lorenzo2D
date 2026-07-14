@@ -35,6 +35,10 @@ namespace l2d
         static std::uint64_t droppedTickCount();
         static double droppedSimulationTime();
 
+        // Accumulated wall-clock time rejected by maximumFrameDeltaTime before
+        // fixed ticks are selected. This is separate from dropped whole ticks.
+        static double clampedFrameTime();
+
     private:
         static void reset(double fixedDeltaTime);
 
@@ -48,7 +52,8 @@ namespace l2d
         static void endFrame(
             double interpolationAlpha,
             std::uint64_t droppedTicks,
-            double droppedSimulationTime
+            double droppedSimulationTime,
+            double clampedFrameTime
         );
 
     private:
@@ -72,6 +77,7 @@ namespace l2d
 
         static std::uint64_t s_droppedTickCount;
         static double s_droppedSimulationTime;
+        static double s_clampedFrameTime;
 
         friend class Application;
     };
