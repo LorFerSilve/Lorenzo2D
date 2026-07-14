@@ -137,6 +137,10 @@ if(L2D_BUILD_TESTS)
         NAME Lorenzo2DTimingAccountingTests
         COMMAND Lorenzo2DTimingAccountingTests
     )
+    set_tests_properties(
+        Lorenzo2DTimingAccountingTests
+        PROPERTIES LABELS headless
+    )
 
     add_executable(
         Lorenzo2DPhysicsTests
