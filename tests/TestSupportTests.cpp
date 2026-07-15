@@ -14,6 +14,17 @@ namespace
     {
         float x;
         float y;
+
+        friend bool operator==(Vector2 left, Vector2 right)
+        {
+            return left.x == right.x && left.y == right.y;
+        }
+    };
+
+    enum class TestPhase
+    {
+        Begin = 2,
+        End = 3
     };
 
     template <typename Function>
@@ -88,6 +99,58 @@ namespace
             "line 19: expected actualCount == expectedCount "
             "(actual: 0, expected: -1)"
         );
+    }
+
+
+    void testRequireEqualFormatsEnumsAndVectors()
+    {
+        const std::string enumMessage = captureFailure(
+            []()
+            {
+                l2d::test::requireEqual(
+                    TestPhase::Begin,
+                    TestPhase::End,
+                    "actualPhase",
+                    "expectedPhase",
+                    27
+                );
+            }
+        );
+
+        L2D_REQUIRE_EQUAL(
+            enumMessage,
+            "line 27: expected actualPhase == expectedPhase "
+            "(actual: 2, expected: 3)"
+        );
+
+        const Vector2 actual{ 1.0f, 2.0f };
+        const Vector2 expected{ 3.0f, 4.0f };
+        const std::string vectorMessage = captureFailure(
+            [&actual, &expected]()
+            {
+                l2d::test::requireEqual(
+                    actual,
+                    expected,
+                    "actualPosition",
+                    "expectedPosition",
+                    35
+                );
+            }
+        );
+
+        L2D_REQUIRE_EQUAL(
+            vectorMessage,
+            "line 35: expected actualPosition == expectedPosition "
+            "(actual: (1, 2), expected: (3, 4))"
+        );
+    }
+
+    void testApproximateMacroDispatchesVectorValues()
+    {
+        const Vector2 actual{ 2.0f, 4.0005f };
+        const Vector2 expected{ 2.0005f, 4.0f };
+
+        L2D_REQUIRE_APPROX(actual, expected, 0.001f);
     }
 
     void testApproximateComparisonUsesExplicitEpsilon()
@@ -201,6 +264,16 @@ int main()
     runTest(
         "requireEqual handles mixed integral signs",
         testRequireEqualHandlesMixedIntegralSigns,
+        failures
+    );
+    runTest(
+        "requireEqual formats enums and vectors",
+        testRequireEqualFormatsEnumsAndVectors,
+        failures
+    );
+    runTest(
+        "approximate macro dispatches vector values",
+        testApproximateMacroDispatchesVectorValues,
         failures
     );
     runTest(

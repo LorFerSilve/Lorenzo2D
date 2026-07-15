@@ -2,6 +2,8 @@
 
 The regression executables use a small first-party harness. All nine suites
 share assertion and named-test execution support through `TestSupport.hpp`.
+Physics and renderer assertions use the same value-rich diagnostics while
+keeping their subsystem comparison tolerances explicit in the owning source.
 Value-rich equality and approximate assertions, scalar and explicit-epsilon 2D
 comparisons, and temporary-file cleanup are centralized there. Target creation,
 compiler warnings, sanitizer instrumentation, CTest registration, labels, and
@@ -31,17 +33,20 @@ narrowest applicable suite or to a new focused executable.
 `TestSupport.hpp` provides:
 
 - `L2D_REQUIRE` with the existing line-based failure message;
-- `L2D_REQUIRE_EQUAL`, which reports both expressions and values;
-- `L2D_REQUIRE_APPROX`, which reports values and the caller-supplied epsilon;
-- `L2D_REQUIRE_APPROX_2D`, which compares `x` and `y` components with an
-  explicit epsilon and reports both vectors;
+- `L2D_REQUIRE_EQUAL`, which reports both expressions and values, including
+  enum underlying values and vector-like `x`/`y` components;
+- `L2D_REQUIRE_APPROX`, which reports values and the caller-supplied epsilon
+  for scalar or vector-like values;
+- `L2D_REQUIRE_APPROX_2D`, which explicitly compares `x` and `y` components
+  with a caller-supplied epsilon and reports both vectors;
 - scalar `approximatelyEqual` overloads for `float` and `double`;
 - `approximatelyEqual2D` for vector-like values with `x` and `y` members;
 - `runTest` for named pass/fail reporting without aborting the remaining suite;
 - `TemporaryFile`, which removes its generated file during destruction.
 
 `Lorenzo2DTestSupportTests` directly verifies the harness failure messages,
-explicit-epsilon behavior, 2D component comparison, and temporary-file cleanup.
+enum and vector formatting, scalar/vector dispatch, explicit-epsilon behavior,
+2D component comparison, and temporary-file cleanup.
 The original `L2D_REQUIRE` output remains unchanged for compatibility.
 
 Every first-party regression executable uses the shared assertion and runner.
@@ -49,7 +54,9 @@ Subsystem-specific fixtures and tolerance choices remain in their owning source
 file. No approximate assertion selects an implicit subsystem tolerance:
 callers must provide it explicitly. Physics therefore retains its established
 `0.001f` policy, renderer retains `0.0001f`, and timing accounting uses
-`0.000000001`.
+`0.000000001`. Physics and renderer now pass these policies directly to the
+shared rich-diagnostic assertions instead of maintaining local comparison
+overloads.
 
 ## Runtime partition labels
 
