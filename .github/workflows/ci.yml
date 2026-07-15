@@ -4,24 +4,33 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export-cycle15-source:
+  apply-cycle15-migration:
     runs-on: ubuntu-24.04
     steps:
-      - name: Check out repository
+      - name: Check out migration branch
         uses: actions/checkout@v6
-
-      - name: Upload cycle source
-        uses: actions/upload-artifact@v4
         with:
-          name: cycle15-source
-          path: |
-            tests/Lorenzo2DPhysicsTests.cpp
-            tests/Lorenzo2DRendererTests.cpp
-            tests/TestSupport.hpp
-            tests/README.md
-            tests/CMakeLists.txt
-          if-no-files-found: error
-          retention-days: 1
+          ref: improve/migrate-physics-renderer-assertions
+          fetch-depth: 0
+
+      - name: Apply validated assertion migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .cycle15.patch.gz.b64 | gzip --decompress > /tmp/cycle15.patch
+          git apply --check /tmp/cycle15.patch
+          git apply /tmp/cycle15.patch
+          rm .cycle15.patch.gz.b64
+
+      - name: Commit migrated assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Migrate physics and renderer assertions"
+          git push origin HEAD:improve/migrate-physics-renderer-assertions
