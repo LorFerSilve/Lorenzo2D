@@ -27,18 +27,9 @@
 
 namespace
 {
-    using l2d::test::approximatelyEqual;
     using l2d::test::runTest;
 
-    bool approximatelyEqual(
-        sf::Vector2f left,
-        sf::Vector2f right,
-        float epsilon = 0.0001f
-    )
-    {
-        return approximatelyEqual(left.x, right.x, epsilon) &&
-            approximatelyEqual(left.y, right.y, epsilon);
-    }
+    constexpr float kRendererComparisonEpsilon = 0.0001f;
 
     bool isFinite(sf::Vector2f value)
     {
@@ -79,7 +70,7 @@ namespace
         L2D_REQUIRE(viewSize.y > 0.f);
         L2D_REQUIRE(viewSize.x <= maximumSafeViewExtent());
         L2D_REQUIRE(viewSize.y <= maximumSafeViewExtent());
-        L2D_REQUIRE(camera.view().getCenter() == camera.center());
+        L2D_REQUIRE_EQUAL(camera.view().getCenter(), camera.center());
         const sf::Transform& transform = camera.view().getTransform();
         const sf::Transform& inverse = camera.view().getInverseTransform();
         L2D_REQUIRE(isFinite(transform));
@@ -116,40 +107,40 @@ namespace
         const float maximum = std::numeric_limits<float>::max();
 
         const l2d::Transform invalidConstructor({ nan, 5.f });
-        L2D_REQUIRE(invalidConstructor.position() == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(invalidConstructor.position(), sf::Vector2f(0.f, 0.f));
         const l2d::Transform infiniteConstructor({ 5.f, infinity });
-        L2D_REQUIRE(infiniteConstructor.position() == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(infiniteConstructor.position(), sf::Vector2f(0.f, 0.f));
 
         l2d::Transform transform;
         transform.setPosition({ 12.f, -34.f });
         const sf::Vector2f validPosition = transform.position();
 
         transform.setPosition({ nan, 1.f });
-        L2D_REQUIRE(transform.position() == validPosition);
+        L2D_REQUIRE_EQUAL(transform.position(), validPosition);
         transform.setPosition({ 1.f, infinity });
-        L2D_REQUIRE(transform.position() == validPosition);
+        L2D_REQUIRE_EQUAL(transform.position(), validPosition);
         transform.move({ -infinity, 1.f });
-        L2D_REQUIRE(transform.position() == validPosition);
+        L2D_REQUIRE_EQUAL(transform.position(), validPosition);
 
         transform.setPosition({ maximum, 0.f });
         transform.move({ maximum, 0.f });
-        L2D_REQUIRE(transform.position() == sf::Vector2f(maximum, 0.f));
+        L2D_REQUIRE_EQUAL(transform.position(), sf::Vector2f(maximum, 0.f));
 
         transform.setRotation(45.f);
         transform.setRotation(nan);
-        L2D_REQUIRE(transform.rotation() == 45.f);
+        L2D_REQUIRE_EQUAL(transform.rotation(), 45.f);
         transform.rotate(infinity);
-        L2D_REQUIRE(transform.rotation() == 45.f);
+        L2D_REQUIRE_EQUAL(transform.rotation(), 45.f);
         transform.setRotation(maximum);
         transform.rotate(maximum);
-        L2D_REQUIRE(transform.rotation() == maximum);
+        L2D_REQUIRE_EQUAL(transform.rotation(), maximum);
 
         transform.setScale({ -2.f, 3.f });
         const sf::Vector2f validScale = transform.scale();
         transform.setScale({ nan, 1.f });
-        L2D_REQUIRE(transform.scale() == validScale);
+        L2D_REQUIRE_EQUAL(transform.scale(), validScale);
         transform.setScale({ 1.f, -infinity });
-        L2D_REQUIRE(transform.scale() == validScale);
+        L2D_REQUIRE_EQUAL(transform.scale(), validScale);
     }
 
     void testTransformInterpolatesExtremeFiniteSnapshotsSafely()
@@ -171,8 +162,8 @@ namespace
         L2D_REQUIRE(isFinite(halfway.position));
         L2D_REQUIRE(std::isfinite(halfway.rotation));
         L2D_REQUIRE(isFinite(halfway.scale));
-        L2D_REQUIRE(halfway.position == sf::Vector2f(0.f, 0.f));
-        L2D_REQUIRE(halfway.scale == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(halfway.position, sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(halfway.scale, sf::Vector2f(0.f, 0.f));
     }
 
     void testCameraMaintainsSafeViewDimensions()
@@ -217,9 +208,9 @@ namespace
 
         camera.setZoom(1.f);
         camera.setSize({ 0.f, 0.005f });
-        L2D_REQUIRE(camera.size() == sf::Vector2f(0.01f, 0.01f));
+        L2D_REQUIRE_EQUAL(camera.size(), sf::Vector2f(0.01f, 0.01f));
         camera.setSize({ nan, infinity });
-        L2D_REQUIRE(camera.size() == sf::Vector2f(0.01f, 0.01f));
+        L2D_REQUIRE_EQUAL(camera.size(), sf::Vector2f(0.01f, 0.01f));
 
         camera.setSize({ 320.f, 180.f });
 
@@ -252,7 +243,7 @@ namespace
         for (float zoom : minimumZoomInputs)
         {
             camera.setZoom(zoom);
-            L2D_REQUIRE(camera.zoom() == 0.01f);
+            L2D_REQUIRE_EQUAL(camera.zoom(), 0.01f);
         }
 
         camera.setSize({ maximum, maximum });
@@ -271,20 +262,20 @@ namespace
         const sf::Vector2f validCenter = camera.center();
 
         camera.setCenter({ nan, 10.f });
-        L2D_REQUIRE(camera.center() == validCenter);
+        L2D_REQUIRE_EQUAL(camera.center(), validCenter);
         camera.setCenter({ 10.f, infinity });
-        L2D_REQUIRE(camera.center() == validCenter);
+        L2D_REQUIRE_EQUAL(camera.center(), validCenter);
         camera.move({ -infinity, 1.f });
-        L2D_REQUIRE(camera.center() == validCenter);
+        L2D_REQUIRE_EQUAL(camera.center(), validCenter);
 
         camera.setCenter({ maximum, 0.f });
-        L2D_REQUIRE(camera.center() == validCenter);
+        L2D_REQUIRE_EQUAL(camera.center(), validCenter);
 
         const float safeExtreme = maximumSafeViewExtent() * 0.75f;
         camera.setCenter({ safeExtreme, 0.f });
-        L2D_REQUIRE(camera.center() == sf::Vector2f(safeExtreme, 0.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(safeExtreme, 0.f));
         camera.move({ safeExtreme, 0.f });
-        L2D_REQUIRE(camera.center() == sf::Vector2f(safeExtreme, 0.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(safeExtreme, 0.f));
         camera.setCenter(validCenter);
 
         l2d::Camera2D unbounded({ 10.f, 10.f });
@@ -293,23 +284,27 @@ namespace
 
         camera.setBounds({ 100.f, 80.f }, { 0.f, 0.f });
         L2D_REQUIRE(camera.hasBounds());
-        L2D_REQUIRE(camera.boundsMin() == sf::Vector2f(0.f, 0.f));
-        L2D_REQUIRE(camera.boundsMax() == sf::Vector2f(100.f, 80.f));
+        L2D_REQUIRE_EQUAL(camera.boundsMin(), sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(camera.boundsMax(), sf::Vector2f(100.f, 80.f));
 
         const sf::Vector2f validBoundsMin = camera.boundsMin();
         const sf::Vector2f validBoundsMax = camera.boundsMax();
         const sf::Vector2f boundedCenter = camera.center();
         camera.setBounds({ 0.f, nan }, { 50.f, 50.f });
-        L2D_REQUIRE(camera.boundsMin() == validBoundsMin);
-        L2D_REQUIRE(camera.boundsMax() == validBoundsMax);
-        L2D_REQUIRE(camera.center() == boundedCenter);
+        L2D_REQUIRE_EQUAL(camera.boundsMin(), validBoundsMin);
+        L2D_REQUIRE_EQUAL(camera.boundsMax(), validBoundsMax);
+        L2D_REQUIRE_EQUAL(camera.center(), boundedCenter);
         camera.setBounds({ 0.f, 0.f }, { maximum, 50.f });
-        L2D_REQUIRE(camera.boundsMin() == validBoundsMin);
-        L2D_REQUIRE(camera.boundsMax() == validBoundsMax);
-        L2D_REQUIRE(camera.center() == boundedCenter);
+        L2D_REQUIRE_EQUAL(camera.boundsMin(), validBoundsMin);
+        L2D_REQUIRE_EQUAL(camera.boundsMax(), validBoundsMax);
+        L2D_REQUIRE_EQUAL(camera.center(), boundedCenter);
 
         camera.setBounds({ 0.f, 0.f }, { 10.f, 10.f });
-        L2D_REQUIRE(approximatelyEqual(camera.center(), { 5.f, 5.f }));
+        L2D_REQUIRE_APPROX(
+            camera.center(),
+            (sf::Vector2f{ 5.f, 5.f }),
+            kRendererComparisonEpsilon
+        );
         camera.clearBounds();
 
         camera.setCenter({ 0.f, 0.f });
@@ -325,34 +320,34 @@ namespace
         for (float deltaTime : invalidDeltas)
         {
             camera.follow({ 100.f, 50.f }, deltaTime);
-            L2D_REQUIRE(camera.center() == sf::Vector2f(0.f, 0.f));
+            L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
         }
 
         camera.follow({ nan, 50.f }, 1.f);
-        L2D_REQUIRE(camera.center() == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
         camera.follow({ 50.f, -infinity }, 1.f);
-        L2D_REQUIRE(camera.center() == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
         camera.follow({ maximum, 50.f }, 1.f);
-        L2D_REQUIRE(camera.center() == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
 
         camera.setFollowSmoothness(nan);
-        L2D_REQUIRE(camera.followSmoothness() == 0.f);
+        L2D_REQUIRE_EQUAL(camera.followSmoothness(), 0.f);
         camera.setFollowSmoothness(infinity);
-        L2D_REQUIRE(camera.followSmoothness() == 0.f);
+        L2D_REQUIRE_EQUAL(camera.followSmoothness(), 0.f);
         camera.setFollowSmoothness(-1.f);
-        L2D_REQUIRE(camera.followSmoothness() == 0.f);
+        L2D_REQUIRE_EQUAL(camera.followSmoothness(), 0.f);
         camera.follow({ 10.f, 20.f }, 0.f);
-        L2D_REQUIRE(camera.center() == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
 
         camera.setFollowSmoothness(1.f);
         camera.follow({ 1.f, 0.f }, 0.00000001f);
         L2D_REQUIRE(camera.center().x > 0.f);
         L2D_REQUIRE(camera.center().x < 0.000001f);
-        L2D_REQUIRE(camera.center().y == 0.f);
+        L2D_REQUIRE_EQUAL(camera.center().y, 0.f);
 
         const float extreme = maximumSafeViewExtent() * 0.75f;
         camera.setCenter({ extreme, -extreme });
-        L2D_REQUIRE(camera.center() == sf::Vector2f(extreme, -extreme));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(extreme, -extreme));
         camera.setFollowSmoothness(std::log(2.f));
         camera.follow({ -extreme, extreme }, 1.f);
         L2D_REQUIRE(isFinite(camera.center()));
@@ -370,27 +365,27 @@ namespace
         camera.setCenter({ 0.f, 0.f });
         l2d::OrthographicCameraController2D controller(camera);
 
-        L2D_REQUIRE(approximatelyEqual(controller.zoomInFactor(), 0.90f));
-        L2D_REQUIRE(approximatelyEqual(controller.zoomOutFactor(), 1.10f));
+        L2D_REQUIRE_APPROX(controller.zoomInFactor(), 0.90f, kRendererComparisonEpsilon);
+        L2D_REQUIRE_APPROX(controller.zoomOutFactor(), 1.10f, kRendererComparisonEpsilon);
 
         controller.setZoomStepFactors(0.75f, 1.25f);
-        L2D_REQUIRE(approximatelyEqual(controller.zoomInFactor(), 0.75f));
-        L2D_REQUIRE(approximatelyEqual(controller.zoomOutFactor(), 1.25f));
+        L2D_REQUIRE_APPROX(controller.zoomInFactor(), 0.75f, kRendererComparisonEpsilon);
+        L2D_REQUIRE_APPROX(controller.zoomOutFactor(), 1.25f, kRendererComparisonEpsilon);
 
         controller.setZoomStepFactors(2.f, 0.5f);
-        L2D_REQUIRE(approximatelyEqual(controller.zoomInFactor(), 2.f));
-        L2D_REQUIRE(approximatelyEqual(controller.zoomOutFactor(), 0.5f));
+        L2D_REQUIRE_APPROX(controller.zoomInFactor(), 2.f, kRendererComparisonEpsilon);
+        L2D_REQUIRE_APPROX(controller.zoomOutFactor(), 0.5f, kRendererComparisonEpsilon);
 
         controller.setZoomStepFactors(nan, infinity);
-        L2D_REQUIRE(approximatelyEqual(controller.zoomInFactor(), 0.90f));
-        L2D_REQUIRE(approximatelyEqual(controller.zoomOutFactor(), 1.10f));
+        L2D_REQUIRE_APPROX(controller.zoomInFactor(), 0.90f, kRendererComparisonEpsilon);
+        L2D_REQUIRE_APPROX(controller.zoomOutFactor(), 1.10f, kRendererComparisonEpsilon);
         controller.setZoomStepFactors(0.f, -1.f);
-        L2D_REQUIRE(approximatelyEqual(controller.zoomInFactor(), 0.90f));
-        L2D_REQUIRE(approximatelyEqual(controller.zoomOutFactor(), 1.10f));
+        L2D_REQUIRE_APPROX(controller.zoomInFactor(), 0.90f, kRendererComparisonEpsilon);
+        L2D_REQUIRE_APPROX(controller.zoomOutFactor(), 1.10f, kRendererComparisonEpsilon);
 
         controller.setZoomLimits(2.f, 0.5f);
-        L2D_REQUIRE(approximatelyEqual(controller.minZoom(), 0.5f));
-        L2D_REQUIRE(approximatelyEqual(controller.maxZoom(), 2.f));
+        L2D_REQUIRE_APPROX(controller.minZoom(), 0.5f, kRendererComparisonEpsilon);
+        L2D_REQUIRE_APPROX(controller.maxZoom(), 2.f, kRendererComparisonEpsilon);
 
         controller.setZoomLimits(nan, infinity);
         L2D_REQUIRE(std::isfinite(controller.minZoom()));
@@ -403,7 +398,7 @@ namespace
         const float maximum = std::numeric_limits<float>::max();
         controller.setZoomLimits(maximum, maximum);
         L2D_REQUIRE(std::isfinite(controller.minZoom()));
-        L2D_REQUIRE(controller.minZoom() == controller.maxZoom());
+        L2D_REQUIRE_EQUAL(controller.minZoom(), controller.maxZoom());
         L2D_REQUIRE(
             controller.maxZoom() <=
             maximumSafeViewExtent() / camera.size().x
@@ -420,18 +415,18 @@ namespace
 
         camera.setFollowSmoothness(0.f);
         controller.update(1.f);
-        L2D_REQUIRE(camera.center() == sf::Vector2f(40.f, 20.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(40.f, 20.f));
 
         camera.setCenter({ 0.f, 0.f });
         camera.setFollowSmoothness(2.f);
         controller.update(nan);
-        L2D_REQUIRE(camera.center() == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
         controller.update(-1.f);
-        L2D_REQUIRE(camera.center() == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
 
         controller.setFollowEnabled(false);
         controller.update(1.f);
-        L2D_REQUIRE(camera.center() == sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
         controller.clearFollowTarget();
         L2D_REQUIRE(!controller.hasFollowTarget());
     }
@@ -442,31 +437,29 @@ namespace
         const float infinity = std::numeric_limits<float>::infinity();
 
         l2d::CircleRenderer circle(-10.f, sf::Color::Red);
-        L2D_REQUIRE(circle.radius() == 0.f);
-        L2D_REQUIRE(circle.fillColor() == sf::Color::Red);
+        L2D_REQUIRE_EQUAL(circle.radius(), 0.f);
+        L2D_REQUIRE_EQUAL(circle.fillColor(), sf::Color::Red);
         circle.setRadius(nan);
-        L2D_REQUIRE(circle.radius() == 0.f);
+        L2D_REQUIRE_EQUAL(circle.radius(), 0.f);
         circle.setRadius(infinity);
-        L2D_REQUIRE(circle.radius() == 0.f);
+        L2D_REQUIRE_EQUAL(circle.radius(), 0.f);
         circle.setRadius(std::numeric_limits<float>::max());
-        L2D_REQUIRE(
-            circle.radius() == std::numeric_limits<float>::max() / 4.f
-        );
+        L2D_REQUIRE_EQUAL(circle.radius(), std::numeric_limits<float>::max() / 4.f);
         circle.setRadius(12.5f);
-        L2D_REQUIRE(approximatelyEqual(circle.radius(), 12.5f));
+        L2D_REQUIRE_APPROX(circle.radius(), 12.5f, kRendererComparisonEpsilon);
 
         l2d::RectangleRenderer rectangle(
             { -10.f, nan },
             sf::Color::Green
         );
-        L2D_REQUIRE(rectangle.size() == sf::Vector2f(0.f, 0.f));
-        L2D_REQUIRE(rectangle.fillColor() == sf::Color::Green);
+        L2D_REQUIRE_EQUAL(rectangle.size(), sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(rectangle.fillColor(), sf::Color::Green);
         rectangle.setSize({ infinity, 25.f });
-        L2D_REQUIRE(rectangle.size() == sf::Vector2f(0.f, 25.f));
+        L2D_REQUIRE_EQUAL(rectangle.size(), sf::Vector2f(0.f, 25.f));
         rectangle.setSize({ 30.f, -infinity });
-        L2D_REQUIRE(rectangle.size() == sf::Vector2f(30.f, 0.f));
+        L2D_REQUIRE_EQUAL(rectangle.size(), sf::Vector2f(30.f, 0.f));
         rectangle.setSize({ 15.f, 20.f });
-        L2D_REQUIRE(rectangle.size() == sf::Vector2f(15.f, 20.f));
+        L2D_REQUIRE_EQUAL(rectangle.size(), sf::Vector2f(15.f, 20.f));
     }
 
     void testDerivedDrawableBoundsStayInTheSafeDomain()
@@ -543,20 +536,20 @@ namespace
         const float infinity = std::numeric_limits<float>::infinity();
 
         l2d::DebugOverlay overlay;
-        L2D_REQUIRE(overlay.position() == sf::Vector2f(10.f, 10.f));
-        L2D_REQUIRE(overlay.characterSize() == 18u);
+        L2D_REQUIRE_EQUAL(overlay.position(), sf::Vector2f(10.f, 10.f));
+        L2D_REQUIRE_EQUAL(overlay.characterSize(), 18u);
 
         overlay.setPosition({ 20.f, 30.f });
-        L2D_REQUIRE(overlay.position() == sf::Vector2f(20.f, 30.f));
+        L2D_REQUIRE_EQUAL(overlay.position(), sf::Vector2f(20.f, 30.f));
         overlay.setPosition({ nan, 40.f });
-        L2D_REQUIRE(overlay.position() == sf::Vector2f(20.f, 30.f));
+        L2D_REQUIRE_EQUAL(overlay.position(), sf::Vector2f(20.f, 30.f));
         overlay.setPosition({ 40.f, infinity });
-        L2D_REQUIRE(overlay.position() == sf::Vector2f(20.f, 30.f));
+        L2D_REQUIRE_EQUAL(overlay.position(), sf::Vector2f(20.f, 30.f));
 
         overlay.setCharacterSize(0u);
-        L2D_REQUIRE(overlay.characterSize() == 1u);
+        L2D_REQUIRE_EQUAL(overlay.characterSize(), 1u);
         overlay.setCharacterSize(24u);
-        L2D_REQUIRE(overlay.characterSize() == 24u);
+        L2D_REQUIRE_EQUAL(overlay.characterSize(), 24u);
     }
 
     void testPhysicsDebugRendererSanitizesConfiguration()
@@ -566,25 +559,25 @@ namespace
 
         l2d::PhysicsDebugRenderer2D renderer;
         L2D_REQUIRE(renderer.isEnabled());
-        L2D_REQUIRE(approximatelyEqual(renderer.outlineThickness(), 2.f));
+        L2D_REQUIRE_APPROX(renderer.outlineThickness(), 2.f, kRendererComparisonEpsilon);
 
         renderer.setOutlineThickness(-1.f);
-        L2D_REQUIRE(renderer.outlineThickness() == 0.f);
+        L2D_REQUIRE_EQUAL(renderer.outlineThickness(), 0.f);
         renderer.setOutlineThickness(nan);
-        L2D_REQUIRE(renderer.outlineThickness() == 0.f);
+        L2D_REQUIRE_EQUAL(renderer.outlineThickness(), 0.f);
         renderer.setOutlineThickness(infinity);
-        L2D_REQUIRE(renderer.outlineThickness() == 0.f);
+        L2D_REQUIRE_EQUAL(renderer.outlineThickness(), 0.f);
         renderer.setOutlineThickness(3.5f);
-        L2D_REQUIRE(approximatelyEqual(renderer.outlineThickness(), 3.5f));
+        L2D_REQUIRE_APPROX(renderer.outlineThickness(), 3.5f, kRendererComparisonEpsilon);
 
         renderer.setEnabled(false);
         L2D_REQUIRE(!renderer.isEnabled());
         renderer.setDefaultColor(sf::Color::Blue);
         renderer.setCollidingColor(sf::Color::Magenta);
         renderer.setSensorColor(sf::Color::Yellow);
-        L2D_REQUIRE(renderer.defaultColor() == sf::Color::Blue);
-        L2D_REQUIRE(renderer.collidingColor() == sf::Color::Magenta);
-        L2D_REQUIRE(renderer.sensorColor() == sf::Color::Yellow);
+        L2D_REQUIRE_EQUAL(renderer.defaultColor(), sf::Color::Blue);
+        L2D_REQUIRE_EQUAL(renderer.collidingColor(), sf::Color::Magenta);
+        L2D_REQUIRE_EQUAL(renderer.sensorColor(), sf::Color::Yellow);
     }
 
     void testRenderLayerStackRejectsInvalidLayers()

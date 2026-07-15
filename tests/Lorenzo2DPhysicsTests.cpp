@@ -24,24 +24,7 @@ namespace
 {
     using l2d::test::runTest;
 
-    bool approximatelyEqual(
-        float left,
-        float right,
-        float epsilon = 0.001f
-    )
-    {
-        return l2d::test::approximatelyEqual(left, right, epsilon);
-    }
-
-    bool approximatelyEqual(
-        sf::Vector2f left,
-        sf::Vector2f right,
-        float epsilon = 0.001f
-    )
-    {
-        return approximatelyEqual(left.x, right.x, epsilon) &&
-            approximatelyEqual(left.y, right.y, epsilon);
-    }
+    constexpr float kPhysicsComparisonEpsilon = 0.001f;
 
     bool isFinite(sf::Vector2f value)
     {
@@ -66,23 +49,22 @@ namespace
         const l2d::PhysicsContact2D& right
     )
     {
-        L2D_REQUIRE(left.firstObjectId == right.firstObjectId);
-        L2D_REQUIRE(left.secondObjectId == right.secondObjectId);
-        L2D_REQUIRE(left.firstColliderType == right.firstColliderType);
-        L2D_REQUIRE(left.secondColliderType == right.secondColliderType);
-        L2D_REQUIRE(left.sensor == right.sensor);
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_EQUAL(left.firstObjectId, right.firstObjectId);
+        L2D_REQUIRE_EQUAL(left.secondObjectId, right.secondObjectId);
+        L2D_REQUIRE_EQUAL(left.firstColliderType, right.firstColliderType);
+        L2D_REQUIRE_EQUAL(left.secondColliderType, right.secondColliderType);
+        L2D_REQUIRE_EQUAL(left.sensor, right.sensor);
+        L2D_REQUIRE_APPROX(
             left.manifold.normal,
-            right.manifold.normal
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            left.manifold.point,
-            right.manifold.point
-        ));
-        L2D_REQUIRE(approximatelyEqual(
+            right.manifold.normal,
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(left.manifold.point, right.manifold.point, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(
             left.manifold.penetration,
-            right.manifold.penetration
-        ));
+            right.manifold.penetration,
+            kPhysicsComparisonEpsilon
+        );
     }
 
     void requireEquivalentContacts(
@@ -90,7 +72,7 @@ namespace
         const std::vector<l2d::PhysicsContact2D>& right
     )
     {
-        L2D_REQUIRE(left.size() == right.size());
+        L2D_REQUIRE_EQUAL(left.size(), right.size());
 
         for (std::size_t index = 0; index < left.size(); ++index)
             requireEquivalentContact(left[index], right[index]);
@@ -101,11 +83,11 @@ namespace
         const std::vector<l2d::PhysicsContactEvent2D>& right
     )
     {
-        L2D_REQUIRE(left.size() == right.size());
+        L2D_REQUIRE_EQUAL(left.size(), right.size());
 
         for (std::size_t index = 0; index < left.size(); ++index)
         {
-            L2D_REQUIRE(left[index].phase == right[index].phase);
+            L2D_REQUIRE_EQUAL(left[index].phase, right[index].phase);
             requireEquivalentContact(
                 left[index].contact,
                 right[index].contact
@@ -223,64 +205,68 @@ namespace
     {
         l2d::RigidBody2D body;
 
-        L2D_REQUIRE(body.bodyType() == l2d::BodyType2D::Dynamic);
-        L2D_REQUIRE(approximatelyEqual(body.mass(), 1.f));
-        L2D_REQUIRE(approximatelyEqual(body.inverseMass(), 1.f));
+        L2D_REQUIRE_EQUAL(body.bodyType(), l2d::BodyType2D::Dynamic);
+        L2D_REQUIRE_APPROX(body.mass(), 1.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(body.inverseMass(), 1.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(!body.useGravity());
-        L2D_REQUIRE(approximatelyEqual(body.gravityScale(), 1.f));
+        L2D_REQUIRE_APPROX(body.gravityScale(), 1.f, kPhysicsComparisonEpsilon);
 
         body.setMass(2.f);
-        L2D_REQUIRE(approximatelyEqual(body.inverseMass(), 0.5f));
+        L2D_REQUIRE_APPROX(body.inverseMass(), 0.5f, kPhysicsComparisonEpsilon);
 
         body.setVelocity({
             std::numeric_limits<float>::quiet_NaN(),
             1.f
         });
-        L2D_REQUIRE(approximatelyEqual(body.velocity(), { 0.f, 0.f }));
+        L2D_REQUIRE_APPROX(body.velocity(), (sf::Vector2f{ 0.f, 0.f }), kPhysicsComparisonEpsilon);
 
         body.setAcceleration({
             1.f,
             std::numeric_limits<float>::infinity()
         });
-        L2D_REQUIRE(approximatelyEqual(body.acceleration(), { 0.f, 0.f }));
+        L2D_REQUIRE_APPROX(
+            body.acceleration(),
+            (sf::Vector2f{ 0.f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
 
         body.applyImpulse({ 2.f, 4.f });
-        L2D_REQUIRE(approximatelyEqual(body.velocity(), { 1.f, 2.f }));
+        L2D_REQUIRE_APPROX(body.velocity(), (sf::Vector2f{ 1.f, 2.f }), kPhysicsComparisonEpsilon);
 
         const float maximum = std::numeric_limits<float>::max();
         l2d::RigidBody2D cancellationBody;
         cancellationBody.setMass(0.5f);
         cancellationBody.setVelocity({ maximum, -maximum });
         cancellationBody.applyImpulse({ -maximum, maximum });
-        L2D_REQUIRE(approximatelyEqual(
-            {
+        L2D_REQUIRE_APPROX(
+            (sf::Vector2f{
                 cancellationBody.velocity().x / maximum,
                 cancellationBody.velocity().y / maximum
-            },
-            { -1.f, 1.f }
-        ));
+            }),
+            (sf::Vector2f{ -1.f, 1.f }),
+            kPhysicsComparisonEpsilon
+        );
 
         body.setBodyType(l2d::BodyType2D::Static);
-        L2D_REQUIRE(approximatelyEqual(body.inverseMass(), 0.f));
-        L2D_REQUIRE(approximatelyEqual(body.velocity(), { 0.f, 0.f }));
+        L2D_REQUIRE_APPROX(body.inverseMass(), 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(body.velocity(), (sf::Vector2f{ 0.f, 0.f }), kPhysicsComparisonEpsilon);
         body.setVelocity({ 4.f, 5.f });
-        L2D_REQUIRE(approximatelyEqual(body.velocity(), { 0.f, 0.f }));
+        L2D_REQUIRE_APPROX(body.velocity(), (sf::Vector2f{ 0.f, 0.f }), kPhysicsComparisonEpsilon);
 
         body.setBodyType(static_cast<l2d::BodyType2D>(999));
-        L2D_REQUIRE(body.bodyType() == l2d::BodyType2D::Dynamic);
-        L2D_REQUIRE(approximatelyEqual(body.inverseMass(), 0.5f));
+        L2D_REQUIRE_EQUAL(body.bodyType(), l2d::BodyType2D::Dynamic);
+        L2D_REQUIRE_APPROX(body.inverseMass(), 0.5f, kPhysicsComparisonEpsilon);
 
         l2d::GameObject object;
         l2d::CircleCollider2D& collider =
             object.addComponent<l2d::CircleCollider2D>(2.f);
 
-        L2D_REQUIRE(approximatelyEqual(collider.material().restitution, 0.f));
-        L2D_REQUIRE(approximatelyEqual(collider.material().staticFriction, 0.f));
-        L2D_REQUIRE(approximatelyEqual(collider.material().dynamicFriction, 0.f));
+        L2D_REQUIRE_APPROX(collider.material().restitution, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(collider.material().staticFriction, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(collider.material().dynamicFriction, 0.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(!collider.isSensor());
-        L2D_REQUIRE(collider.filter().categoryBits == 1u);
-        L2D_REQUIRE(collider.filter().maskBits ==
-            std::numeric_limits<std::uint32_t>::max());
+        L2D_REQUIRE_EQUAL(collider.filter().categoryBits, 1u);
+        L2D_REQUIRE_EQUAL(collider.filter().maskBits, std::numeric_limits<std::uint32_t>::max());
 
         collider.setMaterial({
             2.f,
@@ -288,35 +274,36 @@ namespace
             0.75f
         });
 
-        L2D_REQUIRE(approximatelyEqual(collider.material().restitution, 1.f));
-        L2D_REQUIRE(approximatelyEqual(collider.material().staticFriction, 0.f));
-        L2D_REQUIRE(approximatelyEqual(collider.material().dynamicFriction, 0.f));
+        L2D_REQUIRE_APPROX(collider.material().restitution, 1.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(collider.material().staticFriction, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(collider.material().dynamicFriction, 0.f, kPhysicsComparisonEpsilon);
 
         collider.setMaterial({ 0.5f, 0.8f, 1.f });
-        L2D_REQUIRE(approximatelyEqual(collider.material().restitution, 0.5f));
-        L2D_REQUIRE(approximatelyEqual(collider.material().staticFriction, 0.8f));
-        L2D_REQUIRE(approximatelyEqual(collider.material().dynamicFriction, 0.8f));
+        L2D_REQUIRE_APPROX(collider.material().restitution, 0.5f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(collider.material().staticFriction, 0.8f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(collider.material().dynamicFriction, 0.8f, kPhysicsComparisonEpsilon);
 
         collider.setOffset({
             std::numeric_limits<float>::infinity(),
             -3.f
         });
-        L2D_REQUIRE(approximatelyEqual(collider.offset(), { 0.f, -3.f }));
+        L2D_REQUIRE_APPROX(
+            collider.offset(),
+            (sf::Vector2f{ 0.f, -3.f }),
+            kPhysicsComparisonEpsilon
+        );
     }
 
     void testWorldConfigAndRestitutionThreshold()
     {
         l2d::PhysicsWorld2D world;
 
-        L2D_REQUIRE(
-            world.config().broadPhaseMode ==
+        L2D_REQUIRE_EQUAL(
+            world.config().broadPhaseMode,
             l2d::PhysicsBroadPhaseMode2D::UniformGrid
         );
-        L2D_REQUIRE(approximatelyEqual(
-            world.config().broadPhaseCellSize,
-            128.f
-        ));
-        L2D_REQUIRE(world.config().broadPhaseMaxCellsPerProxy == 256u);
+        L2D_REQUIRE_APPROX(world.config().broadPhaseCellSize, 128.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_EQUAL(world.config().broadPhaseMaxCellsPerProxy, 256u);
         L2D_REQUIRE(broadPhaseStatsEqual(
             world.broadPhaseStats(),
             l2d::PhysicsBroadPhaseStats2D{}
@@ -343,31 +330,24 @@ namespace
         world.setConfig(invalidConfig);
 
         const l2d::PhysicsWorld2DConfig& sanitized = world.config();
-        L2D_REQUIRE(approximatelyEqual(sanitized.gravity, { 0.f, 980.f }));
-        L2D_REQUIRE(sanitized.velocityIterations == 8u);
-        L2D_REQUIRE(sanitized.positionIterations == 3u);
-        L2D_REQUIRE(approximatelyEqual(
-            sanitized.positionCorrectionPercent,
-            1.f
-        ));
-        L2D_REQUIRE(approximatelyEqual(sanitized.penetrationSlop, 0.01f));
-        L2D_REQUIRE(approximatelyEqual(
-            sanitized.restitutionVelocityThreshold,
-            1.f
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            sanitized.groundedNormalThreshold,
-            0.f
-        ));
-        L2D_REQUIRE(
-            sanitized.broadPhaseMode ==
-            l2d::PhysicsBroadPhaseMode2D::UniformGrid
+        L2D_REQUIRE_APPROX(
+            sanitized.gravity,
+            (sf::Vector2f{ 0.f, 980.f }),
+            kPhysicsComparisonEpsilon
         );
-        L2D_REQUIRE(approximatelyEqual(
-            sanitized.broadPhaseCellSize,
-            128.f
-        ));
-        L2D_REQUIRE(sanitized.broadPhaseMaxCellsPerProxy == 256u);
+        L2D_REQUIRE_EQUAL(sanitized.velocityIterations, 8u);
+        L2D_REQUIRE_EQUAL(sanitized.positionIterations, 3u);
+        L2D_REQUIRE_APPROX(sanitized.positionCorrectionPercent, 1.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(sanitized.penetrationSlop, 0.01f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(
+            sanitized.restitutionVelocityThreshold,
+            1.f,
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(sanitized.groundedNormalThreshold, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_EQUAL(sanitized.broadPhaseMode, l2d::PhysicsBroadPhaseMode2D::UniformGrid);
+        L2D_REQUIRE_APPROX(sanitized.broadPhaseCellSize, 128.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_EQUAL(sanitized.broadPhaseMaxCellsPerProxy, 256u);
 
         l2d::PhysicsWorld2DConfig thresholdConfig = zeroGravityConfig();
         thresholdConfig.positionCorrectionPercent = 0.f;
@@ -392,10 +372,7 @@ namespace
         suppressedMover.body->setVelocity({ 1.f, 0.f });
 
         fixedStep(suppressedScene, thresholdWorld, 0.01f);
-        L2D_REQUIRE(approximatelyEqual(
-            suppressedMover.body->velocity().x,
-            0.f
-        ));
+        L2D_REQUIRE_APPROX(suppressedMover.body->velocity().x, 0.f, kPhysicsComparisonEpsilon);
 
         thresholdConfig.restitutionVelocityThreshold = 0.f;
         thresholdWorld.setConfig(thresholdConfig);
@@ -418,10 +395,7 @@ namespace
         bounceMover.body->setVelocity({ 1.f, 0.f });
 
         fixedStep(bounceScene, thresholdWorld, 0.01f);
-        L2D_REQUIRE(approximatelyEqual(
-            bounceMover.body->velocity().x,
-            -1.f
-        ));
+        L2D_REQUIRE_APPROX(bounceMover.body->velocity().x, -1.f, kPhysicsComparisonEpsilon);
     }
 
     void testBodyModesAndFreeIntegration()
@@ -460,21 +434,36 @@ namespace
 
         fixedStep(scene, world, 0.5f);
 
-        L2D_REQUIRE(approximatelyEqual(dynamicBody.velocity(), { 2.f, 2.5f }));
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(
+            dynamicBody.velocity(),
+            (sf::Vector2f{ 2.f, 2.5f }),
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(
             dynamicObject.transform.position(),
-            { 1.f, 1.25f }
-        ));
-        L2D_REQUIRE(approximatelyEqual(kinematicBody.velocity(), { 3.f, 4.f }));
-        L2D_REQUIRE(approximatelyEqual(
+            (sf::Vector2f{ 1.f, 1.25f }),
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            kinematicBody.velocity(),
+            (sf::Vector2f{ 3.f, 4.f }),
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(
             kinematicObject.transform.position(),
-            { 11.5f, 2.f }
-        ));
-        L2D_REQUIRE(approximatelyEqual(
+            (sf::Vector2f{ 11.5f, 2.f }),
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(
             staticObject.transform.position(),
-            { 20.f, 0.f }
-        ));
-        L2D_REQUIRE(approximatelyEqual(staticBody.velocity(), { 0.f, 0.f }));
+            (sf::Vector2f{ 20.f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(
+            staticBody.velocity(),
+            (sf::Vector2f{ 0.f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
 
         l2d::Scene forceScene;
         l2d::PhysicsWorld2D forceWorld(zeroGravityConfig());
@@ -485,9 +474,9 @@ namespace
         forceBody.addForce({ 4.f, 0.f });
 
         fixedStep(forceScene, forceWorld, 0.5f);
-        L2D_REQUIRE(approximatelyEqual(forceBody.velocity().x, 1.f));
+        L2D_REQUIRE_APPROX(forceBody.velocity().x, 1.f, kPhysicsComparisonEpsilon);
         fixedStep(forceScene, forceWorld, 0.5f);
-        L2D_REQUIRE(approximatelyEqual(forceBody.velocity().x, 1.f));
+        L2D_REQUIRE_APPROX(forceBody.velocity().x, 1.f, kPhysicsComparisonEpsilon);
     }
 
     void testExtremeIntegrationCancellationStaysFinite()
@@ -506,10 +495,7 @@ namespace
         fixedStep(dynamicScene, dynamicWorld, 2.f);
 
         L2D_REQUIRE(isFinite(dynamicBody.velocity()));
-        L2D_REQUIRE(approximatelyEqual(
-            dynamicBody.velocity().x / maximum,
-            1.f
-        ));
+        L2D_REQUIRE_APPROX(dynamicBody.velocity().x / maximum, 1.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(isFinite(dynamicObject.transform.position()));
 
         l2d::Scene kinematicScene;
@@ -525,10 +511,11 @@ namespace
         fixedStep(kinematicScene, kinematicWorld, 2.f);
 
         L2D_REQUIRE(isFinite(kinematicObject.transform.position()));
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(
             kinematicObject.transform.position().x / maximum,
-            1.f
-        ));
+            1.f,
+            kPhysicsComparisonEpsilon
+        );
     }
 
     void testDynamicStaticAndDynamicBoxResponse()
@@ -553,11 +540,12 @@ namespace
         mover.body->setVelocity({ 1.f, 0.f });
         fixedStep(circleScene, world, 0.01f);
 
-        L2D_REQUIRE(approximatelyEqual(mover.body->velocity().x, 0.f));
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(mover.body->velocity().x, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(
             obstacle.object.transform.position(),
-            { 1.5f, 0.f }
-        ));
+            (sf::Vector2f{ 1.5f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
         L2D_REQUIRE(world.isTouching(mover.object.id(), obstacle.object.id()));
         L2D_REQUIRE(mover.collider.isColliding());
         L2D_REQUIRE(obstacle.collider.isColliding());
@@ -581,20 +569,15 @@ namespace
         boxMover.body->setVelocity({ 1.f, 0.f });
         fixedStep(boxScene, boxWorld, 0.01f);
 
-        L2D_REQUIRE(approximatelyEqual(boxMover.body->velocity().x, 0.f));
-        L2D_REQUIRE(boxWorld.contacts().size() == 1);
-        L2D_REQUIRE(
-            boxWorld.contacts()[0].firstColliderType ==
-            l2d::ColliderType::Box
-        );
-        L2D_REQUIRE(
-            boxWorld.contacts()[0].secondColliderType ==
-            l2d::ColliderType::Box
-        );
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(boxMover.body->velocity().x, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_EQUAL(boxWorld.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(boxWorld.contacts()[0].firstColliderType, l2d::ColliderType::Box);
+        L2D_REQUIRE_EQUAL(boxWorld.contacts()[0].secondColliderType, l2d::ColliderType::Box);
+        L2D_REQUIRE_APPROX(
             boxObstacle.object.transform.position(),
-            { 1.8f, 0.f }
-        ));
+            (sf::Vector2f{ 1.8f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
     }
 
     void testUnequalMassRestitutionAndKinematicPush()
@@ -626,8 +609,8 @@ namespace
 
         fixedStep(scene, world, 0.01f);
 
-        L2D_REQUIRE(approximatelyEqual(first.body->velocity().x, -0.625f));
-        L2D_REQUIRE(approximatelyEqual(second.body->velocity().x, 0.875f));
+        L2D_REQUIRE_APPROX(first.body->velocity().x, -0.625f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(second.body->velocity().x, 0.875f, kPhysicsComparisonEpsilon);
 
         l2d::Scene reversedRestitutionScene;
         l2d::PhysicsWorld2D reversedRestitutionWorld(config);
@@ -656,14 +639,8 @@ namespace
             0.01f
         );
 
-        L2D_REQUIRE(approximatelyEqual(
-            reversedFirst.body->velocity().x,
-            -0.625f
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            reversedSecond.body->velocity().x,
-            0.875f
-        ));
+        L2D_REQUIRE_APPROX(reversedFirst.body->velocity().x, -0.625f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(reversedSecond.body->velocity().x, 0.875f, kPhysicsComparisonEpsilon);
 
         l2d::Scene kinematicScene;
         l2d::PhysicsWorld2D kinematicWorld(zeroGravityConfig());
@@ -685,8 +662,8 @@ namespace
         kinematic.body->setVelocity({ 1.f, 0.f });
         fixedStep(kinematicScene, kinematicWorld, 0.01f);
 
-        L2D_REQUIRE(approximatelyEqual(kinematic.body->velocity().x, 1.f));
-        L2D_REQUIRE(approximatelyEqual(dynamic.body->velocity().x, 1.f));
+        L2D_REQUIRE_APPROX(kinematic.body->velocity().x, 1.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(dynamic.body->velocity().x, 1.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(kinematic.object.transform.position().x > 0.f);
     }
 
@@ -750,11 +727,11 @@ namespace
             4.f
         );
 
-        L2D_REQUIRE(approximatelyEqual(frictionless, 4.f));
-        L2D_REQUIRE(approximatelyEqual(staticFriction, 0.f));
-        L2D_REQUIRE(approximatelyEqual(reversedStaticFriction, 0.f));
-        L2D_REQUIRE(approximatelyEqual(dynamicFriction, 2.f));
-        L2D_REQUIRE(approximatelyEqual(reversedDynamicFriction, 2.f));
+        L2D_REQUIRE_APPROX(frictionless, 4.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(staticFriction, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(reversedStaticFriction, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(dynamicFriction, 2.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(reversedDynamicFriction, 2.f, kPhysicsComparisonEpsilon);
     }
 
     void testCircleCircleManifolds()
@@ -771,23 +748,27 @@ namespace
 
         l2d::CollisionManifold2D manifold;
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.normal, { 1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 1.f));
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 1.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(isFinite(manifold.point));
 
         l2d::CollisionManifold2D reversed;
         L2D_REQUIRE(l2d::computeCollisionManifold(second, first, reversed));
-        L2D_REQUIRE(approximatelyEqual(reversed.normal, { -1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(reversed.penetration, 1.f));
+        L2D_REQUIRE_APPROX(
+            reversed.normal,
+            (sf::Vector2f{ -1.f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(reversed.penetration, 1.f, kPhysicsComparisonEpsilon);
 
         secondObject.transform.setPosition({ 4.f, 0.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 0.f));
+        L2D_REQUIRE_APPROX(manifold.penetration, 0.f, kPhysicsComparisonEpsilon);
 
         secondObject.transform.setPosition({ 0.f, 0.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.normal, { 1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 4.f));
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 4.f, kPhysicsComparisonEpsilon);
 
         secondObject.transform.setPosition({ 5.f, 0.f });
         L2D_REQUIRE(!l2d::computeCollisionManifold(first, second, manifold));
@@ -811,26 +792,30 @@ namespace
 
         secondObject.transform.setPosition({ 3.f, 0.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.normal, { 1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 1.f));
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 1.f, kPhysicsComparisonEpsilon);
 
         secondObject.transform.setPosition({ 0.f, 3.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.normal, { 0.f, 1.f }));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 1.f));
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 0.f, 1.f }), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 1.f, kPhysicsComparisonEpsilon);
 
         secondObject.transform.setPosition({ 2.f, 2.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.normal, { 1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 2.f));
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 2.f, kPhysicsComparisonEpsilon);
 
         l2d::CollisionManifold2D reversed;
         L2D_REQUIRE(l2d::computeCollisionManifold(second, first, reversed));
-        L2D_REQUIRE(approximatelyEqual(reversed.normal, { -1.f, 0.f }));
+        L2D_REQUIRE_APPROX(
+            reversed.normal,
+            (sf::Vector2f{ -1.f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
 
         secondObject.transform.setPosition({ 4.f, 0.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 0.f));
+        L2D_REQUIRE_APPROX(manifold.penetration, 0.f, kPhysicsComparisonEpsilon);
 
         secondObject.transform.setPosition({ 4.01f, 0.f });
         L2D_REQUIRE(!l2d::computeCollisionManifold(first, second, manifold));
@@ -841,12 +826,12 @@ namespace
         second.setSize({ 10.f, 10.f });
 
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.normal, { 1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 6.f));
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 6.f, kPhysicsComparisonEpsilon);
 
         L2D_REQUIRE(l2d::computeCollisionManifold(second, first, reversed));
-        L2D_REQUIRE(approximatelyEqual(reversed.normal, { 1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(reversed.penetration, 6.f));
+        L2D_REQUIRE_APPROX(reversed.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(reversed.penetration, 6.f, kPhysicsComparisonEpsilon);
     }
 
     void testCircleBoxManifolds()
@@ -865,35 +850,41 @@ namespace
 
         boxObject.transform.setPosition({ 1.5f, 0.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(circle, box, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.normal, { 1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 0.5f));
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 0.5f, kPhysicsComparisonEpsilon);
 
         l2d::CollisionManifold2D reversed;
         L2D_REQUIRE(l2d::computeCollisionManifold(box, circle, reversed));
-        L2D_REQUIRE(approximatelyEqual(reversed.normal, { -1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(reversed.penetration, 0.5f));
+        L2D_REQUIRE_APPROX(
+            reversed.normal,
+            (sf::Vector2f{ -1.f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(reversed.penetration, 0.5f, kPhysicsComparisonEpsilon);
 
         boxObject.transform.setPosition({ 2.f, 0.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(circle, box, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 0.f));
+        L2D_REQUIRE_APPROX(manifold.penetration, 0.f, kPhysicsComparisonEpsilon);
 
         boxObject.transform.setPosition({ 1.5f, 1.5f });
         L2D_REQUIRE(l2d::computeCollisionManifold(circle, box, manifold));
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(
             manifold.normal,
-            { 0.70710677f, 0.70710677f }
-        ));
-        L2D_REQUIRE(approximatelyEqual(
+            (sf::Vector2f{ 0.70710677f, 0.70710677f }),
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(
             manifold.penetration,
-            1.f - std::sqrt(0.5f)
-        ));
+            1.f - std::sqrt(0.5f),
+            kPhysicsComparisonEpsilon
+        );
 
         boxObject.transform.setPosition({ 0.f, 0.f });
         circleObject.transform.setPosition({ 1.f, 1.f });
         box.setSize({ 4.f, 4.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(circle, box, manifold));
-        L2D_REQUIRE(approximatelyEqual(manifold.normal, { 1.f, 0.f }));
-        L2D_REQUIRE(approximatelyEqual(manifold.penetration, 3.f));
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 3.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(isFinite(manifold.point));
     }
 
@@ -928,22 +919,16 @@ namespace
         second.collider.setFilter({ 2u, 1u });
         L2D_REQUIRE(first.collider.canCollideWith(second.collider));
         fixedStep(scene, world);
-        L2D_REQUIRE(world.contacts().size() == 1);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
 
         first.collider.setFilter({ 1u, 0u });
         fixedStep(scene, world);
 
         L2D_REQUIRE(world.contacts().empty());
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::End
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::End);
     }
 
     void testStaticPairsAreNotReported()
@@ -998,41 +983,34 @@ namespace
 
         fixedStep(scene, world, 0.01f);
 
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(world.contacts()[0].sensor);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
         L2D_REQUIRE(world.isTouching(mover.object.id(), sensor.object.id()));
         L2D_REQUIRE(world.isTouching(sensor.object.id(), mover.object.id()));
-        L2D_REQUIRE(approximatelyEqual(mover.body->velocity().x, 1.f));
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(mover.body->velocity().x, 1.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(
             mover.object.transform.position(),
-            { 0.01f, 0.f }
-        ));
-        L2D_REQUIRE(approximatelyEqual(
+            (sf::Vector2f{ 0.01f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
+        L2D_REQUIRE_APPROX(
             sensor.object.transform.position(),
-            sensorPosition
-        ));
+            sensorPosition,
+            kPhysicsComparisonEpsilon
+        );
 
         fixedStep(scene, world, 0.01f);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Stay
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Stay);
 
         mover.object.transform.setPosition({ 10.f, 0.f });
         fixedStep(scene, world, 0.01f);
 
         L2D_REQUIRE(world.contacts().empty());
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::End
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::End);
         L2D_REQUIRE(!mover.collider.isColliding());
         L2D_REQUIRE(!sensor.collider.isColliding());
     }
@@ -1057,34 +1035,25 @@ namespace
         second.collider.setSensor(true);
 
         fixedStep(scene, world);
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(world.isTouching(first.object.id(), second.object.id()));
 
         second.collider.setActive(false);
         fixedStep(scene, world);
         L2D_REQUIRE(world.contacts().empty());
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::End
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::End);
 
         second.collider.setActive(true);
         fixedStep(scene, world);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
 
         second.object.destroy();
         fixedStep(scene, world);
         L2D_REQUIRE(world.contacts().empty());
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::End
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::End);
     }
 
     void testInvalidDeltaTimeIsANoOp()
@@ -1107,16 +1076,16 @@ namespace
         sensor.collider.setSensor(true);
 
         fixedStep(scene, world);
-        L2D_REQUIRE(world.contacts().size() == 1);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
 
         const l2d::PhysicsBroadPhaseStats2D statsBeforeInvalidStep =
             world.broadPhaseStats();
-        L2D_REQUIRE(statsBeforeInvalidStep.proxyCount == 2);
-        L2D_REQUIRE(statsBeforeInvalidStep.fallbackProxyCount == 0);
-        L2D_REQUIRE(statsBeforeInvalidStep.bruteForcePairCount == 1);
-        L2D_REQUIRE(statsBeforeInvalidStep.candidatePairCount == 1);
-        L2D_REQUIRE(statsBeforeInvalidStep.narrowPhaseTestCount == 1);
+        L2D_REQUIRE_EQUAL(statsBeforeInvalidStep.proxyCount, 2);
+        L2D_REQUIRE_EQUAL(statsBeforeInvalidStep.fallbackProxyCount, 0);
+        L2D_REQUIRE_EQUAL(statsBeforeInvalidStep.bruteForcePairCount, 1);
+        L2D_REQUIRE_EQUAL(statsBeforeInvalidStep.candidatePairCount, 1);
+        L2D_REQUIRE_EQUAL(statsBeforeInvalidStep.narrowPhaseTestCount, 1);
 
         mover.body->addForce({ 60.f, 0.f });
         const sf::Vector2f positionBeforeInvalidStep =
@@ -1125,16 +1094,14 @@ namespace
         world.step(scene, 0.f);
         world.step(scene, std::numeric_limits<float>::quiet_NaN());
 
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(
             mover.object.transform.position(),
-            positionBeforeInvalidStep
-        ));
-        L2D_REQUIRE(world.contacts().size() == 1);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Begin
+            positionBeforeInvalidStep,
+            kPhysicsComparisonEpsilon
         );
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
         L2D_REQUIRE(broadPhaseStatsEqual(
             world.broadPhaseStats(),
             statsBeforeInvalidStep
@@ -1142,7 +1109,7 @@ namespace
 
         mover.object.transform.setPosition({ 10.f, 0.f });
         fixedStep(scene, world, 1.f / 60.f);
-        L2D_REQUIRE(approximatelyEqual(mover.body->velocity().x, 1.f));
+        L2D_REQUIRE_APPROX(mover.body->velocity().x, 1.f, kPhysicsComparisonEpsilon);
 
         world.reset();
         L2D_REQUIRE(broadPhaseStatsEqual(
@@ -1193,24 +1160,22 @@ namespace
         fixedStep(staticFirstScene, staticFirstWorld, 0.01f);
 
         L2D_REQUIRE(staticFirstMover.body->isGrounded());
-        L2D_REQUIRE(approximatelyEqual(
-            staticFirstMover.body->velocity().y,
-            0.f
-        ));
-        L2D_REQUIRE(staticFirstWorld.contacts().size() == 1);
-        L2D_REQUIRE(
-            staticFirstWorld.contacts()[0].firstObjectId ==
+        L2D_REQUIRE_APPROX(staticFirstMover.body->velocity().y, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_EQUAL(staticFirstWorld.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(
+            staticFirstWorld.contacts()[0].firstObjectId,
             staticFirstFloor.object.id()
         );
-        L2D_REQUIRE(
-            staticFirstWorld.contacts()[0].secondObjectId ==
+        L2D_REQUIRE_EQUAL(
+            staticFirstWorld.contacts()[0].secondObjectId,
             staticFirstMover.object.id()
         );
         L2D_REQUIRE(staticFirstWorld.contacts()[0].manifold.normal.y < 0.f);
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(
             staticFirstMover.object.transform.position(),
-            mover.object.transform.position()
-        ));
+            mover.object.transform.position(),
+            kPhysicsComparisonEpsilon
+        );
 
         l2d::Scene wallScene;
         l2d::PhysicsWorld2D wallWorld(zeroGravityConfig());
@@ -1284,8 +1249,8 @@ namespace
 
         fixedStep(scene, world);
 
-        L2D_REQUIRE(world.contacts().size() == 3);
-        L2D_REQUIRE(world.contactEvents().size() == 3);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 3);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 3);
 
         for (std::size_t index = 0; index < world.contacts().size(); ++index)
         {
@@ -1310,11 +1275,11 @@ namespace
 
         fixedStep(scene, world);
 
-        L2D_REQUIRE(world.contactEvents().size() == 3);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 3);
 
         for (const l2d::PhysicsContactEvent2D& event : world.contactEvents())
         {
-            L2D_REQUIRE(event.phase == l2d::PhysicsContactPhase2D::Stay);
+            L2D_REQUIRE_EQUAL(event.phase, l2d::PhysicsContactPhase2D::Stay);
         }
 
         l2d::Scene otherScene;
@@ -1323,11 +1288,11 @@ namespace
         L2D_REQUIRE(world.contactEvents().empty());
 
         fixedStep(scene, world);
-        L2D_REQUIRE(world.contactEvents().size() == 3);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 3);
 
         for (const l2d::PhysicsContactEvent2D& event : world.contactEvents())
         {
-            L2D_REQUIRE(event.phase == l2d::PhysicsContactPhase2D::Begin);
+            L2D_REQUIRE_EQUAL(event.phase, l2d::PhysicsContactPhase2D::Begin);
         }
 
         world.reset();
@@ -1359,21 +1324,18 @@ namespace
 
         fixedStep(scene, world, 0.01f);
 
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(mover.collider.isColliding());
         L2D_REQUIRE(obstacle.collider.isColliding());
         L2D_REQUIRE(isFinite(mover.object.transform.position()));
         L2D_REQUIRE(isFinite(mover.body->velocity()));
         L2D_REQUIRE(mover.object.transform.position().x < -1.f);
-        L2D_REQUIRE(approximatelyEqual(
-            mover.body->velocity().x,
-            0.f,
-            0.01f
-        ));
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(mover.body->velocity().x, 0.f, 0.01f);
+        L2D_REQUIRE_APPROX(
             obstacle.object.transform.position(),
-            { 0.5f, 0.f }
-        ));
+            (sf::Vector2f{ 0.5f, 0.f }),
+            kPhysicsComparisonEpsilon
+        );
     }
 
     void testExtremeRestitutionSwapsFiniteVelocities()
@@ -1409,19 +1371,13 @@ namespace
             std::numeric_limits<float>::min()
         );
 
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(isFinite(first.body->velocity()));
         L2D_REQUIRE(isFinite(second.body->velocity()));
-        L2D_REQUIRE(approximatelyEqual(
-            first.body->velocity().x / maximum,
-            -1.f
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            second.body->velocity().x / maximum,
-            1.f
-        ));
-        L2D_REQUIRE(approximatelyEqual(first.body->velocity().y, 0.f));
-        L2D_REQUIRE(approximatelyEqual(second.body->velocity().y, 0.f));
+        L2D_REQUIRE_APPROX(first.body->velocity().x / maximum, -1.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(second.body->velocity().x / maximum, 1.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(first.body->velocity().y, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(second.body->velocity().y, 0.f, kPhysicsComparisonEpsilon);
     }
 
     void testSceneAddressReuseStartsFreshContactHistory()
@@ -1451,12 +1407,9 @@ namespace
 
             fixedStep(sceneSlot.value(), world);
 
-            L2D_REQUIRE(world.contacts().size() == 1);
-            L2D_REQUIRE(world.contactEvents().size() == 1);
-            L2D_REQUIRE(
-                world.contactEvents()[0].phase ==
-                l2d::PhysicsContactPhase2D::Begin
-            );
+            L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
+            L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+            L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
             L2D_REQUIRE(world.isTouching(
                 firstMover.object.id(),
                 firstSensor.object.id()
@@ -1466,8 +1419,8 @@ namespace
         sceneSlot.reset();
         sceneSlot.emplace("SecondScene");
 
-        L2D_REQUIRE(
-            reinterpret_cast<std::uintptr_t>(&sceneSlot.value()) ==
+        L2D_REQUIRE_EQUAL(
+            reinterpret_cast<std::uintptr_t>(&sceneSlot.value()),
             firstSceneAddress
         );
 
@@ -1488,22 +1441,19 @@ namespace
 
         fixedStep(sceneSlot.value(), world);
 
-        L2D_REQUIRE(world.contacts().size() == 1);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
         L2D_REQUIRE(world.isTouching(
             secondMover.object.id(),
             secondSensor.object.id()
         ));
-        L2D_REQUIRE(
-            world.contactEvents()[0].contact.firstObjectId ==
+        L2D_REQUIRE_EQUAL(
+            world.contactEvents()[0].contact.firstObjectId,
             secondMover.object.id()
         );
-        L2D_REQUIRE(
-            world.contactEvents()[0].contact.secondObjectId ==
+        L2D_REQUIRE_EQUAL(
+            world.contactEvents()[0].contact.secondObjectId,
             secondSensor.object.id()
         );
     }
@@ -1529,7 +1479,7 @@ namespace
 
         fixedStep(scene, world, 0.01f);
 
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(mover.collider.isColliding());
         L2D_REQUIRE(floor.collider.isColliding());
         L2D_REQUIRE(mover.body->isGrounded());
@@ -1570,10 +1520,8 @@ namespace
 
         fixedStep(scene, world, 0.01f);
 
-        L2D_REQUIRE(world.contacts().size() == 1);
-        L2D_REQUIRE(
-            kinematic.body->bodyType() == l2d::BodyType2D::Kinematic
-        );
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(kinematic.body->bodyType(), l2d::BodyType2D::Kinematic);
         L2D_REQUIRE(!kinematic.body->isGrounded());
         L2D_REQUIRE(!dynamicSupport.body->isGrounded());
 
@@ -1635,18 +1583,12 @@ namespace
         body.setVelocity({ 1.f, 0.f });
         fixedStep(scene, world, 0.01f);
 
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(participatingBox.isColliding());
         L2D_REQUIRE(!ignoredCircle.isColliding());
         L2D_REQUIRE(obstacleBox.isColliding());
-        L2D_REQUIRE(
-            world.contacts()[0].firstColliderType ==
-            l2d::ColliderType::Box
-        );
-        L2D_REQUIRE(
-            world.contacts()[0].secondColliderType ==
-            l2d::ColliderType::Box
-        );
+        L2D_REQUIRE_EQUAL(world.contacts()[0].firstColliderType, l2d::ColliderType::Box);
+        L2D_REQUIRE_EQUAL(world.contacts()[0].secondColliderType, l2d::ColliderType::Box);
     }
 
     void testShortDynamicBoxStackRemainsFinite()
@@ -1714,8 +1656,8 @@ namespace
         inward.body->setVelocity({ 3.f, 4.f });
         fixedStep(inwardScene, inwardWorld, 0.01f);
 
-        L2D_REQUIRE(approximatelyEqual(inward.body->velocity().x, 3.f));
-        L2D_REQUIRE(approximatelyEqual(inward.body->velocity().y, 0.f));
+        L2D_REQUIRE_APPROX(inward.body->velocity().x, 3.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(inward.body->velocity().y, 0.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(inward.body->isGrounded());
 
         l2d::Scene outwardScene;
@@ -1736,8 +1678,8 @@ namespace
         outward.body->setVelocity({ 3.f, -4.f });
         fixedStep(outwardScene, outwardWorld, 0.01f);
 
-        L2D_REQUIRE(approximatelyEqual(outward.body->velocity().x, 3.f));
-        L2D_REQUIRE(approximatelyEqual(outward.body->velocity().y, -4.f));
+        L2D_REQUIRE_APPROX(outward.body->velocity().x, 3.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(outward.body->velocity().y, -4.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(outward.collider.isColliding());
     }
 
@@ -1773,27 +1715,25 @@ namespace
 
         const l2d::PhysicsBroadPhaseStats2D& stats =
             world.broadPhaseStats();
-        L2D_REQUIRE(stats.proxyCount == 2);
-        L2D_REQUIRE(stats.occupiedCellCount == 6);
-        L2D_REQUIRE(stats.fallbackProxyCount == 0);
-        L2D_REQUIRE(stats.bruteForcePairCount == 1);
-        L2D_REQUIRE(stats.candidatePairCount == 1);
-        L2D_REQUIRE(stats.narrowPhaseTestCount == 1);
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(stats.proxyCount, 2);
+        L2D_REQUIRE_EQUAL(stats.occupiedCellCount, 6);
+        L2D_REQUIRE_EQUAL(stats.fallbackProxyCount, 0);
+        L2D_REQUIRE_EQUAL(stats.bruteForcePairCount, 1);
+        L2D_REQUIRE_EQUAL(stats.candidatePairCount, 1);
+        L2D_REQUIRE_EQUAL(stats.narrowPhaseTestCount, 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(world.contacts()[0].sensor);
-        L2D_REQUIRE(approximatelyEqual(
+        L2D_REQUIRE_APPROX(
             world.contacts()[0].manifold.penetration,
-            0.f
-        ));
+            0.f,
+            kPhysicsComparisonEpsilon
+        );
         L2D_REQUIRE(world.isTouching(
             mover.object.id(),
             target.object.id()
         ));
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
     }
 
     void testUniformGridDeduplicatesMultiCellPairs()
@@ -1827,29 +1767,23 @@ namespace
 
         fixedStep(scene, world);
 
-        L2D_REQUIRE(world.broadPhaseStats().proxyCount == 2);
-        L2D_REQUIRE(world.broadPhaseStats().occupiedCellCount == 16);
-        L2D_REQUIRE(world.broadPhaseStats().fallbackProxyCount == 0);
-        L2D_REQUIRE(world.broadPhaseStats().bruteForcePairCount == 1);
-        L2D_REQUIRE(world.broadPhaseStats().candidatePairCount == 1);
-        L2D_REQUIRE(world.broadPhaseStats().narrowPhaseTestCount == 1);
-        L2D_REQUIRE(world.contacts().size() == 1);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.broadPhaseStats().proxyCount, 2);
+        L2D_REQUIRE_EQUAL(world.broadPhaseStats().occupiedCellCount, 16);
+        L2D_REQUIRE_EQUAL(world.broadPhaseStats().fallbackProxyCount, 0);
+        L2D_REQUIRE_EQUAL(world.broadPhaseStats().bruteForcePairCount, 1);
+        L2D_REQUIRE_EQUAL(world.broadPhaseStats().candidatePairCount, 1);
+        L2D_REQUIRE_EQUAL(world.broadPhaseStats().narrowPhaseTestCount, 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
 
         fixedStep(scene, world);
 
-        L2D_REQUIRE(world.broadPhaseStats().candidatePairCount == 1);
-        L2D_REQUIRE(world.broadPhaseStats().narrowPhaseTestCount == 1);
-        L2D_REQUIRE(world.contacts().size() == 1);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Stay
-        );
+        L2D_REQUIRE_EQUAL(world.broadPhaseStats().candidatePairCount, 1);
+        L2D_REQUIRE_EQUAL(world.broadPhaseStats().narrowPhaseTestCount, 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Stay);
     }
 
     void testUniformGridFallbackAndStaticSuppression()
@@ -1914,13 +1848,13 @@ namespace
 
         const l2d::PhysicsBroadPhaseStats2D& stats =
             world.broadPhaseStats();
-        L2D_REQUIRE(stats.proxyCount == 5);
-        L2D_REQUIRE(stats.occupiedCellCount == 1);
-        L2D_REQUIRE(stats.fallbackProxyCount == 3);
-        L2D_REQUIRE(stats.bruteForcePairCount == 9);
-        L2D_REQUIRE(stats.candidatePairCount == 6);
-        L2D_REQUIRE(stats.narrowPhaseTestCount == 6);
-        L2D_REQUIRE(world.contacts().size() == 2);
+        L2D_REQUIRE_EQUAL(stats.proxyCount, 5);
+        L2D_REQUIRE_EQUAL(stats.occupiedCellCount, 1);
+        L2D_REQUIRE_EQUAL(stats.fallbackProxyCount, 3);
+        L2D_REQUIRE_EQUAL(stats.bruteForcePairCount, 9);
+        L2D_REQUIRE_EQUAL(stats.candidatePairCount, 6);
+        L2D_REQUIRE_EQUAL(stats.narrowPhaseTestCount, 6);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 2);
         L2D_REQUIRE(world.isTouching(
             oversized.object.id(),
             firstStatic.object.id()
@@ -2051,24 +1985,16 @@ namespace
             gridWorld.contactEvents(),
             bruteForceWorld.contactEvents()
         );
-        L2D_REQUIRE(gridWorld.contacts().size() == 3);
-        L2D_REQUIRE(gridWorld.broadPhaseStats().proxyCount == 10);
-        L2D_REQUIRE(gridWorld.broadPhaseStats().fallbackProxyCount == 0);
-        L2D_REQUIRE(gridWorld.broadPhaseStats().bruteForcePairCount == 30);
-        L2D_REQUIRE(gridWorld.broadPhaseStats().candidatePairCount == 4);
-        L2D_REQUIRE(gridWorld.broadPhaseStats().narrowPhaseTestCount == 3);
-        L2D_REQUIRE(
-            bruteForceWorld.broadPhaseStats().bruteForcePairCount == 30
-        );
-        L2D_REQUIRE(
-            bruteForceWorld.broadPhaseStats().candidatePairCount == 30
-        );
-        L2D_REQUIRE(
-            bruteForceWorld.broadPhaseStats().occupiedCellCount == 0
-        );
-        L2D_REQUIRE(
-            bruteForceWorld.broadPhaseStats().fallbackProxyCount == 0
-        );
+        L2D_REQUIRE_EQUAL(gridWorld.contacts().size(), 3);
+        L2D_REQUIRE_EQUAL(gridWorld.broadPhaseStats().proxyCount, 10);
+        L2D_REQUIRE_EQUAL(gridWorld.broadPhaseStats().fallbackProxyCount, 0);
+        L2D_REQUIRE_EQUAL(gridWorld.broadPhaseStats().bruteForcePairCount, 30);
+        L2D_REQUIRE_EQUAL(gridWorld.broadPhaseStats().candidatePairCount, 4);
+        L2D_REQUIRE_EQUAL(gridWorld.broadPhaseStats().narrowPhaseTestCount, 3);
+        L2D_REQUIRE_EQUAL(bruteForceWorld.broadPhaseStats().bruteForcePairCount, 30);
+        L2D_REQUIRE_EQUAL(bruteForceWorld.broadPhaseStats().candidatePairCount, 30);
+        L2D_REQUIRE_EQUAL(bruteForceWorld.broadPhaseStats().occupiedCellCount, 0);
+        L2D_REQUIRE_EQUAL(bruteForceWorld.broadPhaseStats().fallbackProxyCount, 0);
 
         for (std::size_t index = 1; index < gridWorld.contacts().size(); ++index)
         {
@@ -2114,7 +2040,7 @@ namespace
             gridWorld.contactEvents(),
             bruteForceWorld.contactEvents()
         );
-        L2D_REQUIRE(gridWorld.contacts().size() == 2);
+        L2D_REQUIRE_EQUAL(gridWorld.contacts().size(), 2);
         L2D_REQUIRE(containsContactPhase(
             gridWorld.contactEvents(),
             l2d::PhysicsContactPhase2D::End
@@ -2173,16 +2099,16 @@ namespace
 
         const l2d::PhysicsBroadPhaseStats2D& stats =
             world.broadPhaseStats();
-        L2D_REQUIRE(stats.proxyCount == 129);
-        L2D_REQUIRE(stats.occupiedCellCount == 128);
-        L2D_REQUIRE(stats.fallbackProxyCount == 0);
-        L2D_REQUIRE(stats.bruteForcePairCount == 128);
-        L2D_REQUIRE(stats.candidatePairCount == 1);
-        L2D_REQUIRE(stats.narrowPhaseTestCount == 1);
+        L2D_REQUIRE_EQUAL(stats.proxyCount, 129);
+        L2D_REQUIRE_EQUAL(stats.occupiedCellCount, 128);
+        L2D_REQUIRE_EQUAL(stats.fallbackProxyCount, 0);
+        L2D_REQUIRE_EQUAL(stats.bruteForcePairCount, 128);
+        L2D_REQUIRE_EQUAL(stats.candidatePairCount, 1);
+        L2D_REQUIRE_EQUAL(stats.narrowPhaseTestCount, 1);
         L2D_REQUIRE(
             stats.candidatePairCount < stats.bruteForcePairCount
         );
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(world.isTouching(
             mover.object.id(),
             nearStatic.object.id()
@@ -2197,8 +2123,8 @@ namespace
         tileMap.loadFromLayout(scene, { "####" }, '#', "Ground");
 
         const l2d::TileMapBuildStats& buildStats = tileMap.buildStats();
-        L2D_REQUIRE(buildStats.solidTileCount == 4);
-        L2D_REQUIRE(buildStats.collisionRectangleCount == 1);
+        L2D_REQUIRE_EQUAL(buildStats.solidTileCount, 4);
+        L2D_REQUIRE_EQUAL(buildStats.collisionRectangleCount, 1);
 
         l2d::GameObject* ground = nullptr;
 
@@ -2206,7 +2132,7 @@ namespace
         {
             if (gameObject->getComponent<l2d::BoxCollider2D>() != nullptr)
             {
-                L2D_REQUIRE(ground == nullptr);
+                L2D_REQUIRE_EQUAL(ground, nullptr);
                 ground = gameObject.get();
             }
         }
@@ -2226,45 +2152,36 @@ namespace
 
         fixedStep(scene, world);
 
-        L2D_REQUIRE(
-            world.broadPhaseStats().proxyCount ==
+        L2D_REQUIRE_EQUAL(
+            world.broadPhaseStats().proxyCount,
             buildStats.collisionRectangleCount + 1
         );
         L2D_REQUIRE(
             world.broadPhaseStats().proxyCount <
             buildStats.solidTileCount + 1
         );
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(world.isTouching(probe.object.id(), ground->id()));
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
 
         // This probe overlaps the old boundary between the first two tiles.
         // A merged collider keeps the same contact alive through that seam.
         probe.object.transform.setPosition({ 9.f, 4.f });
         fixedStep(scene, world);
 
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(world.isTouching(probe.object.id(), ground->id()));
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Stay
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Stay);
 
         probe.object.transform.setPosition({ 14.f, 4.f });
         fixedStep(scene, world);
 
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(world.isTouching(probe.object.id(), ground->id()));
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Stay
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Stay);
     }
 
     void testMergedTileMapCollidersPreserveIrregularHole()
@@ -2280,8 +2197,8 @@ namespace
         );
 
         const l2d::TileMapBuildStats& buildStats = tileMap.buildStats();
-        L2D_REQUIRE(buildStats.solidTileCount == 8);
-        L2D_REQUIRE(buildStats.collisionRectangleCount == 4);
+        L2D_REQUIRE_EQUAL(buildStats.solidTileCount, 8);
+        L2D_REQUIRE_EQUAL(buildStats.collisionRectangleCount, 4);
 
         l2d::PhysicsWorld2D world(zeroGravityConfig());
         BoxBody probe = createBox(
@@ -2296,8 +2213,8 @@ namespace
 
         fixedStep(scene, world);
 
-        L2D_REQUIRE(
-            world.broadPhaseStats().proxyCount ==
+        L2D_REQUIRE_EQUAL(
+            world.broadPhaseStats().proxyCount,
             buildStats.collisionRectangleCount + 1
         );
         L2D_REQUIRE(
@@ -2310,13 +2227,10 @@ namespace
         probe.object.transform.setPosition({ 4.f, 14.f });
         fixedStep(scene, world);
 
-        L2D_REQUIRE(world.contacts().size() == 1);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
         L2D_REQUIRE(world.contacts()[0].sensor);
-        L2D_REQUIRE(world.contactEvents().size() == 1);
-        L2D_REQUIRE(
-            world.contactEvents()[0].phase ==
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
     }
 
 }

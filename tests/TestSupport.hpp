@@ -16,19 +16,64 @@ namespace l2d::test
 {
     namespace detail
     {
+        template <typename Value, typename = void>
+        struct HasVector2Components : std::false_type
+        {
+        };
+
+        template <typename Value>
+        struct HasVector2Components<
+            Value,
+            std::void_t<
+                decltype(std::declval<const Value&>().x),
+                decltype(std::declval<const Value&>().y)
+            >
+        > : std::true_type
+        {
+        };
+
+        template <typename Value, typename = void>
+        struct IsStreamInsertable : std::false_type
+        {
+        };
+
+        template <typename Value>
+        struct IsStreamInsertable<
+            Value,
+            std::void_t<decltype(
+                std::declval<std::ostream&>() <<
+                std::declval<const Value&>()
+            )>
+        > : std::true_type
+        {
+        };
+
         template <typename Value>
         std::string formatValue(const Value& value)
         {
-            std::ostringstream stream;
-            stream << std::boolalpha << value;
-            return stream.str();
-        }
+            using ValueType =
+                std::remove_cv_t<std::remove_reference_t<Value>>;
 
-        template <typename Vector>
-        std::string formatVector2(const Vector& value)
-        {
-            return "(" + formatValue(value.x) + ", " +
-                formatValue(value.y) + ")";
+            if constexpr (std::is_enum_v<ValueType>)
+            {
+                using UnderlyingType = std::underlying_type_t<ValueType>;
+                return formatValue(static_cast<UnderlyingType>(value));
+            }
+            else if constexpr (HasVector2Components<ValueType>::value)
+            {
+                return "(" + formatValue(value.x) + ", " +
+                    formatValue(value.y) + ")";
+            }
+            else if constexpr (IsStreamInsertable<ValueType>::value)
+            {
+                std::ostringstream stream;
+                stream << std::boolalpha << value;
+                return stream.str();
+            }
+            else
+            {
+                return "<unprintable>";
+            }
         }
 
         template <typename Left, typename Right>
@@ -226,9 +271,38 @@ namespace l2d::test
         throw std::runtime_error(
             "line " + std::to_string(line) + ": expected " +
             actualExpression + " ~= " + expectedExpression +
-            " (actual: " + detail::formatVector2(actual) +
-            ", expected: " + detail::formatVector2(expected) +
+            " (actual: " + detail::formatValue(actual) +
+            ", expected: " + detail::formatValue(expected) +
             ", epsilon: " + detail::formatValue(epsilon) + ")"
+        );
+    }
+
+    template <
+        typename Vector,
+        typename Epsilon,
+        std::enable_if_t<
+            detail::HasVector2Components<
+                std::remove_cv_t<std::remove_reference_t<Vector>>
+            >::value,
+            int
+        > = 0
+    >
+    void requireApproximatelyEqual(
+        const Vector& actual,
+        const Vector& expected,
+        Epsilon epsilon,
+        const char* actualExpression,
+        const char* expectedExpression,
+        int line
+    )
+    {
+        requireApproximatelyEqual2D(
+            actual,
+            expected,
+            epsilon,
+            actualExpression,
+            expectedExpression,
+            line
         );
     }
 
