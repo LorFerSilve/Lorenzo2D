@@ -77,6 +77,10 @@ namespace l2d
         void step(Scene& scene, float deltaTime);
 
     private:
+        struct BroadPhaseStepData2D;
+
+        BroadPhaseStepData2D buildBroadPhaseStepData(Scene& scene) const;
+
         bool isPhysicsParticipant(
             const Scene& scene,
             const GameObject* gameObject
