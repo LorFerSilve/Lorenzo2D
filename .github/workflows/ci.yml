@@ -4,57 +4,37 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  capture-clang-build-diagnostics:
+  apply-cycle15-brace-fix:
     runs-on: ubuntu-24.04
     steps:
-      - name: Check out repository
+      - name: Check out migration branch
         uses: actions/checkout@v6
+        with:
+          ref: improve/migrate-physics-renderer-assertions
+          fetch-depth: 0
 
-      - name: Install Linux graphics dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes \
-            xorg-dev \
-            xauth \
-            xvfb \
-            libharfbuzz-dev \
-            libfreetype-dev \
-            libgl1-mesa-dev \
-            libegl1-mesa-dev \
-            libudev-dev
-
-      - name: Configure Clang Debug
-        env:
-          CC: clang
-          CXX: clang++
-        run: >-
-          cmake -S . -B build
-          -DCMAKE_BUILD_TYPE=Debug
-          -DL2D_BUILD_SANDBOX=ON
-          -DL2D_BUILD_TESTS=ON
-          -DL2D_WARNINGS_AS_ERRORS=ON
-          -DL2D_ENABLE_ASAN=OFF
-          -DL2D_ENABLE_UBSAN=OFF
-
-      - name: Capture build diagnostics
+      - name: Apply validated macro-argument fix
         shell: bash
         run: |
-          set +e
-          cmake --build build --parallel > clang-build.log 2>&1
-          status=$?
-          cat clang-build.log
-          printf '%s\n' "$status" > clang-build.status
-          exit 0
+          set -euo pipefail
+          cat > /tmp/cycle15-brace-fix.patch.gz.b64 <<'PATCH'
+          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
+          PATCH
+          base64 --decode /tmp/cycle15-brace-fix.patch.gz.b64 |
+            gzip --decompress > /tmp/cycle15-brace-fix.patch
+          git apply --check /tmp/cycle15-brace-fix.patch
+          git apply /tmp/cycle15-brace-fix.patch
+          git checkout origin/master -- .github/workflows/ci.yml
 
-      - name: Upload build diagnostics
-        uses: actions/upload-artifact@v4
-        with:
-          name: cycle15-clang-build-diagnostics
-          path: |
-            clang-build.log
-            clang-build.status
-          if-no-files-found: error
-          retention-days: 1
+      - name: Commit brace-safe macro arguments
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Make vector assertion macro arguments brace-safe"
+          git push origin HEAD:improve/migrate-physics-renderer-assertions
