@@ -44,7 +44,7 @@ function(l2d_add_regression_test target)
         l2d_xvfb_label_index GREATER_EQUAL 0
     )
         message(FATAL_ERROR
-            "${target} cannot use both the headless and xvfb runtime label"
+            "${target} cannot use both the headless and xvfb runtime labels"
         )
     endif()
 
