@@ -103,7 +103,7 @@ else()
         set(SFML_BUILD_EXAMPLES OFF CACHE BOOL "Build SFML examples")
     endif()
     if(NOT DEFINED SFML_BUILD_TEST_SUITE)
-        set(SFML_BUILD_TEST_SUITE OFF CACHE BOOL "Build the SFML test suite")
+        set(SFML_BUILD_TEST_SUITE OFF CACHE BOOL "Build SFML test suite")
     endif()
 
     FetchContent_Declare(SFML
@@ -135,6 +135,8 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Physics/CollisionManifold2D.cpp
     src/Lorenzo2D/Physics/PhysicsDebugRenderer2D.cpp
     src/Lorenzo2D/Physics/PhysicsWorld2D.cpp
+    src/Lorenzo2D/Physics/PhysicsWorld2DContacts.cpp
+    src/Lorenzo2D/Physics/PhysicsWorld2DProxies.cpp
     src/Lorenzo2D/Physics/RigidBody2D.cpp
     src/Lorenzo2D/Physics/UniformGridBroadPhase2D.cpp
     src/Lorenzo2D/Renderer/Camera2D.cpp
