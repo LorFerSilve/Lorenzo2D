@@ -44,7 +44,7 @@ function(l2d_add_regression_test target)
         l2d_xvfb_label_index GREATER_EQUAL 0
     )
         message(FATAL_ERROR
-            "${target} cannot use both the headless and xvfb runtime labels"
+            "${target} cannot use both the headless and xvfb runtime label"
         )
     endif()
 
@@ -123,6 +123,13 @@ l2d_add_regression_test(
     SOURCE Lorenzo2DPhysicsTests.cpp
     LABELS headless physics tilemap
     TIMEOUT 180
+)
+
+l2d_add_regression_test(
+    Lorenzo2DPhysicsStabilityTests
+    SOURCE Lorenzo2DPhysicsStabilityTests.cpp
+    LABELS headless physics stability
+    TIMEOUT 240
 )
 
 l2d_add_regression_test(
