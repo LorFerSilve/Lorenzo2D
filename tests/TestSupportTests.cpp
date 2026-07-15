@@ -101,7 +101,6 @@ namespace
         );
     }
 
-
     void testRequireEqualFormatsEnumsAndVectors()
     {
         const std::string enumMessage = captureFailure(
