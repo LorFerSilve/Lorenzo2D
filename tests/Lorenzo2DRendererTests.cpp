@@ -302,7 +302,7 @@ namespace
         camera.setBounds({ 0.f, 0.f }, { 10.f, 10.f });
         L2D_REQUIRE_APPROX(
             camera.center(),
-            sf::Vector2f{ 5.f, 5.f },
+            (sf::Vector2f{ 5.f, 5.f }),
             kRendererComparisonEpsilon
         );
         camera.clearBounds();

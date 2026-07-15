@@ -218,7 +218,7 @@ namespace
             std::numeric_limits<float>::quiet_NaN(),
             1.f
         });
-        L2D_REQUIRE_APPROX(body.velocity(), sf::Vector2f{ 0.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(body.velocity(), (sf::Vector2f{ 0.f, 0.f }), kPhysicsComparisonEpsilon);
 
         body.setAcceleration({
             1.f,
@@ -226,12 +226,12 @@ namespace
         });
         L2D_REQUIRE_APPROX(
             body.acceleration(),
-            sf::Vector2f{ 0.f, 0.f },
+            (sf::Vector2f{ 0.f, 0.f }),
             kPhysicsComparisonEpsilon
         );
 
         body.applyImpulse({ 2.f, 4.f });
-        L2D_REQUIRE_APPROX(body.velocity(), sf::Vector2f{ 1.f, 2.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(body.velocity(), (sf::Vector2f{ 1.f, 2.f }), kPhysicsComparisonEpsilon);
 
         const float maximum = std::numeric_limits<float>::max();
         l2d::RigidBody2D cancellationBody;
@@ -239,19 +239,19 @@ namespace
         cancellationBody.setVelocity({ maximum, -maximum });
         cancellationBody.applyImpulse({ -maximum, maximum });
         L2D_REQUIRE_APPROX(
-            sf::Vector2f{
+            (sf::Vector2f{
                 cancellationBody.velocity().x / maximum,
                 cancellationBody.velocity().y / maximum
-            },
-            sf::Vector2f{ -1.f, 1.f },
+            }),
+            (sf::Vector2f{ -1.f, 1.f }),
             kPhysicsComparisonEpsilon
         );
 
         body.setBodyType(l2d::BodyType2D::Static);
         L2D_REQUIRE_APPROX(body.inverseMass(), 0.f, kPhysicsComparisonEpsilon);
-        L2D_REQUIRE_APPROX(body.velocity(), sf::Vector2f{ 0.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(body.velocity(), (sf::Vector2f{ 0.f, 0.f }), kPhysicsComparisonEpsilon);
         body.setVelocity({ 4.f, 5.f });
-        L2D_REQUIRE_APPROX(body.velocity(), sf::Vector2f{ 0.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(body.velocity(), (sf::Vector2f{ 0.f, 0.f }), kPhysicsComparisonEpsilon);
 
         body.setBodyType(static_cast<l2d::BodyType2D>(999));
         L2D_REQUIRE_EQUAL(body.bodyType(), l2d::BodyType2D::Dynamic);
@@ -289,7 +289,7 @@ namespace
         });
         L2D_REQUIRE_APPROX(
             collider.offset(),
-            sf::Vector2f{ 0.f, -3.f },
+            (sf::Vector2f{ 0.f, -3.f }),
             kPhysicsComparisonEpsilon
         );
     }
@@ -332,7 +332,7 @@ namespace
         const l2d::PhysicsWorld2DConfig& sanitized = world.config();
         L2D_REQUIRE_APPROX(
             sanitized.gravity,
-            sf::Vector2f{ 0.f, 980.f },
+            (sf::Vector2f{ 0.f, 980.f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_EQUAL(sanitized.velocityIterations, 8u);
@@ -436,32 +436,32 @@ namespace
 
         L2D_REQUIRE_APPROX(
             dynamicBody.velocity(),
-            sf::Vector2f{ 2.f, 2.5f },
+            (sf::Vector2f{ 2.f, 2.5f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_APPROX(
             dynamicObject.transform.position(),
-            sf::Vector2f{ 1.f, 1.25f },
+            (sf::Vector2f{ 1.f, 1.25f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_APPROX(
             kinematicBody.velocity(),
-            sf::Vector2f{ 3.f, 4.f },
+            (sf::Vector2f{ 3.f, 4.f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_APPROX(
             kinematicObject.transform.position(),
-            sf::Vector2f{ 11.5f, 2.f },
+            (sf::Vector2f{ 11.5f, 2.f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_APPROX(
             staticObject.transform.position(),
-            sf::Vector2f{ 20.f, 0.f },
+            (sf::Vector2f{ 20.f, 0.f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_APPROX(
             staticBody.velocity(),
-            sf::Vector2f{ 0.f, 0.f },
+            (sf::Vector2f{ 0.f, 0.f }),
             kPhysicsComparisonEpsilon
         );
 
@@ -543,7 +543,7 @@ namespace
         L2D_REQUIRE_APPROX(mover.body->velocity().x, 0.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(
             obstacle.object.transform.position(),
-            sf::Vector2f{ 1.5f, 0.f },
+            (sf::Vector2f{ 1.5f, 0.f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE(world.isTouching(mover.object.id(), obstacle.object.id()));
@@ -575,7 +575,7 @@ namespace
         L2D_REQUIRE_EQUAL(boxWorld.contacts()[0].secondColliderType, l2d::ColliderType::Box);
         L2D_REQUIRE_APPROX(
             boxObstacle.object.transform.position(),
-            sf::Vector2f{ 1.8f, 0.f },
+            (sf::Vector2f{ 1.8f, 0.f }),
             kPhysicsComparisonEpsilon
         );
     }
@@ -748,7 +748,7 @@ namespace
 
         l2d::CollisionManifold2D manifold;
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, sf::Vector2f{ 1.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(manifold.penetration, 1.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(isFinite(manifold.point));
 
@@ -756,7 +756,7 @@ namespace
         L2D_REQUIRE(l2d::computeCollisionManifold(second, first, reversed));
         L2D_REQUIRE_APPROX(
             reversed.normal,
-            sf::Vector2f{ -1.f, 0.f },
+            (sf::Vector2f{ -1.f, 0.f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_APPROX(reversed.penetration, 1.f, kPhysicsComparisonEpsilon);
@@ -767,7 +767,7 @@ namespace
 
         secondObject.transform.setPosition({ 0.f, 0.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, sf::Vector2f{ 1.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(manifold.penetration, 4.f, kPhysicsComparisonEpsilon);
 
         secondObject.transform.setPosition({ 5.f, 0.f });
@@ -792,24 +792,24 @@ namespace
 
         secondObject.transform.setPosition({ 3.f, 0.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, sf::Vector2f{ 1.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(manifold.penetration, 1.f, kPhysicsComparisonEpsilon);
 
         secondObject.transform.setPosition({ 0.f, 3.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, sf::Vector2f{ 0.f, 1.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 0.f, 1.f }), kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(manifold.penetration, 1.f, kPhysicsComparisonEpsilon);
 
         secondObject.transform.setPosition({ 2.f, 2.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, sf::Vector2f{ 1.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(manifold.penetration, 2.f, kPhysicsComparisonEpsilon);
 
         l2d::CollisionManifold2D reversed;
         L2D_REQUIRE(l2d::computeCollisionManifold(second, first, reversed));
         L2D_REQUIRE_APPROX(
             reversed.normal,
-            sf::Vector2f{ -1.f, 0.f },
+            (sf::Vector2f{ -1.f, 0.f }),
             kPhysicsComparisonEpsilon
         );
 
@@ -826,11 +826,11 @@ namespace
         second.setSize({ 10.f, 10.f });
 
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, sf::Vector2f{ 1.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(manifold.penetration, 6.f, kPhysicsComparisonEpsilon);
 
         L2D_REQUIRE(l2d::computeCollisionManifold(second, first, reversed));
-        L2D_REQUIRE_APPROX(reversed.normal, sf::Vector2f{ 1.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(reversed.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(reversed.penetration, 6.f, kPhysicsComparisonEpsilon);
     }
 
@@ -850,14 +850,14 @@ namespace
 
         boxObject.transform.setPosition({ 1.5f, 0.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(circle, box, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, sf::Vector2f{ 1.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(manifold.penetration, 0.5f, kPhysicsComparisonEpsilon);
 
         l2d::CollisionManifold2D reversed;
         L2D_REQUIRE(l2d::computeCollisionManifold(box, circle, reversed));
         L2D_REQUIRE_APPROX(
             reversed.normal,
-            sf::Vector2f{ -1.f, 0.f },
+            (sf::Vector2f{ -1.f, 0.f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_APPROX(reversed.penetration, 0.5f, kPhysicsComparisonEpsilon);
@@ -870,7 +870,7 @@ namespace
         L2D_REQUIRE(l2d::computeCollisionManifold(circle, box, manifold));
         L2D_REQUIRE_APPROX(
             manifold.normal,
-            sf::Vector2f{ 0.70710677f, 0.70710677f },
+            (sf::Vector2f{ 0.70710677f, 0.70710677f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_APPROX(
@@ -883,7 +883,7 @@ namespace
         circleObject.transform.setPosition({ 1.f, 1.f });
         box.setSize({ 4.f, 4.f });
         L2D_REQUIRE(l2d::computeCollisionManifold(circle, box, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, sf::Vector2f{ 1.f, 0.f }, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{ 1.f, 0.f }), kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(manifold.penetration, 3.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(isFinite(manifold.point));
     }
@@ -992,7 +992,7 @@ namespace
         L2D_REQUIRE_APPROX(mover.body->velocity().x, 1.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE_APPROX(
             mover.object.transform.position(),
-            sf::Vector2f{ 0.01f, 0.f },
+            (sf::Vector2f{ 0.01f, 0.f }),
             kPhysicsComparisonEpsilon
         );
         L2D_REQUIRE_APPROX(
@@ -1333,7 +1333,7 @@ namespace
         L2D_REQUIRE_APPROX(mover.body->velocity().x, 0.f, 0.01f);
         L2D_REQUIRE_APPROX(
             obstacle.object.transform.position(),
-            sf::Vector2f{ 0.5f, 0.f },
+            (sf::Vector2f{ 0.5f, 0.f }),
             kPhysicsComparisonEpsilon
         );
     }
