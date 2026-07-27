@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include "TestSupport.hpp"
@@ -187,6 +188,34 @@ namespace
 
     private:
         l2d::Scene* m_scene;
+        bool m_reentered = false;
+    };
+
+    class SwitchSceneAndReenterManagerOnce final : public l2d::Component
+    {
+    public:
+        SwitchSceneAndReenterManagerOnce(
+            l2d::SceneManager& sceneManager,
+            std::string targetScene
+        )
+            : m_sceneManager(&sceneManager),
+            m_targetScene(std::move(targetScene))
+        {
+        }
+
+        void onUpdate(float deltaTime) override
+        {
+            if (m_reentered)
+                return;
+
+            m_reentered = true;
+            L2D_REQUIRE(m_sceneManager->setActiveScene(m_targetScene));
+            m_sceneManager->fixedUpdate(deltaTime);
+        }
+
+    private:
+        l2d::SceneManager* m_sceneManager;
+        std::string m_targetScene;
         bool m_reentered = false;
     };
 
@@ -507,6 +536,46 @@ namespace
         ));
     }
 
+    void testSceneManagerUsesUniqueNamesAndTopLevelTicks()
+    {
+        l2d::SceneManager sceneManager;
+        l2d::Scene& first = sceneManager.createScene("First");
+        int secondUpdates = 0;
+
+        bool duplicateRejected = false;
+
+        try
+        {
+            sceneManager.createScene("First");
+        }
+        catch (const std::invalid_argument&)
+        {
+            duplicateRejected = true;
+        }
+
+        L2D_REQUIRE(duplicateRejected);
+        L2D_REQUIRE_EQUAL(sceneManager.sceneCount(), 1);
+        L2D_REQUIRE(sceneManager.activeScene() == &first);
+        L2D_REQUIRE(sceneManager.findSceneByName("First") == &first);
+
+        l2d::Scene& second = sceneManager.createScene("Second");
+        second.createGameObject("Counter")
+            .addComponent<CounterComponent>(secondUpdates);
+        first.createGameObject("Switcher")
+            .addComponent<SwitchSceneAndReenterManagerOnce>(
+                sceneManager,
+                "Second"
+            );
+
+        sceneManager.fixedUpdate(1.f / 60.f);
+
+        L2D_REQUIRE(sceneManager.activeScene() == &second);
+        L2D_REQUIRE_EQUAL(secondUpdates, 0);
+
+        sceneManager.fixedUpdate(1.f / 60.f);
+        L2D_REQUIRE_EQUAL(secondUpdates, 1);
+    }
+
     void testHandlesExpireWithTheirScene()
     {
         l2d::GameObjectHandle handle;
@@ -785,6 +854,8 @@ int main()
     runTest("activation joins all fixed phases next tick",
         testActivationJoinsFixedPhasesOnTheNextTick, failures);
     runTest("fixed updates are non-reentrant", testFixedUpdateIsNonReentrant, failures);
+    runTest("scene manager uses unique names and top-level ticks",
+        testSceneManagerUsesUniqueNamesAndTopLevelTicks, failures);
     runTest("handles expire with their scene", testHandlesExpireWithTheirScene, failures);
     runTest("scene ID index tracks owned object lifetime",
         testSceneIdIndexTracksOwnedObjectLifetime, failures);

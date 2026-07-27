@@ -1,9 +1,36 @@
 #include <Lorenzo2D/Core/ActionMap.hpp>
 
+#include "ActionState.hpp"
+
 #include <algorithm>
 
 namespace l2d
 {
+    namespace
+    {
+        core_detail::ActionState aggregateActionState(
+            const std::vector<Key>& keys
+        )
+        {
+            core_detail::ActionState state;
+
+            for (Key key : keys)
+            {
+                const bool currentPressed = Input::isKeyPressed(key);
+                state.include(
+                    currentPressed,
+                    core_detail::previousButtonState(
+                        currentPressed,
+                        Input::wasKeyPressed(key),
+                        Input::wasKeyReleased(key)
+                    )
+                );
+            }
+
+            return state;
+        }
+    }
+
     void ActionMap::bindAction(const std::string& actionName, Key key)
     {
         std::vector<Key>& keys = m_actions[actionName];
@@ -31,13 +58,7 @@ namespace l2d
         if (keys == nullptr)
             return false;
 
-        for (Key key : *keys)
-        {
-            if (Input::isKeyPressed(key))
-                return true;
-        }
-
-        return false;
+        return aggregateActionState(*keys).isPressed();
     }
 
     bool ActionMap::wasActionPressed(const std::string& actionName) const
@@ -47,13 +68,7 @@ namespace l2d
         if (keys == nullptr)
             return false;
 
-        for (Key key : *keys)
-        {
-            if (Input::wasKeyPressed(key))
-                return true;
-        }
-
-        return false;
+        return aggregateActionState(*keys).wasPressed();
     }
 
     bool ActionMap::wasActionReleased(const std::string& actionName) const
@@ -63,13 +78,7 @@ namespace l2d
         if (keys == nullptr)
             return false;
 
-        for (Key key : *keys)
-        {
-            if (Input::wasKeyReleased(key))
-                return true;
-        }
-
-        return false;
+        return aggregateActionState(*keys).wasReleased();
     }
 
     const std::vector<Key>* ActionMap::findKeys(const std::string& actionName) const

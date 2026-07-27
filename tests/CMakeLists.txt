@@ -91,6 +91,15 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DInputTests
+    SOURCE Lorenzo2DInputTests.cpp
+    LABELS headless core input
+    PRIVATE_INCLUDE_DIRECTORIES
+        "${PROJECT_SOURCE_DIR}/src/Lorenzo2D/Core"
+    TIMEOUT 30
+)
+
+l2d_add_regression_test(
     Lorenzo2DEcsSceneTests
     SOURCE Lorenzo2DEcsSceneTests.cpp
     LABELS headless ecs scene
