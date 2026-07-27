@@ -10,6 +10,18 @@ namespace l2d
     {
     public:
         explicit OrthographicCameraController2D(Camera2D& camera);
+        OrthographicCameraController2D(
+            const OrthographicCameraController2D&
+        ) = delete;
+        OrthographicCameraController2D& operator=(
+            const OrthographicCameraController2D&
+        ) = delete;
+        OrthographicCameraController2D(
+            OrthographicCameraController2D&&
+        ) = delete;
+        OrthographicCameraController2D& operator=(
+            OrthographicCameraController2D&&
+        ) = delete;
 
         void setFollowEnabled(bool enabled);
         bool isFollowEnabled() const;

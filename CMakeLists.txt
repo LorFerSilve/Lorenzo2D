@@ -86,7 +86,9 @@ function(l2d_enable_sanitizers target)
     target_link_options(${target} PRIVATE ${l2d_sanitizer_flag})
 endfunction()
 
-if(L2D_USE_SYSTEM_SFML)
+if(TARGET SFML::Graphics)
+    message(STATUS "Using the SFML::Graphics target provided by the parent project")
+elseif(L2D_USE_SYSTEM_SFML)
     find_package(SFML 3.1 CONFIG REQUIRED COMPONENTS Graphics)
 else()
     include(FetchContent)
@@ -153,7 +155,10 @@ set(LORENZO2D_SOURCES
 add_library(Lorenzo2D STATIC ${LORENZO2D_SOURCES})
 add_library(Lorenzo2D::Lorenzo2D ALIAS Lorenzo2D)
 
-set_target_properties(Lorenzo2D PROPERTIES EXPORT_NAME Lorenzo2D)
+set_target_properties(Lorenzo2D PROPERTIES
+    EXPORT_NAME Lorenzo2D
+    POSITION_INDEPENDENT_CODE ON
+)
 
 target_include_directories(Lorenzo2D
     PUBLIC
@@ -236,7 +241,7 @@ if(L2D_INSTALL)
     write_basic_package_version_file(
         "${PROJECT_BINARY_DIR}/Lorenzo2DConfigVersion.cmake"
         VERSION ${PROJECT_VERSION}
-        COMPATIBILITY SameMajorVersion
+        COMPATIBILITY SameMinorVersion
     )
 
     install(

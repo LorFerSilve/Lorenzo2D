@@ -113,7 +113,9 @@ target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 
 A parent may explicitly enable any Lorenzo2D option before adding the
 subdirectory. The public target propagates the C++17 requirement, public include
-path, and `SFML::Graphics` dependency.
+path, and `SFML::Graphics` dependency. If the parent already provides an
+`SFML::Graphics` target, Lorenzo2D reuses it without running its own SFML
+discovery or FetchContent step.
 
 ### Install and consume the package
 
@@ -270,10 +272,15 @@ physically removed.
 
 `SceneManager::clear()` is safe during an owned scene's update or render
 dispatch. It clears the active-scene selection immediately and releases scene
-ownership after the outermost dispatch returns.
+ownership after the outermost dispatch returns. Scene names are unique within a
+manager; creating a duplicate throws `std::invalid_argument`. Manager-level
+fixed updates are non-reentrant, including when a callback switches the active
+scene before attempting a recursive update.
 
 `PhysicsWorld2D` is also non-copyable and non-movable because each instance owns
 configuration, contact history, and contact-event state for its simulation.
+Solver iteration counts use their defaults when set to zero and are capped at 64
+to keep malformed or untrusted configuration from stalling a simulation step.
 
 ## Simulation timing
 

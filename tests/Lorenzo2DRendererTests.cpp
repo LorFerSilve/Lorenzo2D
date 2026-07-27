@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <limits>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace
@@ -358,6 +359,27 @@ namespace
 
     void testCameraControllerSanitizesTargetsAndZoomConfiguration()
     {
+        static_assert(
+            !std::is_copy_constructible<
+                l2d::OrthographicCameraController2D
+            >::value
+        );
+        static_assert(
+            !std::is_copy_assignable<
+                l2d::OrthographicCameraController2D
+            >::value
+        );
+        static_assert(
+            !std::is_move_constructible<
+                l2d::OrthographicCameraController2D
+            >::value
+        );
+        static_assert(
+            !std::is_move_assignable<
+                l2d::OrthographicCameraController2D
+            >::value
+        );
+
         const float nan = std::numeric_limits<float>::quiet_NaN();
         const float infinity = std::numeric_limits<float>::infinity();
 

@@ -287,6 +287,27 @@ namespace
         L2D_REQUIRE(secondWeak.expired());
     }
 
+    void testSpriteRendererSizesAgainstTheActiveTextureRect()
+    {
+        l2d::TextureHandle first(std::make_shared<sf::Texture>(
+            sf::Vector2u{ 100u, 80u }
+        ));
+        l2d::TextureHandle second(std::make_shared<sf::Texture>(
+            sf::Vector2u{ 200u, 160u }
+        ));
+
+        l2d::SpriteRenderer renderer(first);
+        renderer.setSize({ 50.f, 20.f });
+        L2D_REQUIRE_EQUAL(renderer.sizeScale(), sf::Vector2f(0.5f, 0.25f));
+
+        L2D_REQUIRE(renderer.setTexture(second, false));
+        renderer.setSize({ 100.f, 40.f });
+
+        // resetRect=false retains the 100x80 sprite rect from the first
+        // texture, so the requested size must be divided by that active rect.
+        L2D_REQUIRE_EQUAL(renderer.sizeScale(), sf::Vector2f(1.f, 0.5f));
+    }
+
     void testDebugOverlayRetainsAndClearsLeases()
     {
         static_assert(!std::is_copy_constructible<l2d::DebugOverlay>::value);
@@ -393,6 +414,8 @@ int main()
         testHandlesSurviveManagerDestruction, failures);
     runTest("sprite renderer retains and rebinds leases",
         testSpriteRendererRetainsAndRebindsLeases, failures);
+    runTest("sprite renderer sizes against the active texture rect",
+        testSpriteRendererSizesAgainstTheActiveTextureRect, failures);
     runTest("debug overlay retains and clears leases",
         testDebugOverlayRetainsAndClearsLeases, failures);
     runTest("asset manager move contract",
