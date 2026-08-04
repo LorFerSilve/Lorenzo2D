@@ -44,7 +44,8 @@ function(l2d_add_coverage_target)
             --exclude "${PROJECT_BINARY_DIR}"
             --print-summary
             --html-details "${PROJECT_BINARY_DIR}/coverage/index.html"
-            --xml-pretty "${PROJECT_BINARY_DIR}/coverage/coverage.xml"
+            --xml "${PROJECT_BINARY_DIR}/coverage/coverage.xml"
+            --xml-pretty
         WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
         COMMENT "Generating Lorenzo2D coverage reports"
         VERBATIM
