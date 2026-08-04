@@ -58,6 +58,18 @@ cmake --build build --config Debug
 ctest --test-dir build -C Debug --output-on-failure
 ```
 
+CMake presets provide matching developer configurations when Ninja is
+available:
+
+```sh
+cmake --preset dev
+cmake --build --preset dev
+ctest --preset dev
+```
+
+`release`, `sanitize`, `lint`, `coverage`, and `benchmarks` presets keep
+specialized build trees isolated under `build/<preset>`.
+
 The sandbox executable is written to `build/bin`. Disable it for a test- or
 library-only build with `-DL2D_BUILD_SANDBOX=OFF`.
 
@@ -77,10 +89,13 @@ Useful configuration options:
 | --- | --- | --- | --- |
 | `L2D_BUILD_SANDBOX` | `ON` | `OFF` | Build the interactive sandbox |
 | `L2D_BUILD_TESTS` | `ON` | `OFF` | Build and register regression tests |
+| `L2D_BUILD_BENCHMARKS` | `OFF` | `OFF` | Build the standalone performance benchmarks |
 | `L2D_USE_SYSTEM_SFML` | `OFF` | `OFF` | Use an installed SFML package |
 | `L2D_WARNINGS_AS_ERRORS` | `OFF` | `OFF` | Promote first-party warnings to errors |
 | `L2D_ENABLE_ASAN` | `OFF` | `OFF` | Enable AddressSanitizer on GCC, Clang, or AppleClang |
 | `L2D_ENABLE_UBSAN` | `OFF` | `OFF` | Enable UndefinedBehaviorSanitizer on GCC, Clang, or AppleClang |
+| `L2D_ENABLE_COVERAGE` | `OFF` | `OFF` | Add GCC/Clang coverage instrumentation and a `coverage` report target |
+| `L2D_ENABLE_CLANG_TIDY` | `OFF` | `OFF` | Run the repository clang-tidy policy while compiling first-party targets |
 | `L2D_INSTALL` | `ON` | `OFF` | Generate install and CMake package export rules |
 
 AddressSanitizer and UndefinedBehaviorSanitizer may be enabled independently or
@@ -98,6 +113,48 @@ cmake -S . -B build-sanitize \
   -DL2D_ENABLE_UBSAN=ON
 cmake --build build-sanitize --parallel
 ```
+
+### Developer quality tools
+
+With clang-format available, top-level builds expose `format` and
+`format-check` targets. The repository pins the CI formatter to version
+22.1.3 so formatting results remain reproducible. Static analysis is enabled
+through the `lint` preset:
+
+```sh
+cmake --preset lint
+cmake --build build/lint --target format-check
+cmake --build --preset lint
+```
+
+On Linux, install `gcovr` before using the coverage preset. Run the test
+partitions first, then generate HTML and XML reports under
+`build/coverage/coverage`:
+
+```sh
+cmake --preset coverage
+cmake --build --preset coverage
+ctest --preset coverage
+cmake --build --preset coverage-report
+```
+
+Coverage is reported in CI but is intentionally not a merge threshold yet.
+This establishes a measurable baseline without rewarding superficial tests.
+
+### Performance benchmarks
+
+The standalone benchmark executable measures uniform-grid and brute-force
+physics steps plus full tile-map construction. Results are diagnostic rather
+than pass/fail gates:
+
+```sh
+cmake --preset benchmarks
+cmake --build --preset benchmarks
+./build/benchmarks/benchmarks/Lorenzo2DBenchmarks
+```
+
+Multi-config generators may place the executable in a configuration-specific
+subdirectory.
 
 ### Use as a CMake dependency
 
@@ -253,6 +310,7 @@ src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
 assets/             Text levels and optional runtime assets
 tests/              Regression and consumer integration tests
+benchmarks/         Standalone physics and tile-map performance probes
 cmake/              Installed-package configuration templates
 ```
 

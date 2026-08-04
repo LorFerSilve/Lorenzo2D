@@ -1,0 +1,189 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 28,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "L2D_BUILD_SANDBOX": "ON",
+        "L2D_BUILD_TESTS": "ON",
+        "L2D_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Developer Debug",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "sanitize",
+      "displayName": "Clang ASan and UBSan",
+      "inherits": "dev",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "L2D_ENABLE_ASAN": "ON",
+        "L2D_ENABLE_UBSAN": "ON"
+      }
+    },
+    {
+      "name": "lint",
+      "displayName": "Clang-Tidy",
+      "inherits": "dev",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "L2D_BUILD_SANDBOX": "OFF",
+        "L2D_BUILD_TESTS": "OFF",
+        "L2D_ENABLE_CLANG_TIDY": "ON"
+      }
+    },
+    {
+      "name": "coverage",
+      "displayName": "GCC Coverage",
+      "inherits": "dev",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "L2D_BUILD_SANDBOX": "OFF",
+        "L2D_ENABLE_COVERAGE": "ON"
+      }
+    },
+    {
+      "name": "benchmarks",
+      "displayName": "Release Benchmarks",
+      "inherits": "release",
+      "cacheVariables": {
+        "L2D_BUILD_SANDBOX": "OFF",
+        "L2D_BUILD_TESTS": "OFF",
+        "L2D_BUILD_BENCHMARKS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "jobs": 0
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "jobs": 0
+    },
+    {
+      "name": "sanitize",
+      "configurePreset": "sanitize",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "jobs": 0
+    },
+    {
+      "name": "lint",
+      "configurePreset": "lint",
+      "targets": [
+        "Lorenzo2D"
+      ],
+      "jobs": 0
+    },
+    {
+      "name": "coverage",
+      "configurePreset": "coverage",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "jobs": 0
+    },
+    {
+      "name": "coverage-report",
+      "configurePreset": "coverage",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "targets": [
+        "coverage"
+      ]
+    },
+    {
+      "name": "benchmarks",
+      "configurePreset": "benchmarks",
+      "jobs": 0
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "sanitize",
+      "configurePreset": "sanitize",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "coverage",
+      "configurePreset": "coverage",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

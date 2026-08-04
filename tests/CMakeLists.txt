@@ -64,6 +64,8 @@ function(l2d_add_regression_test target)
 
     l2d_enable_warnings(${target})
     l2d_enable_sanitizers(${target})
+    l2d_enable_coverage(${target})
+    l2d_enable_clang_tidy(${target})
 
     add_test(NAME ${target} COMMAND ${target})
     set_tests_properties(
@@ -128,10 +130,38 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
-    Lorenzo2DPhysicsTests
-    SOURCE Lorenzo2DPhysicsTests.cpp
+    Lorenzo2DPhysicsBodyTests
+    SOURCE physics/Lorenzo2DPhysicsBodyTests.cpp
+    LABELS headless physics bodies
+    TIMEOUT 90
+)
+
+l2d_add_regression_test(
+    Lorenzo2DPhysicsCollisionTests
+    SOURCE physics/Lorenzo2DPhysicsCollisionTests.cpp
+    LABELS headless physics collision
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
+    Lorenzo2DPhysicsWorldTests
+    SOURCE physics/Lorenzo2DPhysicsWorldTests.cpp
+    LABELS headless physics ecs scene
+    TIMEOUT 90
+)
+
+l2d_add_regression_test(
+    Lorenzo2DPhysicsBroadPhaseTests
+    SOURCE physics/Lorenzo2DPhysicsBroadPhaseTests.cpp
+    LABELS headless physics broad-phase
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
+    Lorenzo2DPhysicsTilemapTests
+    SOURCE physics/Lorenzo2DPhysicsTilemapTests.cpp
     LABELS headless physics tilemap
-    TIMEOUT 180
+    TIMEOUT 90
 )
 
 l2d_add_regression_test(

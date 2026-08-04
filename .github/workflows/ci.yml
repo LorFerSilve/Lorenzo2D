@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Linux graphics dependencies
         if: runner.os == 'Linux'
@@ -131,7 +131,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Linux graphics dependencies
         run: |
@@ -218,3 +218,91 @@ jobs:
           ctest --test-dir build-package-consumer \
             --output-on-failure \
             --no-tests=error
+
+  quality:
+    name: Clang formatting and static analysis
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install tooling and graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            clang \
+            clang-tidy \
+            ninja-build \
+            xorg-dev \
+            libharfbuzz-dev \
+            libfreetype-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libudev-dev
+          python3 -m pip install --break-system-packages clang-format==22.1.3
+
+      - name: Configure static analysis
+        run: cmake --preset lint
+
+      - name: Check formatting
+        run: cmake --build build/lint --target format-check
+
+      - name: Build with clang-tidy
+        run: cmake --build --preset lint
+
+  coverage:
+    name: Linux GCC coverage
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install coverage and graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            gcovr \
+            ninja-build \
+            xorg-dev \
+            xauth \
+            xvfb \
+            libharfbuzz-dev \
+            libfreetype-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libudev-dev
+
+      - name: Configure coverage build
+        run: cmake --preset coverage
+
+      - name: Build instrumented tests
+        run: cmake --build --preset coverage
+
+      - name: Run headless coverage partition
+        run: |
+          unset DISPLAY
+          unset WAYLAND_DISPLAY
+          ctest --test-dir build/coverage \
+            --output-on-failure \
+            --no-tests=error \
+            -L headless
+
+      - name: Run Xvfb coverage partition
+        run: >-
+          xvfb-run --auto-servernum
+          ctest --test-dir build/coverage
+          --output-on-failure
+          --no-tests=error
+          -L xvfb
+
+      - name: Generate coverage report
+        run: cmake --build --preset coverage-report
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: lorenzo2d-coverage
+          path: build/coverage/coverage
+          if-no-files-found: error
