@@ -22,6 +22,7 @@ namespace l2d
         constexpr sf::Vector2f DEFAULT_GRAVITY = { 0.f, 980.f };
         constexpr std::uint32_t DEFAULT_VELOCITY_ITERATIONS = 8;
         constexpr std::uint32_t DEFAULT_POSITION_ITERATIONS = 3;
+        constexpr std::uint32_t MAXIMUM_SOLVER_ITERATIONS = 64;
         constexpr float DEFAULT_POSITION_CORRECTION_PERCENT = 0.8f;
         constexpr float DEFAULT_PENETRATION_SLOP = 0.01f;
         constexpr float DEFAULT_RESTITUTION_VELOCITY_THRESHOLD = 1.f;
@@ -245,6 +246,15 @@ namespace l2d
                     DEFAULT_POSITION_ITERATIONS;
             }
 
+            config.velocityIterations = std::min(
+                config.velocityIterations,
+                MAXIMUM_SOLVER_ITERATIONS
+            );
+            config.positionIterations = std::min(
+                config.positionIterations,
+                MAXIMUM_SOLVER_ITERATIONS
+            );
+
             config.positionCorrectionPercent = sanitizeUnitInterval(
                 config.positionCorrectionPercent,
                 DEFAULT_POSITION_CORRECTION_PERCENT
@@ -464,6 +474,10 @@ namespace l2d
             const double correctionDistance =
                 static_cast<double>(config.positionCorrectionPercent) *
                 correctablePenetration;
+
+            if (correctionDistance <= 0.0)
+                return false;
+
             bool moved = false;
 
             if (firstInverseMass > 0.0)

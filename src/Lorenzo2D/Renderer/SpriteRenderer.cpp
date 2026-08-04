@@ -63,15 +63,15 @@ namespace l2d
         if (!m_texture)
             return;
 
-        const sf::Vector2u textureSize = m_texture->getSize();
+        const sf::Vector2f localSize = m_sprite.getLocalBounds().size;
 
-        if (textureSize.x == 0 || textureSize.y == 0)
+        if (localSize.x <= 0.f || localSize.y <= 0.f)
             return;
 
         m_sizeScale =
         {
-            size.x / static_cast<float>(textureSize.x),
-            size.y / static_cast<float>(textureSize.y)
+            size.x / localSize.x,
+            size.y / localSize.y
         };
     }
 

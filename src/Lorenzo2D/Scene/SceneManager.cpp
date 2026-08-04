@@ -1,9 +1,18 @@
 #include <Lorenzo2D/Scene/SceneManager.hpp>
 
+#include <stdexcept>
+
 namespace l2d
 {
     Scene& SceneManager::createScene(const std::string& name)
     {
+        if (findSceneByName(name) != nullptr)
+        {
+            throw std::invalid_argument(
+                "SceneManager requires every scene name to be unique."
+            );
+        }
+
         std::unique_ptr<Scene> scene = std::make_unique<Scene>(name);
         scene->m_ownerManager = this;
 
@@ -69,11 +78,15 @@ namespace l2d
 
     void SceneManager::fixedUpdate(float deltaTime)
     {
+        if (m_fixedUpdateInProgress)
+            return;
+
         Scene* activeScene = m_activeScene;
 
         if (activeScene == nullptr)
             return;
 
+        m_fixedUpdateInProgress = true;
         beginDispatch();
 
         try
@@ -82,10 +95,12 @@ namespace l2d
         }
         catch (...)
         {
+            m_fixedUpdateInProgress = false;
             endDispatch();
             throw;
         }
 
+        m_fixedUpdateInProgress = false;
         endDispatch();
     }
 

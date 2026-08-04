@@ -349,6 +349,42 @@ namespace
         L2D_REQUIRE_APPROX(sanitized.broadPhaseCellSize, 128.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE_EQUAL(sanitized.broadPhaseMaxCellsPerProxy, 256u);
 
+        l2d::PhysicsWorld2DConfig extremeIterations = zeroGravityConfig();
+        extremeIterations.velocityIterations =
+            std::numeric_limits<std::uint32_t>::max();
+        extremeIterations.positionIterations =
+            std::numeric_limits<std::uint32_t>::max();
+        extremeIterations.positionCorrectionPercent = 0.f;
+        world.setConfig(extremeIterations);
+
+        L2D_REQUIRE_EQUAL(world.config().velocityIterations, 64u);
+        L2D_REQUIRE_EQUAL(world.config().positionIterations, 64u);
+
+        l2d::Scene noCorrectionScene;
+        BoxBody noCorrectionMover = createBox(
+            noCorrectionScene,
+            "NoCorrectionMover",
+            { 0.f, 0.f },
+            { 1.f, 1.f },
+            true
+        );
+        createBox(
+            noCorrectionScene,
+            "NoCorrectionObstacle",
+            { 0.5f, 0.f },
+            { 1.f, 1.f },
+            false
+        );
+        const sf::Vector2f positionBeforeStep =
+            noCorrectionMover.object.transform.position();
+
+        world.step(noCorrectionScene, 1.f / 60.f);
+
+        L2D_REQUIRE_EQUAL(
+            noCorrectionMover.object.transform.position(),
+            positionBeforeStep
+        );
+
         l2d::PhysicsWorld2DConfig thresholdConfig = zeroGravityConfig();
         thresholdConfig.positionCorrectionPercent = 0.f;
         thresholdConfig.restitutionVelocityThreshold = 2.f;

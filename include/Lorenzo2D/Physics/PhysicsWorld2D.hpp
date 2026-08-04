@@ -24,6 +24,8 @@ namespace l2d
     {
         sf::Vector2f gravity = { 0.f, 980.f };
 
+        // Zero selects the default. Larger values are clamped to 64 so
+        // untrusted configuration cannot stall a simulation step.
         std::uint32_t velocityIterations = 8;
         std::uint32_t positionIterations = 3;
 
