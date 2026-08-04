@@ -29,7 +29,7 @@ namespace l2d
 
     class Mouse
     {
-    public:
+      public:
         static bool isButtonPressed(MouseButton button);
         static bool wasButtonPressed(MouseButton button);
         static bool wasButtonReleased(MouseButton button);
@@ -39,13 +39,13 @@ namespace l2d
         static sf::Vector2f worldPosition(const sf::RenderWindow& window);
         static sf::Vector2f worldPosition(const sf::RenderWindow& window, const sf::View& view);
 
-    private:
+      private:
         static void update(const sf::RenderWindow& window);
 
         static sf::Mouse::Button toSfmlButton(MouseButton button);
         static std::size_t buttonToIndex(MouseButton button);
 
-    private:
+      private:
         static std::array<bool, static_cast<std::size_t>(MouseButton::Count)> s_currentButtons;
         static std::array<bool, static_cast<std::size_t>(MouseButton::Count)> s_previousButtons;
 

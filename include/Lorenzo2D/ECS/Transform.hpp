@@ -6,16 +6,16 @@ namespace l2d
 {
     struct TransformState
     {
-        sf::Vector2f position = { 0.f, 0.f };
+        sf::Vector2f position = {0.f, 0.f};
         float rotation = 0.f;
-        sf::Vector2f scale = { 1.f, 1.f };
+        sf::Vector2f scale = {1.f, 1.f};
     };
 
     class Scene;
 
     class Transform
     {
-    public:
+      public:
         Transform();
         // A nonfinite position initializes the whole vector to zero.
         explicit Transform(sf::Vector2f position);
@@ -40,11 +40,11 @@ namespace l2d
         TransformState interpolated(float alpha) const;
         void resetInterpolation();
 
-    private:
+      private:
         void capturePrevious();
         void synchronizePreviousBeforeFirstSnapshot();
 
-    private:
+      private:
         TransformState m_current;
         TransformState m_previous;
         bool m_hasHistory = false;

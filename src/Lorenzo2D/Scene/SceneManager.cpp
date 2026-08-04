@@ -8,9 +8,7 @@ namespace l2d
     {
         if (findSceneByName(name) != nullptr)
         {
-            throw std::invalid_argument(
-                "SceneManager requires every scene name to be unique."
-            );
+            throw std::invalid_argument("SceneManager requires every scene name to be unique.");
         }
 
         std::unique_ptr<Scene> scene = std::make_unique<Scene>(name);
@@ -32,8 +30,7 @@ namespace l2d
     {
         Scene* scene = findSceneByName(name);
 
-        if (scene == nullptr)
-            return false;
+        if (scene == nullptr) return false;
 
         m_activeScene = scene;
         return true;
@@ -53,8 +50,7 @@ namespace l2d
     {
         for (const std::unique_ptr<Scene>& scene : m_scenes)
         {
-            if (scene->name() == name)
-                return scene.get();
+            if (scene->name() == name) return scene.get();
         }
 
         return nullptr;
@@ -64,8 +60,7 @@ namespace l2d
     {
         for (const std::unique_ptr<Scene>& scene : m_scenes)
         {
-            if (scene->name() == name)
-                return scene.get();
+            if (scene->name() == name) return scene.get();
         }
 
         return nullptr;
@@ -78,13 +73,11 @@ namespace l2d
 
     void SceneManager::fixedUpdate(float deltaTime)
     {
-        if (m_fixedUpdateInProgress)
-            return;
+        if (m_fixedUpdateInProgress) return;
 
         Scene* activeScene = m_activeScene;
 
-        if (activeScene == nullptr)
-            return;
+        if (activeScene == nullptr) return;
 
         m_fixedUpdateInProgress = true;
         beginDispatch();
@@ -114,15 +107,11 @@ namespace l2d
         render(window, 1.f);
     }
 
-    void SceneManager::render(
-        sf::RenderWindow& window,
-        float interpolationAlpha
-    )
+    void SceneManager::render(sf::RenderWindow& window, float interpolationAlpha)
     {
         Scene* activeScene = m_activeScene;
 
-        if (activeScene == nullptr)
-            return;
+        if (activeScene == nullptr) return;
 
         beginDispatch();
 
@@ -167,8 +156,7 @@ namespace l2d
         {
             for (const std::unique_ptr<Scene>& scene : m_scenes)
             {
-                if (scene != nullptr)
-                    scene->clear();
+                if (scene != nullptr) scene->clear();
             }
 
             m_clearDeferred = true;
@@ -188,8 +176,7 @@ namespace l2d
     {
         --m_dispatchDepth;
 
-        if (m_dispatchDepth > 0 || !m_clearDeferred)
-            return;
+        if (m_dispatchDepth > 0 || !m_clearDeferred) return;
 
         m_clearDeferred = false;
         m_activeScene = nullptr;

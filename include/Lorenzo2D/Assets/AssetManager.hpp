@@ -13,7 +13,7 @@ namespace l2d
 {
     class AssetManager
     {
-    public:
+      public:
         AssetManager() = default;
         ~AssetManager() = default;
 
@@ -48,7 +48,7 @@ namespace l2d
         void clearTextures();
         void clearAll();
 
-    private:
+      private:
         std::unordered_map<std::string, FontHandle> m_fonts;
         std::unordered_map<std::string, TextureHandle> m_textures;
     };

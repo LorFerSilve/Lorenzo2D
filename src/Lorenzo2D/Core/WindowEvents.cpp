@@ -5,11 +5,11 @@ namespace l2d
     bool WindowEvents::s_closeRequested = false;
 
     bool WindowEvents::s_wasResized = false;
-    sf::Vector2u WindowEvents::s_resizedSize = { 0, 0 };
+    sf::Vector2u WindowEvents::s_resizedSize = {0, 0};
 
     bool WindowEvents::s_mouseWheelScrolled = false;
     float WindowEvents::s_mouseWheelDelta = 0.f;
-    sf::Vector2i WindowEvents::s_mouseWheelPosition = { 0, 0 };
+    sf::Vector2i WindowEvents::s_mouseWheelPosition = {0, 0};
     MouseWheel WindowEvents::s_mouseWheel = MouseWheel::Unknown;
 
     bool WindowEvents::closeRequested()
@@ -55,7 +55,7 @@ namespace l2d
 
         s_mouseWheelScrolled = false;
         s_mouseWheelDelta = 0.f;
-        s_mouseWheelPosition = { 0, 0 };
+        s_mouseWheelPosition = {0, 0};
         s_mouseWheel = MouseWheel::Unknown;
     }
 

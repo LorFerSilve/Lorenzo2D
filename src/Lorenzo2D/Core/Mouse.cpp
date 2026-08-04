@@ -8,14 +8,13 @@ namespace l2d
     std::array<bool, static_cast<std::size_t>(MouseButton::Count)> Mouse::s_currentButtons = {};
     std::array<bool, static_cast<std::size_t>(MouseButton::Count)> Mouse::s_previousButtons = {};
 
-    sf::Vector2i Mouse::s_screenPosition = { 0, 0 };
+    sf::Vector2i Mouse::s_screenPosition = {0, 0};
 
     bool Mouse::isButtonPressed(MouseButton button)
     {
         const std::size_t index = buttonToIndex(button);
 
-        if (index >= s_currentButtons.size())
-            return false;
+        if (index >= s_currentButtons.size()) return false;
 
         return s_currentButtons[index];
     }
@@ -24,8 +23,7 @@ namespace l2d
     {
         const std::size_t index = buttonToIndex(button);
 
-        if (index >= s_currentButtons.size())
-            return false;
+        if (index >= s_currentButtons.size()) return false;
 
         return s_currentButtons[index] && !s_previousButtons[index];
     }
@@ -34,8 +32,7 @@ namespace l2d
     {
         const std::size_t index = buttonToIndex(button);
 
-        if (index >= s_currentButtons.size())
-            return false;
+        if (index >= s_currentButtons.size()) return false;
 
         return !s_currentButtons[index] && s_previousButtons[index];
     }
@@ -69,9 +66,7 @@ namespace l2d
                 continue;
             }
 
-            s_currentButtons[index] = sf::Mouse::isButtonPressed(
-                toSfmlButton(button)
-            );
+            s_currentButtons[index] = sf::Mouse::isButtonPressed(toSfmlButton(button));
         }
 
         s_screenPosition = sf::Mouse::getPosition(window);

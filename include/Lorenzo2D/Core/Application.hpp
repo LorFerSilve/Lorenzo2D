@@ -15,22 +15,18 @@ namespace l2d
 
     class Application
     {
-    public:
+      public:
         Application(unsigned int width, unsigned int height, const std::string& title);
 
-        Application(
-            unsigned int width,
-            unsigned int height,
-            const std::string& title,
-            const ApplicationConfig& config
-        );
+        Application(unsigned int width, unsigned int height, const std::string& title,
+                    const ApplicationConfig& config);
 
         virtual ~Application() = default;
 
         void run();
         void requestClose();
 
-    protected:
+      protected:
         virtual void onFrameStart(float deltaTime);
 
         virtual void onFixedPreSimulation(float fixedDeltaTime);
@@ -39,20 +35,17 @@ namespace l2d
 
         virtual void onUpdate(float deltaTime);
 
-        virtual void onRender(
-            sf::RenderWindow& window,
-            float interpolationAlpha
-        );
+        virtual void onRender(sf::RenderWindow& window, float interpolationAlpha);
 
         virtual void onRender(sf::RenderWindow& window);
 
         sf::RenderWindow& getWindow();
 
-    private:
+      private:
         void processEvents();
         bool shouldClose() const;
 
-    private:
+      private:
         sf::RenderWindow m_window;
         sf::Clock m_clock;
         FixedStepScheduler m_fixedStepScheduler;

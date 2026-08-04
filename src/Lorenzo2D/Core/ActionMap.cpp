@@ -8,23 +8,16 @@ namespace l2d
 {
     namespace
     {
-        core_detail::ActionState aggregateActionState(
-            const std::vector<Key>& keys
-        )
+        core_detail::ActionState aggregateActionState(const std::vector<Key>& keys)
         {
             core_detail::ActionState state;
 
             for (Key key : keys)
             {
                 const bool currentPressed = Input::isKeyPressed(key);
-                state.include(
-                    currentPressed,
-                    core_detail::previousButtonState(
-                        currentPressed,
-                        Input::wasKeyPressed(key),
-                        Input::wasKeyReleased(key)
-                    )
-                );
+                state.include(currentPressed, core_detail::previousButtonState(
+                                                  currentPressed, Input::wasKeyPressed(key),
+                                                  Input::wasKeyReleased(key)));
             }
 
             return state;
@@ -55,8 +48,7 @@ namespace l2d
     {
         const std::vector<Key>* keys = findKeys(actionName);
 
-        if (keys == nullptr)
-            return false;
+        if (keys == nullptr) return false;
 
         return aggregateActionState(*keys).isPressed();
     }
@@ -65,8 +57,7 @@ namespace l2d
     {
         const std::vector<Key>* keys = findKeys(actionName);
 
-        if (keys == nullptr)
-            return false;
+        if (keys == nullptr) return false;
 
         return aggregateActionState(*keys).wasPressed();
     }
@@ -75,8 +66,7 @@ namespace l2d
     {
         const std::vector<Key>* keys = findKeys(actionName);
 
-        if (keys == nullptr)
-            return false;
+        if (keys == nullptr) return false;
 
         return aggregateActionState(*keys).wasReleased();
     }
@@ -85,8 +75,7 @@ namespace l2d
     {
         auto it = m_actions.find(actionName);
 
-        if (it == m_actions.end())
-            return nullptr;
+        if (it == m_actions.end()) return nullptr;
 
         return &it->second;
     }

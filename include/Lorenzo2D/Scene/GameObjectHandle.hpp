@@ -18,7 +18,7 @@ namespace l2d
 
     class GameObjectHandle
     {
-    public:
+      public:
         GameObjectHandle();
 
         GameObjectId id() const;
@@ -31,13 +31,11 @@ namespace l2d
 
         void reset();
 
-    private:
-        GameObjectHandle(
-            const std::shared_ptr<detail::SceneHandleState>& sceneState,
-            GameObjectId id
-        );
+      private:
+        GameObjectHandle(const std::shared_ptr<detail::SceneHandleState>& sceneState,
+                         GameObjectId id);
 
-    private:
+      private:
         std::weak_ptr<detail::SceneHandleState> m_sceneState;
         GameObjectId m_id = InvalidGameObjectId;
 

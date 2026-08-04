@@ -15,12 +15,9 @@ namespace l2d
 
         bool checkedFloat(double value, float& result)
         {
-            const double maximum = static_cast<double>(
-                std::numeric_limits<float>::max()
-            );
+            const double maximum = static_cast<double>(std::numeric_limits<float>::max());
 
-            if (!std::isfinite(value) || value < -maximum || value > maximum)
-                return false;
+            if (!std::isfinite(value) || value < -maximum || value > maximum) return false;
 
             result = static_cast<float>(value);
             return true;
@@ -28,9 +25,7 @@ namespace l2d
 
         float finiteFloat(double value)
         {
-            const double maximum = static_cast<double>(
-                std::numeric_limits<float>::max()
-            );
+            const double maximum = static_cast<double>(std::numeric_limits<float>::max());
 
             value = std::clamp(value, -maximum, maximum);
             return static_cast<float>(value);
@@ -38,31 +33,23 @@ namespace l2d
 
         float interpolate(float previous, float current, double alpha)
         {
-            return finiteFloat(
-                static_cast<double>(previous) +
-                (static_cast<double>(current) -
-                    static_cast<double>(previous)) * alpha
-            );
+            return finiteFloat(static_cast<double>(previous) +
+                               (static_cast<double>(current) - static_cast<double>(previous)) *
+                                   alpha);
         }
 
         sf::Vector2f initialPosition(sf::Vector2f position)
         {
-            if (!isFinite(position))
-                return { 0.f, 0.f };
+            if (!isFinite(position)) return {0.f, 0.f};
 
             return position;
         }
     }
 
-    Transform::Transform()
-        : m_current(),
-        m_previous(m_current)
-    {
-    }
+    Transform::Transform() : m_current(), m_previous(m_current) {}
 
     Transform::Transform(sf::Vector2f position)
-        : m_current{ initialPosition(position), 0.f, { 1.f, 1.f } },
-        m_previous(m_current)
+        : m_current{initialPosition(position), 0.f, {1.f, 1.f}}, m_previous(m_current)
     {
     }
 
@@ -73,8 +60,7 @@ namespace l2d
 
     void Transform::setPosition(sf::Vector2f position)
     {
-        if (!isFinite(position))
-            return;
+        if (!isFinite(position)) return;
 
         m_current.position = position;
         synchronizePreviousBeforeFirstSnapshot();
@@ -82,23 +68,14 @@ namespace l2d
 
     void Transform::move(sf::Vector2f offset)
     {
-        if (!isFinite(offset))
-            return;
+        if (!isFinite(offset)) return;
 
         sf::Vector2f nextPosition;
 
-        if (
-            !checkedFloat(
-                static_cast<double>(m_current.position.x) +
-                    static_cast<double>(offset.x),
-                nextPosition.x
-            ) ||
-            !checkedFloat(
-                static_cast<double>(m_current.position.y) +
-                    static_cast<double>(offset.y),
-                nextPosition.y
-            )
-        )
+        if (!checkedFloat(static_cast<double>(m_current.position.x) + static_cast<double>(offset.x),
+                          nextPosition.x) ||
+            !checkedFloat(static_cast<double>(m_current.position.y) + static_cast<double>(offset.y),
+                          nextPosition.y))
         {
             return;
         }
@@ -114,8 +91,7 @@ namespace l2d
 
     void Transform::setRotation(float rotation)
     {
-        if (!std::isfinite(rotation))
-            return;
+        if (!std::isfinite(rotation)) return;
 
         m_current.rotation = rotation;
         synchronizePreviousBeforeFirstSnapshot();
@@ -123,16 +99,12 @@ namespace l2d
 
     void Transform::rotate(float angle)
     {
-        if (!std::isfinite(angle))
-            return;
+        if (!std::isfinite(angle)) return;
 
         float nextRotation = 0.f;
 
-        if (!checkedFloat(
-            static_cast<double>(m_current.rotation) +
-                static_cast<double>(angle),
-            nextRotation
-        ))
+        if (!checkedFloat(static_cast<double>(m_current.rotation) + static_cast<double>(angle),
+                          nextRotation))
         {
             return;
         }
@@ -148,8 +120,7 @@ namespace l2d
 
     void Transform::setScale(sf::Vector2f scale)
     {
-        if (!isFinite(scale))
-            return;
+        if (!isFinite(scale)) return;
 
         m_current.scale = scale;
         synchronizePreviousBeforeFirstSnapshot();
@@ -157,57 +128,27 @@ namespace l2d
 
     TransformState Transform::interpolated(float alpha) const
     {
-        if (!m_hasHistory)
-            return m_current;
+        if (!m_hasHistory) return m_current;
 
-        if (std::isnan(alpha))
-            alpha = 1.f;
+        if (std::isnan(alpha)) alpha = 1.f;
 
         alpha = std::clamp(alpha, 0.f, 1.f);
 
-        if (alpha <= 0.f)
-            return m_previous;
+        if (alpha <= 0.f) return m_previous;
 
-        if (alpha >= 1.f)
-            return m_current;
+        if (alpha >= 1.f) return m_current;
 
         const double interpolationAlpha = static_cast<double>(alpha);
-        const double rotationDelta = std::remainder(
-            static_cast<double>(m_current.rotation) -
-                static_cast<double>(m_previous.rotation),
-            360.0
-        );
+        const double rotationDelta = std::remainder(static_cast<double>(m_current.rotation) -
+                                                        static_cast<double>(m_previous.rotation),
+                                                    360.0);
 
-        return {
-            {
-                interpolate(
-                    m_previous.position.x,
-                    m_current.position.x,
-                    interpolationAlpha
-                ),
-                interpolate(
-                    m_previous.position.y,
-                    m_current.position.y,
-                    interpolationAlpha
-                )
-            },
-            finiteFloat(
-                static_cast<double>(m_previous.rotation) +
-                rotationDelta * interpolationAlpha
-            ),
-            {
-                interpolate(
-                    m_previous.scale.x,
-                    m_current.scale.x,
-                    interpolationAlpha
-                ),
-                interpolate(
-                    m_previous.scale.y,
-                    m_current.scale.y,
-                    interpolationAlpha
-                )
-            }
-        };
+        return {{interpolate(m_previous.position.x, m_current.position.x, interpolationAlpha),
+                 interpolate(m_previous.position.y, m_current.position.y, interpolationAlpha)},
+                finiteFloat(static_cast<double>(m_previous.rotation) +
+                            rotationDelta * interpolationAlpha),
+                {interpolate(m_previous.scale.x, m_current.scale.x, interpolationAlpha),
+                 interpolate(m_previous.scale.y, m_current.scale.y, interpolationAlpha)}};
     }
 
     void Transform::resetInterpolation()
@@ -224,7 +165,6 @@ namespace l2d
 
     void Transform::synchronizePreviousBeforeFirstSnapshot()
     {
-        if (!m_hasHistory)
-            m_previous = m_current;
+        if (!m_hasHistory) m_previous = m_current;
     }
 }

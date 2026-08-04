@@ -43,8 +43,7 @@ namespace
 
         for (std::size_t index = 0; index < 16u; ++index)
         {
-            if (!std::isfinite(matrix[index]))
-                return false;
+            if (!std::isfinite(matrix[index])) return false;
         }
 
         return true;
@@ -78,26 +77,24 @@ namespace
         L2D_REQUIRE(isFinite(inverse));
 
         const float* matrix = transform.getMatrix();
-        const float determinant =
-            matrix[0] * matrix[5] - matrix[4] * matrix[1];
+        const float determinant = matrix[0] * matrix[5] - matrix[4] * matrix[1];
         L2D_REQUIRE(std::isfinite(determinant));
         L2D_REQUIRE(determinant != 0.f);
     }
 
     class ExtremeTransformWriter final : public l2d::Component
     {
-    public:
+      public:
         void onUpdate(float) override
         {
             l2d::GameObject* gameObject = owner();
 
-            if (gameObject == nullptr)
-                return;
+            if (gameObject == nullptr) return;
 
             const float maximum = std::numeric_limits<float>::max();
-            gameObject->transform.setPosition({ -maximum, maximum });
+            gameObject->transform.setPosition({-maximum, maximum});
             gameObject->transform.setRotation(-maximum);
-            gameObject->transform.setScale({ -maximum, maximum });
+            gameObject->transform.setScale({-maximum, maximum});
         }
     };
 
@@ -107,24 +104,24 @@ namespace
         const float infinity = std::numeric_limits<float>::infinity();
         const float maximum = std::numeric_limits<float>::max();
 
-        const l2d::Transform invalidConstructor({ nan, 5.f });
+        const l2d::Transform invalidConstructor({nan, 5.f});
         L2D_REQUIRE_EQUAL(invalidConstructor.position(), sf::Vector2f(0.f, 0.f));
-        const l2d::Transform infiniteConstructor({ 5.f, infinity });
+        const l2d::Transform infiniteConstructor({5.f, infinity});
         L2D_REQUIRE_EQUAL(infiniteConstructor.position(), sf::Vector2f(0.f, 0.f));
 
         l2d::Transform transform;
-        transform.setPosition({ 12.f, -34.f });
+        transform.setPosition({12.f, -34.f});
         const sf::Vector2f validPosition = transform.position();
 
-        transform.setPosition({ nan, 1.f });
+        transform.setPosition({nan, 1.f});
         L2D_REQUIRE_EQUAL(transform.position(), validPosition);
-        transform.setPosition({ 1.f, infinity });
+        transform.setPosition({1.f, infinity});
         L2D_REQUIRE_EQUAL(transform.position(), validPosition);
-        transform.move({ -infinity, 1.f });
+        transform.move({-infinity, 1.f});
         L2D_REQUIRE_EQUAL(transform.position(), validPosition);
 
-        transform.setPosition({ maximum, 0.f });
-        transform.move({ maximum, 0.f });
+        transform.setPosition({maximum, 0.f});
+        transform.move({maximum, 0.f});
         L2D_REQUIRE_EQUAL(transform.position(), sf::Vector2f(maximum, 0.f));
 
         transform.setRotation(45.f);
@@ -136,11 +133,11 @@ namespace
         transform.rotate(maximum);
         L2D_REQUIRE_EQUAL(transform.rotation(), maximum);
 
-        transform.setScale({ -2.f, 3.f });
+        transform.setScale({-2.f, 3.f});
         const sf::Vector2f validScale = transform.scale();
-        transform.setScale({ nan, 1.f });
+        transform.setScale({nan, 1.f});
         L2D_REQUIRE_EQUAL(transform.scale(), validScale);
-        transform.setScale({ 1.f, -infinity });
+        transform.setScale({1.f, -infinity});
         L2D_REQUIRE_EQUAL(transform.scale(), validScale);
     }
 
@@ -150,15 +147,14 @@ namespace
 
         l2d::Scene scene;
         l2d::GameObject& object = scene.createGameObject("Extreme transform");
-        object.transform.setPosition({ maximum, -maximum });
+        object.transform.setPosition({maximum, -maximum});
         object.transform.setRotation(maximum);
-        object.transform.setScale({ maximum, -maximum });
+        object.transform.setScale({maximum, -maximum});
         object.addComponent<ExtremeTransformWriter>();
 
         scene.fixedUpdate(1.f);
 
-        const l2d::TransformState halfway =
-            object.transform.interpolated(0.5f);
+        const l2d::TransformState halfway = object.transform.interpolated(0.5f);
 
         L2D_REQUIRE(isFinite(halfway.position));
         L2D_REQUIRE(std::isfinite(halfway.rotation));
@@ -174,15 +170,13 @@ namespace
         const float denormal = std::numeric_limits<float>::denorm_min();
         const float maximum = std::numeric_limits<float>::max();
 
-        const std::array<sf::Vector2f, 7> constructorSizes = {{
-            { 0.f, 180.f },
-            { -320.f, 180.f },
-            { nan, 180.f },
-            { 320.f, infinity },
-            { 320.f, -infinity },
-            { denormal, denormal },
-            { maximum, maximum }
-        }};
+        const std::array<sf::Vector2f, 7> constructorSizes = {{{0.f, 180.f},
+                                                               {-320.f, 180.f},
+                                                               {nan, 180.f},
+                                                               {320.f, infinity},
+                                                               {320.f, -infinity},
+                                                               {denormal, denormal},
+                                                               {maximum, maximum}}};
 
         for (sf::Vector2f size : constructorSizes)
         {
@@ -190,16 +184,14 @@ namespace
             requireSafeCamera(camera);
         }
 
-        l2d::Camera2D camera({ 320.f, 180.f });
-        const std::array<sf::Vector2f, 7> assignedSizes = {{
-            { 0.f, 180.f },
-            { 320.f, -1.f },
-            { nan, 180.f },
-            { 320.f, infinity },
-            { 320.f, -infinity },
-            { denormal, denormal },
-            { maximum, maximum }
-        }};
+        l2d::Camera2D camera({320.f, 180.f});
+        const std::array<sf::Vector2f, 7> assignedSizes = {{{0.f, 180.f},
+                                                            {320.f, -1.f},
+                                                            {nan, 180.f},
+                                                            {320.f, infinity},
+                                                            {320.f, -infinity},
+                                                            {denormal, denormal},
+                                                            {maximum, maximum}}};
 
         for (sf::Vector2f size : assignedSizes)
         {
@@ -208,23 +200,15 @@ namespace
         }
 
         camera.setZoom(1.f);
-        camera.setSize({ 0.f, 0.005f });
+        camera.setSize({0.f, 0.005f});
         L2D_REQUIRE_EQUAL(camera.size(), sf::Vector2f(0.01f, 0.01f));
-        camera.setSize({ nan, infinity });
+        camera.setSize({nan, infinity});
         L2D_REQUIRE_EQUAL(camera.size(), sf::Vector2f(0.01f, 0.01f));
 
-        camera.setSize({ 320.f, 180.f });
+        camera.setSize({320.f, 180.f});
 
-        const std::array<float, 8> zooms = {
-            0.f,
-            -1.f,
-            nan,
-            infinity,
-            -infinity,
-            denormal,
-            maximum,
-            1.f
-        };
+        const std::array<float, 8> zooms = {0.f,       -1.f,     nan,     infinity,
+                                            -infinity, denormal, maximum, 1.f};
 
         for (float zoom : zooms)
         {
@@ -232,14 +216,8 @@ namespace
             requireSafeCamera(camera);
         }
 
-        const std::array<float, 6> minimumZoomInputs = {
-            0.f,
-            -1.f,
-            nan,
-            infinity,
-            -infinity,
-            denormal
-        };
+        const std::array<float, 6> minimumZoomInputs = {0.f,      -1.f,      nan,
+                                                        infinity, -infinity, denormal};
 
         for (float zoom : minimumZoomInputs)
         {
@@ -247,7 +225,7 @@ namespace
             L2D_REQUIRE_EQUAL(camera.zoom(), 0.01f);
         }
 
-        camera.setSize({ maximum, maximum });
+        camera.setSize({maximum, maximum});
         camera.setZoom(maximum);
         requireSafeCamera(camera);
     }
@@ -258,32 +236,32 @@ namespace
         const float infinity = std::numeric_limits<float>::infinity();
         const float maximum = std::numeric_limits<float>::max();
 
-        l2d::Camera2D camera({ 100.f, 100.f });
-        camera.setCenter({ 25.f, 30.f });
+        l2d::Camera2D camera({100.f, 100.f});
+        camera.setCenter({25.f, 30.f});
         const sf::Vector2f validCenter = camera.center();
 
-        camera.setCenter({ nan, 10.f });
+        camera.setCenter({nan, 10.f});
         L2D_REQUIRE_EQUAL(camera.center(), validCenter);
-        camera.setCenter({ 10.f, infinity });
+        camera.setCenter({10.f, infinity});
         L2D_REQUIRE_EQUAL(camera.center(), validCenter);
-        camera.move({ -infinity, 1.f });
+        camera.move({-infinity, 1.f});
         L2D_REQUIRE_EQUAL(camera.center(), validCenter);
 
-        camera.setCenter({ maximum, 0.f });
+        camera.setCenter({maximum, 0.f});
         L2D_REQUIRE_EQUAL(camera.center(), validCenter);
 
         const float safeExtreme = maximumSafeViewExtent() * 0.75f;
-        camera.setCenter({ safeExtreme, 0.f });
+        camera.setCenter({safeExtreme, 0.f});
         L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(safeExtreme, 0.f));
-        camera.move({ safeExtreme, 0.f });
+        camera.move({safeExtreme, 0.f});
         L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(safeExtreme, 0.f));
         camera.setCenter(validCenter);
 
-        l2d::Camera2D unbounded({ 10.f, 10.f });
-        unbounded.setBounds({ nan, 0.f }, { 10.f, 10.f });
+        l2d::Camera2D unbounded({10.f, 10.f});
+        unbounded.setBounds({nan, 0.f}, {10.f, 10.f});
         L2D_REQUIRE(!unbounded.hasBounds());
 
-        camera.setBounds({ 100.f, 80.f }, { 0.f, 0.f });
+        camera.setBounds({100.f, 80.f}, {0.f, 0.f});
         L2D_REQUIRE(camera.hasBounds());
         L2D_REQUIRE_EQUAL(camera.boundsMin(), sf::Vector2f(0.f, 0.f));
         L2D_REQUIRE_EQUAL(camera.boundsMax(), sf::Vector2f(100.f, 80.f));
@@ -291,44 +269,35 @@ namespace
         const sf::Vector2f validBoundsMin = camera.boundsMin();
         const sf::Vector2f validBoundsMax = camera.boundsMax();
         const sf::Vector2f boundedCenter = camera.center();
-        camera.setBounds({ 0.f, nan }, { 50.f, 50.f });
+        camera.setBounds({0.f, nan}, {50.f, 50.f});
         L2D_REQUIRE_EQUAL(camera.boundsMin(), validBoundsMin);
         L2D_REQUIRE_EQUAL(camera.boundsMax(), validBoundsMax);
         L2D_REQUIRE_EQUAL(camera.center(), boundedCenter);
-        camera.setBounds({ 0.f, 0.f }, { maximum, 50.f });
+        camera.setBounds({0.f, 0.f}, {maximum, 50.f});
         L2D_REQUIRE_EQUAL(camera.boundsMin(), validBoundsMin);
         L2D_REQUIRE_EQUAL(camera.boundsMax(), validBoundsMax);
         L2D_REQUIRE_EQUAL(camera.center(), boundedCenter);
 
-        camera.setBounds({ 0.f, 0.f }, { 10.f, 10.f });
-        L2D_REQUIRE_APPROX(
-            camera.center(),
-            (sf::Vector2f{ 5.f, 5.f }),
-            kRendererComparisonEpsilon
-        );
+        camera.setBounds({0.f, 0.f}, {10.f, 10.f});
+        L2D_REQUIRE_APPROX(camera.center(), (sf::Vector2f{5.f, 5.f}), kRendererComparisonEpsilon);
         camera.clearBounds();
 
-        camera.setCenter({ 0.f, 0.f });
+        camera.setCenter({0.f, 0.f});
         camera.setFollowSmoothness(2.f);
 
-        const std::array<float, 4> invalidDeltas = {
-            0.f,
-            -1.f,
-            nan,
-            infinity
-        };
+        const std::array<float, 4> invalidDeltas = {0.f, -1.f, nan, infinity};
 
         for (float deltaTime : invalidDeltas)
         {
-            camera.follow({ 100.f, 50.f }, deltaTime);
+            camera.follow({100.f, 50.f}, deltaTime);
             L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
         }
 
-        camera.follow({ nan, 50.f }, 1.f);
+        camera.follow({nan, 50.f}, 1.f);
         L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
-        camera.follow({ 50.f, -infinity }, 1.f);
+        camera.follow({50.f, -infinity}, 1.f);
         L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
-        camera.follow({ maximum, 50.f }, 1.f);
+        camera.follow({maximum, 50.f}, 1.f);
         L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
 
         camera.setFollowSmoothness(nan);
@@ -337,20 +306,20 @@ namespace
         L2D_REQUIRE_EQUAL(camera.followSmoothness(), 0.f);
         camera.setFollowSmoothness(-1.f);
         L2D_REQUIRE_EQUAL(camera.followSmoothness(), 0.f);
-        camera.follow({ 10.f, 20.f }, 0.f);
+        camera.follow({10.f, 20.f}, 0.f);
         L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
 
         camera.setFollowSmoothness(1.f);
-        camera.follow({ 1.f, 0.f }, 0.00000001f);
+        camera.follow({1.f, 0.f}, 0.00000001f);
         L2D_REQUIRE(camera.center().x > 0.f);
         L2D_REQUIRE(camera.center().x < 0.000001f);
         L2D_REQUIRE_EQUAL(camera.center().y, 0.f);
 
         const float extreme = maximumSafeViewExtent() * 0.75f;
-        camera.setCenter({ extreme, -extreme });
+        camera.setCenter({extreme, -extreme});
         L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(extreme, -extreme));
         camera.setFollowSmoothness(std::log(2.f));
-        camera.follow({ -extreme, extreme }, 1.f);
+        camera.follow({-extreme, extreme}, 1.f);
         L2D_REQUIRE(isFinite(camera.center()));
         L2D_REQUIRE(std::fabs(camera.center().x) < extreme);
         L2D_REQUIRE(std::fabs(camera.center().y) < extreme);
@@ -359,32 +328,16 @@ namespace
 
     void testCameraControllerSanitizesTargetsAndZoomConfiguration()
     {
-        static_assert(
-            !std::is_copy_constructible<
-                l2d::OrthographicCameraController2D
-            >::value
-        );
-        static_assert(
-            !std::is_copy_assignable<
-                l2d::OrthographicCameraController2D
-            >::value
-        );
-        static_assert(
-            !std::is_move_constructible<
-                l2d::OrthographicCameraController2D
-            >::value
-        );
-        static_assert(
-            !std::is_move_assignable<
-                l2d::OrthographicCameraController2D
-            >::value
-        );
+        static_assert(!std::is_copy_constructible<l2d::OrthographicCameraController2D>::value);
+        static_assert(!std::is_copy_assignable<l2d::OrthographicCameraController2D>::value);
+        static_assert(!std::is_move_constructible<l2d::OrthographicCameraController2D>::value);
+        static_assert(!std::is_move_assignable<l2d::OrthographicCameraController2D>::value);
 
         const float nan = std::numeric_limits<float>::quiet_NaN();
         const float infinity = std::numeric_limits<float>::infinity();
 
-        l2d::Camera2D camera({ 100.f, 100.f });
-        camera.setCenter({ 0.f, 0.f });
+        l2d::Camera2D camera({100.f, 100.f});
+        camera.setCenter({0.f, 0.f});
         l2d::OrthographicCameraController2D controller(camera);
 
         L2D_REQUIRE_APPROX(controller.zoomInFactor(), 0.90f, kRendererComparisonEpsilon);
@@ -421,25 +374,22 @@ namespace
         controller.setZoomLimits(maximum, maximum);
         L2D_REQUIRE(std::isfinite(controller.minZoom()));
         L2D_REQUIRE_EQUAL(controller.minZoom(), controller.maxZoom());
-        L2D_REQUIRE(
-            controller.maxZoom() <=
-            maximumSafeViewExtent() / camera.size().x
-        );
+        L2D_REQUIRE(controller.maxZoom() <= maximumSafeViewExtent() / camera.size().x);
         L2D_REQUIRE(camera.zoom() >= controller.minZoom());
         L2D_REQUIRE(camera.zoom() <= controller.maxZoom());
         requireSafeCamera(camera);
 
-        controller.setFollowTarget({ nan, 10.f });
+        controller.setFollowTarget({nan, 10.f});
         L2D_REQUIRE(!controller.hasFollowTarget());
-        controller.setFollowTarget({ 40.f, 20.f });
+        controller.setFollowTarget({40.f, 20.f});
         L2D_REQUIRE(controller.hasFollowTarget());
-        controller.setFollowTarget({ infinity, 10.f });
+        controller.setFollowTarget({infinity, 10.f});
 
         camera.setFollowSmoothness(0.f);
         controller.update(1.f);
         L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(40.f, 20.f));
 
-        camera.setCenter({ 0.f, 0.f });
+        camera.setCenter({0.f, 0.f});
         camera.setFollowSmoothness(2.f);
         controller.update(nan);
         L2D_REQUIRE_EQUAL(camera.center(), sf::Vector2f(0.f, 0.f));
@@ -470,17 +420,14 @@ namespace
         circle.setRadius(12.5f);
         L2D_REQUIRE_APPROX(circle.radius(), 12.5f, kRendererComparisonEpsilon);
 
-        l2d::RectangleRenderer rectangle(
-            { -10.f, nan },
-            sf::Color::Green
-        );
+        l2d::RectangleRenderer rectangle({-10.f, nan}, sf::Color::Green);
         L2D_REQUIRE_EQUAL(rectangle.size(), sf::Vector2f(0.f, 0.f));
         L2D_REQUIRE_EQUAL(rectangle.fillColor(), sf::Color::Green);
-        rectangle.setSize({ infinity, 25.f });
+        rectangle.setSize({infinity, 25.f});
         L2D_REQUIRE_EQUAL(rectangle.size(), sf::Vector2f(0.f, 25.f));
-        rectangle.setSize({ 30.f, -infinity });
+        rectangle.setSize({30.f, -infinity});
         L2D_REQUIRE_EQUAL(rectangle.size(), sf::Vector2f(30.f, 0.f));
-        rectangle.setSize({ 15.f, 20.f });
+        rectangle.setSize({15.f, 20.f});
         L2D_REQUIRE_EQUAL(rectangle.size(), sf::Vector2f(15.f, 20.f));
     }
 
@@ -488,68 +435,33 @@ namespace
     {
         const float maximum = std::numeric_limits<float>::max();
         const float safeExtent = maximumSafeViewExtent();
-        const sf::FloatRect localBounds({ 0.f, 0.f }, { 20.f, 10.f });
+        const sf::FloatRect localBounds({0.f, 0.f}, {20.f, 10.f});
 
-        l2d::TransformState state = {
-            { 100.f, -50.f },
-            45.f,
-            { 2.f, -3.f }
-        };
-        L2D_REQUIRE(l2d::renderer_detail::hasSafeTransformedBounds(
-            localBounds,
-            state
-        ));
+        l2d::TransformState state = {{100.f, -50.f}, 45.f, {2.f, -3.f}};
+        L2D_REQUIRE(l2d::renderer_detail::hasSafeTransformedBounds(localBounds, state));
 
         state.rotation = maximum;
-        L2D_REQUIRE(l2d::renderer_detail::hasSafeTransformedBounds(
-            localBounds,
-            state
-        ));
-        L2D_REQUIRE(std::isfinite(
-            l2d::renderer_detail::normalizedRotationDegrees(state.rotation)
-        ));
+        L2D_REQUIRE(l2d::renderer_detail::hasSafeTransformedBounds(localBounds, state));
+        L2D_REQUIRE(std::isfinite(l2d::renderer_detail::normalizedRotationDegrees(state.rotation)));
 
-        state.position = { maximum, 0.f };
-        L2D_REQUIRE(!l2d::renderer_detail::hasSafeTransformedBounds(
-            localBounds,
-            state
-        ));
+        state.position = {maximum, 0.f};
+        L2D_REQUIRE(!l2d::renderer_detail::hasSafeTransformedBounds(localBounds, state));
 
-        state = { { 0.f, 0.f }, 0.f, { maximum, 1.f } };
-        const sf::FloatRect spriteLikeBounds(
-            { 0.f, 0.f },
-            { 2.f, 1.f }
-        );
-        L2D_REQUIRE(!l2d::renderer_detail::hasSafeTransformedBounds(
-            spriteLikeBounds,
-            state
-        ));
+        state = {{0.f, 0.f}, 0.f, {maximum, 1.f}};
+        const sf::FloatRect spriteLikeBounds({0.f, 0.f}, {2.f, 1.f});
+        L2D_REQUIRE(!l2d::renderer_detail::hasSafeTransformedBounds(spriteLikeBounds, state));
 
-        state = { { 0.f, 0.f }, 45.f, { 1.f, 1.f } };
-        const sf::FloatRect rotatedExtremeBounds(
-            { 0.f, 0.f },
-            { safeExtent * 0.75f, safeExtent * 0.75f }
-        );
-        L2D_REQUIRE(!l2d::renderer_detail::hasSafeTransformedBounds(
-            rotatedExtremeBounds,
-            state
-        ));
+        state = {{0.f, 0.f}, 45.f, {1.f, 1.f}};
+        const sf::FloatRect rotatedExtremeBounds({0.f, 0.f},
+                                                 {safeExtent * 0.75f, safeExtent * 0.75f});
+        L2D_REQUIRE(!l2d::renderer_detail::hasSafeTransformedBounds(rotatedExtremeBounds, state));
 
-        L2D_REQUIRE(l2d::renderer_detail::hasSafeAxisAlignedBounds(
-            { 10.f, 20.f },
-            { 30.f, 40.f },
-            2.f
-        ));
-        L2D_REQUIRE(!l2d::renderer_detail::hasSafeAxisAlignedBounds(
-            { safeExtent * 0.75f, 0.f },
-            { safeExtent * 0.5f, 1.f },
-            0.f
-        ));
-        L2D_REQUIRE(!l2d::renderer_detail::hasSafeAxisAlignedBounds(
-            { 0.f, 0.f },
-            { maximum, 1.f },
-            1.f
-        ));
+        L2D_REQUIRE(
+            l2d::renderer_detail::hasSafeAxisAlignedBounds({10.f, 20.f}, {30.f, 40.f}, 2.f));
+        L2D_REQUIRE(!l2d::renderer_detail::hasSafeAxisAlignedBounds({safeExtent * 0.75f, 0.f},
+                                                                    {safeExtent * 0.5f, 1.f}, 0.f));
+        L2D_REQUIRE(
+            !l2d::renderer_detail::hasSafeAxisAlignedBounds({0.f, 0.f}, {maximum, 1.f}, 1.f));
     }
 
     void testDebugOverlaySanitizesLayoutValues()
@@ -561,11 +473,11 @@ namespace
         L2D_REQUIRE_EQUAL(overlay.position(), sf::Vector2f(10.f, 10.f));
         L2D_REQUIRE_EQUAL(overlay.characterSize(), 18u);
 
-        overlay.setPosition({ 20.f, 30.f });
+        overlay.setPosition({20.f, 30.f});
         L2D_REQUIRE_EQUAL(overlay.position(), sf::Vector2f(20.f, 30.f));
-        overlay.setPosition({ nan, 40.f });
+        overlay.setPosition({nan, 40.f});
         L2D_REQUIRE_EQUAL(overlay.position(), sf::Vector2f(20.f, 30.f));
-        overlay.setPosition({ 40.f, infinity });
+        overlay.setPosition({40.f, infinity});
         L2D_REQUIRE_EQUAL(overlay.position(), sf::Vector2f(20.f, 30.f));
 
         overlay.setCharacterSize(0u);
@@ -636,56 +548,25 @@ int main()
 {
     int failures = 0;
 
-    runTest(
-        "transform rejects invalid and overflowing mutations",
-        testTransformRejectsInvalidAndOverflowingMutations,
-        failures
-    );
-    runTest(
-        "transform interpolates extreme finite snapshots safely",
-        testTransformInterpolatesExtremeFiniteSnapshotsSafely,
-        failures
-    );
-    runTest(
-        "camera maintains safe view dimensions",
-        testCameraMaintainsSafeViewDimensions,
-        failures
-    );
-    runTest(
-        "camera coordinates, bounds, and follow are transactional",
-        testCameraCoordinatesBoundsAndFollowAreTransactional,
-        failures
-    );
-    runTest(
-        "camera controller sanitizes targets and zoom configuration",
-        testCameraControllerSanitizesTargetsAndZoomConfiguration,
-        failures
-    );
-    runTest(
-        "shape renderers sanitize geometry",
-        testShapeRenderersSanitizeGeometry,
-        failures
-    );
-    runTest(
-        "derived drawable bounds stay in the safe domain",
-        testDerivedDrawableBoundsStayInTheSafeDomain,
-        failures
-    );
-    runTest(
-        "debug overlay sanitizes layout values",
-        testDebugOverlaySanitizesLayoutValues,
-        failures
-    );
-    runTest(
-        "physics debug renderer sanitizes configuration",
-        testPhysicsDebugRendererSanitizesConfiguration,
-        failures
-    );
-    runTest(
-        "render layer stack rejects invalid layers",
-        testRenderLayerStackRejectsInvalidLayers,
-        failures
-    );
+    runTest("transform rejects invalid and overflowing mutations",
+            testTransformRejectsInvalidAndOverflowingMutations, failures);
+    runTest("transform interpolates extreme finite snapshots safely",
+            testTransformInterpolatesExtremeFiniteSnapshotsSafely, failures);
+    runTest("camera maintains safe view dimensions", testCameraMaintainsSafeViewDimensions,
+            failures);
+    runTest("camera coordinates, bounds, and follow are transactional",
+            testCameraCoordinatesBoundsAndFollowAreTransactional, failures);
+    runTest("camera controller sanitizes targets and zoom configuration",
+            testCameraControllerSanitizesTargetsAndZoomConfiguration, failures);
+    runTest("shape renderers sanitize geometry", testShapeRenderersSanitizeGeometry, failures);
+    runTest("derived drawable bounds stay in the safe domain",
+            testDerivedDrawableBoundsStayInTheSafeDomain, failures);
+    runTest("debug overlay sanitizes layout values", testDebugOverlaySanitizesLayoutValues,
+            failures);
+    runTest("physics debug renderer sanitizes configuration",
+            testPhysicsDebugRendererSanitizesConfiguration, failures);
+    runTest("render layer stack rejects invalid layers", testRenderLayerStackRejectsInvalidLayers,
+            failures);
 
     if (failures != 0)
     {

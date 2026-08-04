@@ -5,26 +5,18 @@
 
 namespace l2d
 {
-    bool AssetManager::loadFont(
-        const std::string& name,
-        const std::string& filepath
-    )
+    bool AssetManager::loadFont(const std::string& name, const std::string& filepath)
     {
         std::shared_ptr<sf::Font> font = std::make_shared<sf::Font>();
 
-        if (!font->openFromFile(filepath))
-            return false;
+        if (!font->openFromFile(filepath)) return false;
 
         return storeFont(name, FontHandle(std::move(font)));
     }
 
-    bool AssetManager::storeFont(
-        const std::string& name,
-        FontHandle font
-    )
+    bool AssetManager::storeFont(const std::string& name, FontHandle font)
     {
-        if (!font)
-            return false;
+        if (!font) return false;
 
         m_fonts.insert_or_assign(name, std::move(font));
         return true;
@@ -34,8 +26,7 @@ namespace l2d
     {
         const auto iterator = m_fonts.find(name);
 
-        if (iterator == m_fonts.end())
-            return {};
+        if (iterator == m_fonts.end()) return {};
 
         return iterator->second;
     }
@@ -55,29 +46,20 @@ namespace l2d
         return m_fonts.size();
     }
 
-    bool AssetManager::loadTexture(
-        const std::string& name,
-        const std::string& filepath,
-        bool smooth
-    )
+    bool AssetManager::loadTexture(const std::string& name, const std::string& filepath,
+                                   bool smooth)
     {
-        std::shared_ptr<sf::Texture> texture =
-            std::make_shared<sf::Texture>();
+        std::shared_ptr<sf::Texture> texture = std::make_shared<sf::Texture>();
 
-        if (!texture->loadFromFile(filepath))
-            return false;
+        if (!texture->loadFromFile(filepath)) return false;
 
         texture->setSmooth(smooth);
         return storeTexture(name, TextureHandle(std::move(texture)));
     }
 
-    bool AssetManager::storeTexture(
-        const std::string& name,
-        TextureHandle texture
-    )
+    bool AssetManager::storeTexture(const std::string& name, TextureHandle texture)
     {
-        if (!texture)
-            return false;
+        if (!texture) return false;
 
         m_textures.insert_or_assign(name, std::move(texture));
         return true;
@@ -87,8 +69,7 @@ namespace l2d
     {
         const auto iterator = m_textures.find(name);
 
-        if (iterator == m_textures.end())
-            return {};
+        if (iterator == m_textures.end()) return {};
 
         return iterator->second;
     }

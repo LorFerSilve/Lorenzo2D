@@ -36,18 +36,18 @@ namespace l2d
 
     class Input
     {
-    public:
+      public:
         static bool isKeyPressed(Key key);
         static bool wasKeyPressed(Key key);
         static bool wasKeyReleased(Key key);
 
-    private:
+      private:
         static void update();
 
         static sf::Keyboard::Key toSfmlKey(Key key);
         static std::size_t keyToIndex(Key key);
 
-    private:
+      private:
         static std::array<bool, static_cast<std::size_t>(Key::Count)> s_currentKeys;
         static std::array<bool, static_cast<std::size_t>(Key::Count)> s_previousKeys;
 

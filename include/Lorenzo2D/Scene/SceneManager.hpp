@@ -16,7 +16,7 @@ namespace l2d
 {
     class SceneManager
     {
-    public:
+      public:
         SceneManager() = default;
         ~SceneManager() = default;
 
@@ -47,11 +47,11 @@ namespace l2d
 
         void clear();
 
-    private:
+      private:
         void beginDispatch();
         void endDispatch();
 
-    private:
+      private:
         std::vector<std::unique_ptr<Scene>> m_scenes;
         Scene* m_activeScene = nullptr;
 

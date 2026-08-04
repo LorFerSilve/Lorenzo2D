@@ -10,7 +10,7 @@ namespace l2d
 {
     class ActionMap
     {
-    public:
+      public:
         void bindAction(const std::string& actionName, Key key);
         void clearAction(const std::string& actionName);
         void clearAll();
@@ -19,10 +19,10 @@ namespace l2d
         bool wasActionPressed(const std::string& actionName) const;
         bool wasActionReleased(const std::string& actionName) const;
 
-    private:
+      private:
         const std::vector<Key>* findKeys(const std::string& actionName) const;
 
-    private:
+      private:
         std::unordered_map<std::string, std::vector<Key>> m_actions;
     };
 }

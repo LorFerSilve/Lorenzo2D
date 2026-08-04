@@ -21,38 +21,33 @@ namespace
 
     class TransformSequenceComponent final : public l2d::Component
     {
-    public:
+      public:
         void onUpdate(float) override
         {
             l2d::GameObject* gameObject = owner();
 
-            if (gameObject == nullptr)
-                return;
+            if (gameObject == nullptr) return;
 
             if (m_updateCount == 0)
             {
-                gameObject->transform.setPosition({ 20.f, 30.f });
+                gameObject->transform.setPosition({20.f, 30.f});
                 gameObject->transform.setRotation(10.f);
-                gameObject->transform.setScale({ 3.f, 5.f });
+                gameObject->transform.setScale({3.f, 5.f});
             }
             else
             {
-                gameObject->transform.move({ 10.f, 4.f });
+                gameObject->transform.move({10.f, 4.f});
                 gameObject->transform.rotate(20.f);
 
-                const sf::Vector2f currentScale =
-                    gameObject->transform.scale();
+                const sf::Vector2f currentScale = gameObject->transform.scale();
 
-                gameObject->transform.setScale({
-                    currentScale.x + 2.f,
-                    currentScale.y + 2.f
-                });
+                gameObject->transform.setScale({currentScale.x + 2.f, currentScale.y + 2.f});
             }
 
             ++m_updateCount;
         }
 
-    private:
+      private:
         int m_updateCount = 0;
     };
 
@@ -121,16 +116,11 @@ namespace
 
         for (std::size_t frame = 0; frame < 144; ++frame)
         {
-            highRefreshTicks += highRefreshScheduler.advance(
-                1.0 / 144.0
-            ).ticksToRun;
+            highRefreshTicks += highRefreshScheduler.advance(1.0 / 144.0).ticksToRun;
         }
 
         L2D_REQUIRE(highRefreshTicks == 60);
-        L2D_REQUIRE(approximatelyEqual(
-            highRefreshScheduler.accumulator(),
-            0.0
-        ));
+        L2D_REQUIRE(approximatelyEqual(highRefreshScheduler.accumulator(), 0.0));
 
         l2d::FixedStepConfig exactRatioConfig;
         exactRatioConfig.fixedDeltaTime = 1.0 / 60.0;
@@ -138,18 +128,13 @@ namespace
         exactRatioConfig.maximumTicksPerFrame = 16;
 
         l2d::FixedStepScheduler exactRatioScheduler(exactRatioConfig);
-        const l2d::FixedStepFrame exactRatioFrame =
-            exactRatioScheduler.advance(0.15);
+        const l2d::FixedStepFrame exactRatioFrame = exactRatioScheduler.advance(0.15);
 
         L2D_REQUIRE(exactRatioFrame.ticksToRun == 9);
-        L2D_REQUIRE(approximatelyEqual(
-            exactRatioFrame.interpolationAlpha,
-            0.0
-        ));
+        L2D_REQUIRE(approximatelyEqual(exactRatioFrame.interpolationAlpha, 0.0));
         L2D_REQUIRE(approximatelyEqual(exactRatioScheduler.accumulator(), 0.0));
 
-        const l2d::FixedStepFrame followingTinyFrame =
-            exactRatioScheduler.advance(0.000001);
+        const l2d::FixedStepFrame followingTinyFrame = exactRatioScheduler.advance(0.000001);
 
         L2D_REQUIRE(followingTinyFrame.ticksToRun == 0);
     }
@@ -190,42 +175,26 @@ namespace
     void testFixedStepSchedulerSanitizesInvalidInputs()
     {
         l2d::FixedStepConfig invalidConfig;
-        invalidConfig.fixedDeltaTime =
-            std::numeric_limits<double>::quiet_NaN();
-        invalidConfig.maximumFrameDeltaTime =
-            -std::numeric_limits<double>::infinity();
+        invalidConfig.fixedDeltaTime = std::numeric_limits<double>::quiet_NaN();
+        invalidConfig.maximumFrameDeltaTime = -std::numeric_limits<double>::infinity();
         invalidConfig.maximumTicksPerFrame = 0;
 
         l2d::FixedStepScheduler scheduler(invalidConfig);
 
-        L2D_REQUIRE(approximatelyEqual(
-            scheduler.config().fixedDeltaTime,
-            1.0 / 60.0
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            scheduler.config().maximumFrameDeltaTime,
-            0.1
-        ));
+        L2D_REQUIRE(approximatelyEqual(scheduler.config().fixedDeltaTime, 1.0 / 60.0));
+        L2D_REQUIRE(approximatelyEqual(scheduler.config().maximumFrameDeltaTime, 0.1));
         L2D_REQUIRE(scheduler.config().maximumTicksPerFrame == 8);
 
         l2d::FixedStepConfig unrepresentableConfig;
-        unrepresentableConfig.fixedDeltaTime =
-            std::numeric_limits<double>::denorm_min();
+        unrepresentableConfig.fixedDeltaTime = std::numeric_limits<double>::denorm_min();
 
-        const l2d::FixedStepScheduler unrepresentableScheduler(
-            unrepresentableConfig
-        );
+        const l2d::FixedStepScheduler unrepresentableScheduler(unrepresentableConfig);
 
-        L2D_REQUIRE(approximatelyEqual(
-            unrepresentableScheduler.config().fixedDeltaTime,
-            1.0 / 60.0
-        ));
+        L2D_REQUIRE(
+            approximatelyEqual(unrepresentableScheduler.config().fixedDeltaTime, 1.0 / 60.0));
 
-        const std::vector<double> invalidDeltas = {
-            -1.0,
-            std::numeric_limits<double>::quiet_NaN(),
-            std::numeric_limits<double>::infinity()
-        };
+        const std::vector<double> invalidDeltas = {-1.0, std::numeric_limits<double>::quiet_NaN(),
+                                                   std::numeric_limits<double>::infinity()};
 
         for (double invalidDelta : invalidDeltas)
         {
@@ -257,9 +226,9 @@ namespace
         l2d::Scene scene;
         l2d::GameObject& object = scene.createGameObject("Interpolated");
 
-        object.transform.setPosition({ 10.f, 20.f });
+        object.transform.setPosition({10.f, 20.f});
         object.transform.setRotation(350.f);
-        object.transform.setScale({ 1.f, 1.f });
+        object.transform.setScale({1.f, 1.f});
         object.addComponent<TransformSequenceComponent>();
 
         const l2d::TransformState initial = object.transform.interpolated(0.f);
@@ -293,21 +262,14 @@ namespace
         L2D_REQUIRE(approximatelyEqual(current.scale.x, 3.f));
         L2D_REQUIRE(approximatelyEqual(current.scale.y, 5.f));
 
-        const l2d::TransformState belowRange =
-            object.transform.interpolated(-1.f);
-        const l2d::TransformState aboveRange =
-            object.transform.interpolated(2.f);
-        const l2d::TransformState nanAlpha = object.transform.interpolated(
-            std::numeric_limits<float>::quiet_NaN()
-        );
+        const l2d::TransformState belowRange = object.transform.interpolated(-1.f);
+        const l2d::TransformState aboveRange = object.transform.interpolated(2.f);
+        const l2d::TransformState nanAlpha =
+            object.transform.interpolated(std::numeric_limits<float>::quiet_NaN());
         const l2d::TransformState negativeInfinity =
-            object.transform.interpolated(
-                -std::numeric_limits<float>::infinity()
-            );
+            object.transform.interpolated(-std::numeric_limits<float>::infinity());
         const l2d::TransformState positiveInfinity =
-            object.transform.interpolated(
-                std::numeric_limits<float>::infinity()
-            );
+            object.transform.interpolated(std::numeric_limits<float>::infinity());
 
         L2D_REQUIRE(approximatelyEqual(belowRange.position.x, 10.f));
         L2D_REQUIRE(approximatelyEqual(aboveRange.position.x, 20.f));
@@ -317,8 +279,7 @@ namespace
 
         scene.fixedUpdate(0.125f);
 
-        const l2d::TransformState secondHalfway =
-            object.transform.interpolated(0.5f);
+        const l2d::TransformState secondHalfway = object.transform.interpolated(0.5f);
 
         L2D_REQUIRE(approximatelyEqual(secondHalfway.position.x, 25.f));
         L2D_REQUIRE(approximatelyEqual(secondHalfway.position.y, 32.f));
@@ -326,15 +287,13 @@ namespace
         L2D_REQUIRE(approximatelyEqual(secondHalfway.scale.x, 4.f));
         L2D_REQUIRE(approximatelyEqual(secondHalfway.scale.y, 6.f));
 
-        object.transform.setPosition({ 100.f, 200.f });
+        object.transform.setPosition({100.f, 200.f});
         object.transform.setRotation(270.f);
-        object.transform.setScale({ 8.f, 9.f });
+        object.transform.setScale({8.f, 9.f});
         object.transform.resetInterpolation();
 
-        const l2d::TransformState teleportedPrevious =
-            object.transform.interpolated(0.f);
-        const l2d::TransformState teleportedHalfway =
-            object.transform.interpolated(0.5f);
+        const l2d::TransformState teleportedPrevious = object.transform.interpolated(0.f);
+        const l2d::TransformState teleportedHalfway = object.transform.interpolated(0.5f);
 
         L2D_REQUIRE(approximatelyEqual(teleportedPrevious.position.x, 100.f));
         L2D_REQUIRE(approximatelyEqual(teleportedPrevious.position.y, 200.f));
@@ -350,17 +309,18 @@ int main()
 {
     int failures = 0;
 
-    runTest("identity types cannot be moved or copied", testIdentityTypesCannotBeMovedOrCopied, failures);
+    runTest("identity types cannot be moved or copied", testIdentityTypesCannotBeMovedOrCopied,
+            failures);
     runTest("fixed scheduler accumulates exact substeps",
-        testFixedStepSchedulerAccumulatesExactSubsteps, failures);
+            testFixedStepSchedulerAccumulatesExactSubsteps, failures);
     runTest("fixed scheduler snaps floating boundaries",
-        testFixedStepSchedulerSnapsFloatingPointBoundaries, failures);
+            testFixedStepSchedulerSnapsFloatingPointBoundaries, failures);
     runTest("fixed scheduler bounds catch-up and recovers",
-        testFixedStepSchedulerBoundsCatchUpAndRecovers, failures);
-    runTest("fixed scheduler sanitizes invalid input",
-        testFixedStepSchedulerSanitizesInvalidInputs, failures);
+            testFixedStepSchedulerBoundsCatchUpAndRecovers, failures);
+    runTest("fixed scheduler sanitizes invalid input", testFixedStepSchedulerSanitizesInvalidInputs,
+            failures);
     runTest("transforms interpolate fixed snapshots",
-        testTransformInterpolationTracksFixedSnapshots, failures);
+            testTransformInterpolationTracksFixedSnapshots, failures);
 
     if (failures != 0)
     {

@@ -4,16 +4,11 @@
 
 namespace l2d
 {
-    GameObjectHandle::GameObjectHandle()
-    {
-    }
+    GameObjectHandle::GameObjectHandle() {}
 
-    GameObjectHandle::GameObjectHandle(
-        const std::shared_ptr<detail::SceneHandleState>& sceneState,
-        GameObjectId id
-    )
-        : m_sceneState(sceneState),
-        m_id(id)
+    GameObjectHandle::GameObjectHandle(const std::shared_ptr<detail::SceneHandleState>& sceneState,
+                                       GameObjectId id)
+        : m_sceneState(sceneState), m_id(id)
     {
     }
 
@@ -29,11 +24,9 @@ namespace l2d
 
     Scene* GameObjectHandle::scene() const
     {
-        const std::shared_ptr<detail::SceneHandleState> sceneState =
-            m_sceneState.lock();
+        const std::shared_ptr<detail::SceneHandleState> sceneState = m_sceneState.lock();
 
-        if (sceneState == nullptr)
-            return nullptr;
+        if (sceneState == nullptr) return nullptr;
 
         return sceneState->scene;
     }
@@ -42,19 +35,15 @@ namespace l2d
     {
         Scene* currentScene = scene();
 
-        if (currentScene == nullptr)
-            return nullptr;
+        if (currentScene == nullptr) return nullptr;
 
-        if (m_id == InvalidGameObjectId)
-            return nullptr;
+        if (m_id == InvalidGameObjectId) return nullptr;
 
         GameObject* gameObject = currentScene->findGameObjectById(m_id);
 
-        if (gameObject == nullptr)
-            return nullptr;
+        if (gameObject == nullptr) return nullptr;
 
-        if (gameObject->isDestroyQueued())
-            return nullptr;
+        if (gameObject->isDestroyQueued()) return nullptr;
 
         return gameObject;
     }

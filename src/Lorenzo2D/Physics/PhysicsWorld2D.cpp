@@ -19,7 +19,7 @@ namespace l2d
 {
     namespace
     {
-        constexpr sf::Vector2f DEFAULT_GRAVITY = { 0.f, 980.f };
+        constexpr sf::Vector2f DEFAULT_GRAVITY = {0.f, 980.f};
         constexpr std::uint32_t DEFAULT_VELOCITY_ITERATIONS = 8;
         constexpr std::uint32_t DEFAULT_POSITION_ITERATIONS = 3;
         constexpr std::uint32_t MAXIMUM_SOLVER_ITERATIONS = 64;
@@ -54,21 +54,16 @@ namespace l2d
 
         sf::Vector2f effectiveVelocity(const PhysicsProxy2D& proxy)
         {
-            if (proxy.body == nullptr)
-                return { 0.f, 0.f };
+            if (proxy.body == nullptr) return {0.f, 0.f};
 
-            if (proxy.body->bodyType() == BodyType2D::Static)
-                return { 0.f, 0.f };
+            if (proxy.body->bodyType() == BodyType2D::Static) return {0.f, 0.f};
 
             return proxy.body->velocity();
         }
 
         double inverseMass(const PhysicsProxy2D& proxy)
         {
-            if (
-                proxy.body == nullptr ||
-                proxy.body->bodyType() != BodyType2D::Dynamic
-            )
+            if (proxy.body == nullptr || proxy.body->bodyType() != BodyType2D::Dynamic)
             {
                 return 0.0;
             }
@@ -76,204 +71,130 @@ namespace l2d
             return 1.0 / static_cast<double>(proxy.body->mass());
         }
 
-        double relativeVelocityAlong(
-            const PhysicsProxy2D& first,
-            const PhysicsProxy2D& second,
-            sf::Vector2f direction
-        )
+        double relativeVelocityAlong(const PhysicsProxy2D& first, const PhysicsProxy2D& second,
+                                     sf::Vector2f direction)
         {
             const sf::Vector2f firstVelocity = effectiveVelocity(first);
             const sf::Vector2f secondVelocity = effectiveVelocity(second);
 
             const double relativeX =
-                static_cast<double>(secondVelocity.x) -
-                static_cast<double>(firstVelocity.x);
+                static_cast<double>(secondVelocity.x) - static_cast<double>(firstVelocity.x);
             const double relativeY =
-                static_cast<double>(secondVelocity.y) -
-                static_cast<double>(firstVelocity.y);
+                static_cast<double>(secondVelocity.y) - static_cast<double>(firstVelocity.y);
 
-            return
-                relativeX * static_cast<double>(direction.x) +
-                relativeY * static_cast<double>(direction.y);
+            return relativeX * static_cast<double>(direction.x) +
+                   relativeY * static_cast<double>(direction.y);
         }
 
-        bool scaledVector(
-            sf::Vector2f direction,
-            double scale,
-            sf::Vector2f& result
-        )
+        bool scaledVector(sf::Vector2f direction, double scale, sf::Vector2f& result)
         {
             const double x = static_cast<double>(direction.x) * scale;
             const double y = static_cast<double>(direction.y) * scale;
-            const double maximum =
-                static_cast<double>(std::numeric_limits<float>::max());
+            const double maximum = static_cast<double>(std::numeric_limits<float>::max());
 
-            if (
-                !std::isfinite(x) ||
-                !std::isfinite(y) ||
-                std::fabs(x) > maximum ||
-                std::fabs(y) > maximum
-            )
+            if (!std::isfinite(x) || !std::isfinite(y) || std::fabs(x) > maximum ||
+                std::fabs(y) > maximum)
             {
                 return false;
             }
 
-            result = {
-                static_cast<float>(x),
-                static_cast<float>(y)
-            };
+            result = {static_cast<float>(x), static_cast<float>(y)};
             return true;
         }
 
-        bool moveObject(
-            GameObject* object,
-            sf::Vector2f direction,
-            double distance
-        )
+        bool moveObject(GameObject* object, sf::Vector2f direction, double distance)
         {
-            if (object == nullptr)
-                return false;
+            if (object == nullptr) return false;
 
             sf::Vector2f offset;
 
-            if (!scaledVector(direction, distance, offset))
-                return false;
+            if (!scaledVector(direction, distance, offset)) return false;
 
             const sf::Vector2f position = object->transform.position();
-            const double x =
-                static_cast<double>(position.x) +
-                static_cast<double>(offset.x);
-            const double y =
-                static_cast<double>(position.y) +
-                static_cast<double>(offset.y);
-            const double maximum =
-                static_cast<double>(std::numeric_limits<float>::max());
+            const double x = static_cast<double>(position.x) + static_cast<double>(offset.x);
+            const double y = static_cast<double>(position.y) + static_cast<double>(offset.y);
+            const double maximum = static_cast<double>(std::numeric_limits<float>::max());
 
-            if (
-                !std::isfinite(x) ||
-                !std::isfinite(y) ||
-                std::fabs(x) > maximum ||
-                std::fabs(y) > maximum
-            )
+            if (!std::isfinite(x) || !std::isfinite(y) || std::fabs(x) > maximum ||
+                std::fabs(y) > maximum)
             {
                 return false;
             }
 
-            object->transform.setPosition({
-                static_cast<float>(x),
-                static_cast<float>(y)
-            });
+            object->transform.setPosition({static_cast<float>(x), static_cast<float>(y)});
             return true;
         }
 
-        bool addScaledVelocity(
-            RigidBody2D* body,
-            sf::Vector2f direction,
-            double scale
-        )
+        bool addScaledVelocity(RigidBody2D* body, sf::Vector2f direction, double scale)
         {
-            if (body == nullptr)
-                return false;
+            if (body == nullptr) return false;
 
             const sf::Vector2f velocity = body->velocity();
             const double x =
-                static_cast<double>(velocity.x) +
-                static_cast<double>(direction.x) * scale;
+                static_cast<double>(velocity.x) + static_cast<double>(direction.x) * scale;
             const double y =
-                static_cast<double>(velocity.y) +
-                static_cast<double>(direction.y) * scale;
-            const double maximum =
-                static_cast<double>(std::numeric_limits<float>::max());
+                static_cast<double>(velocity.y) + static_cast<double>(direction.y) * scale;
+            const double maximum = static_cast<double>(std::numeric_limits<float>::max());
 
-            if (
-                !std::isfinite(x) ||
-                !std::isfinite(y) ||
-                std::fabs(x) > maximum ||
-                std::fabs(y) > maximum
-            )
+            if (!std::isfinite(x) || !std::isfinite(y) || std::fabs(x) > maximum ||
+                std::fabs(y) > maximum)
             {
                 return false;
             }
 
-            body->setVelocity({
-                static_cast<float>(x),
-                static_cast<float>(y)
-            });
+            body->setVelocity({static_cast<float>(x), static_cast<float>(y)});
             return true;
         }
 
-        bool constraintLess(
-            const ContactConstraint2D& left,
-            const ContactConstraint2D& right
-        )
+        bool constraintLess(const ContactConstraint2D& left, const ContactConstraint2D& right)
         {
-            return detail::physicsContactLess(
-                left.contact,
-                right.contact
-            );
+            return detail::physicsContactLess(left.contact, right.contact);
         }
 
         float sanitizeUnitInterval(float value, float fallback)
         {
-            if (!std::isfinite(value))
-                return fallback;
+            if (!std::isfinite(value)) return fallback;
 
             return std::clamp(value, 0.f, 1.f);
         }
 
         float sanitizeNonNegative(float value, float fallback)
         {
-            if (!std::isfinite(value) || value < 0.f)
-                return fallback;
+            if (!std::isfinite(value) || value < 0.f) return fallback;
 
             return value;
         }
 
         PhysicsWorld2DConfig sanitizeConfig(PhysicsWorld2DConfig config)
         {
-            if (!isFinite(config.gravity))
-                config.gravity = DEFAULT_GRAVITY;
+            if (!isFinite(config.gravity)) config.gravity = DEFAULT_GRAVITY;
 
             if (config.velocityIterations == 0)
             {
-                config.velocityIterations =
-                    DEFAULT_VELOCITY_ITERATIONS;
+                config.velocityIterations = DEFAULT_VELOCITY_ITERATIONS;
             }
 
             if (config.positionIterations == 0)
             {
-                config.positionIterations =
-                    DEFAULT_POSITION_ITERATIONS;
+                config.positionIterations = DEFAULT_POSITION_ITERATIONS;
             }
 
-            config.velocityIterations = std::min(
-                config.velocityIterations,
-                MAXIMUM_SOLVER_ITERATIONS
-            );
-            config.positionIterations = std::min(
-                config.positionIterations,
-                MAXIMUM_SOLVER_ITERATIONS
-            );
+            config.velocityIterations =
+                std::min(config.velocityIterations, MAXIMUM_SOLVER_ITERATIONS);
+            config.positionIterations =
+                std::min(config.positionIterations, MAXIMUM_SOLVER_ITERATIONS);
 
             config.positionCorrectionPercent = sanitizeUnitInterval(
-                config.positionCorrectionPercent,
-                DEFAULT_POSITION_CORRECTION_PERCENT
-            );
+                config.positionCorrectionPercent, DEFAULT_POSITION_CORRECTION_PERCENT);
 
-            config.penetrationSlop = sanitizeNonNegative(
-                config.penetrationSlop,
-                DEFAULT_PENETRATION_SLOP
-            );
+            config.penetrationSlop =
+                sanitizeNonNegative(config.penetrationSlop, DEFAULT_PENETRATION_SLOP);
 
             config.restitutionVelocityThreshold = sanitizeNonNegative(
-                config.restitutionVelocityThreshold,
-                DEFAULT_RESTITUTION_VELOCITY_THRESHOLD
-            );
+                config.restitutionVelocityThreshold, DEFAULT_RESTITUTION_VELOCITY_THRESHOLD);
 
             config.groundedNormalThreshold = sanitizeUnitInterval(
-                config.groundedNormalThreshold,
-                DEFAULT_GROUNDED_NORMAL_THRESHOLD
-            );
+                config.groundedNormalThreshold, DEFAULT_GROUNDED_NORMAL_THRESHOLD);
 
             switch (config.broadPhaseMode)
             {
@@ -281,61 +202,37 @@ namespace l2d
             case PhysicsBroadPhaseMode2D::BruteForce:
                 break;
             default:
-                config.broadPhaseMode =
-                    PhysicsBroadPhaseMode2D::UniformGrid;
+                config.broadPhaseMode = PhysicsBroadPhaseMode2D::UniformGrid;
                 break;
             }
 
-            if (
-                !std::isfinite(config.broadPhaseCellSize) ||
-                config.broadPhaseCellSize <= 0.f
-            )
+            if (!std::isfinite(config.broadPhaseCellSize) || config.broadPhaseCellSize <= 0.f)
             {
-                config.broadPhaseCellSize =
-                    DEFAULT_BROAD_PHASE_CELL_SIZE;
+                config.broadPhaseCellSize = DEFAULT_BROAD_PHASE_CELL_SIZE;
             }
 
             if (config.broadPhaseMaxCellsPerProxy == 0)
             {
-                config.broadPhaseMaxCellsPerProxy =
-                    DEFAULT_BROAD_PHASE_MAX_CELLS_PER_PROXY;
+                config.broadPhaseMaxCellsPerProxy = DEFAULT_BROAD_PHASE_MAX_CELLS_PER_PROXY;
             }
 
             return config;
         }
 
-        void applyVelocityImpulse(
-            PhysicsProxy2D& first,
-            PhysicsProxy2D& second,
-            sf::Vector2f direction,
-            double magnitude
-        )
+        void applyVelocityImpulse(PhysicsProxy2D& first, PhysicsProxy2D& second,
+                                  sf::Vector2f direction, double magnitude)
         {
             const double firstInverseMass = inverseMass(first);
             const double secondInverseMass = inverseMass(second);
 
-            if (
-                first.body != nullptr &&
-                firstInverseMass > 0.0
-            )
+            if (first.body != nullptr && firstInverseMass > 0.0)
             {
-                addScaledVelocity(
-                    first.body,
-                    direction,
-                    -magnitude * firstInverseMass
-                );
+                addScaledVelocity(first.body, direction, -magnitude * firstInverseMass);
             }
 
-            if (
-                second.body != nullptr &&
-                secondInverseMass > 0.0
-            )
+            if (second.body != nullptr && secondInverseMass > 0.0)
             {
-                addScaledVelocity(
-                    second.body,
-                    direction,
-                    magnitude * secondInverseMass
-                );
+                addScaledVelocity(second.body, direction, magnitude * secondInverseMass);
             }
         }
 
@@ -346,168 +243,109 @@ namespace l2d
 
             const double firstInverseMass = inverseMass(first);
             const double secondInverseMass = inverseMass(second);
-            const double inverseMassSum =
-                firstInverseMass + secondInverseMass;
+            const double inverseMassSum = firstInverseMass + secondInverseMass;
 
-            if (inverseMassSum <= 0.0 || !std::isfinite(inverseMassSum))
-                return;
+            if (inverseMassSum <= 0.0 || !std::isfinite(inverseMassSum)) return;
 
             const sf::Vector2f normal = constraint.contact.manifold.normal;
-            const double normalVelocity = relativeVelocityAlong(
-                first,
-                second,
-                normal
-            );
+            const double normalVelocity = relativeVelocityAlong(first, second, normal);
             const double normalImpulseDelta =
-                (constraint.restitutionBias - normalVelocity) /
-                inverseMassSum;
+                (constraint.restitutionBias - normalVelocity) / inverseMassSum;
 
-            const double previousNormalImpulse =
-                constraint.accumulatedNormalImpulse;
+            const double previousNormalImpulse = constraint.accumulatedNormalImpulse;
 
-            if (!std::isfinite(normalImpulseDelta))
-                return;
+            if (!std::isfinite(normalImpulseDelta)) return;
 
-            constraint.accumulatedNormalImpulse = std::max(
-                previousNormalImpulse + normalImpulseDelta,
-                0.0
-            );
+            constraint.accumulatedNormalImpulse =
+                std::max(previousNormalImpulse + normalImpulseDelta, 0.0);
 
             const double appliedNormalImpulse =
-                constraint.accumulatedNormalImpulse -
-                previousNormalImpulse;
+                constraint.accumulatedNormalImpulse - previousNormalImpulse;
 
-            applyVelocityImpulse(
-                first,
-                second,
-                normal,
-                appliedNormalImpulse
-            );
+            applyVelocityImpulse(first, second, normal, appliedNormalImpulse);
 
-            const sf::Vector2f tangent{ -normal.y, normal.x };
-            const double tangentVelocity = relativeVelocityAlong(
-                first,
-                second,
-                tangent
-            );
-            const double tangentImpulseDelta =
-                -tangentVelocity / inverseMassSum;
+            const sf::Vector2f tangent{-normal.y, normal.x};
+            const double tangentVelocity = relativeVelocityAlong(first, second, tangent);
+            const double tangentImpulseDelta = -tangentVelocity / inverseMassSum;
 
-            const double previousTangentImpulse =
-                constraint.accumulatedTangentImpulse;
-            const double candidateTangentImpulse =
-                previousTangentImpulse + tangentImpulseDelta;
+            const double previousTangentImpulse = constraint.accumulatedTangentImpulse;
+            const double candidateTangentImpulse = previousTangentImpulse + tangentImpulseDelta;
 
-            if (!std::isfinite(candidateTangentImpulse))
-                return;
+            if (!std::isfinite(candidateTangentImpulse)) return;
 
             const double staticLimit =
-                constraint.staticFriction *
-                constraint.accumulatedNormalImpulse;
+                constraint.staticFriction * constraint.accumulatedNormalImpulse;
 
             if (std::fabs(candidateTangentImpulse) <= staticLimit)
             {
-                constraint.accumulatedTangentImpulse =
-                    candidateTangentImpulse;
+                constraint.accumulatedTangentImpulse = candidateTangentImpulse;
             }
             else
             {
                 const double dynamicLimit =
-                    constraint.dynamicFriction *
-                    constraint.accumulatedNormalImpulse;
+                    constraint.dynamicFriction * constraint.accumulatedNormalImpulse;
 
-                constraint.accumulatedTangentImpulse = std::clamp(
-                    candidateTangentImpulse,
-                    -dynamicLimit,
-                    dynamicLimit
-                );
+                constraint.accumulatedTangentImpulse =
+                    std::clamp(candidateTangentImpulse, -dynamicLimit, dynamicLimit);
             }
 
             const double appliedTangentImpulse =
-                constraint.accumulatedTangentImpulse -
-                previousTangentImpulse;
+                constraint.accumulatedTangentImpulse - previousTangentImpulse;
 
-            applyVelocityImpulse(
-                first,
-                second,
-                tangent,
-                appliedTangentImpulse
-            );
+            applyVelocityImpulse(first, second, tangent, appliedTangentImpulse);
         }
 
-        bool solvePosition(
-            ContactConstraint2D& constraint,
-            const PhysicsWorld2DConfig& config
-        )
+        bool solvePosition(ContactConstraint2D& constraint, const PhysicsWorld2DConfig& config)
         {
             PhysicsProxy2D& first = *constraint.first;
             PhysicsProxy2D& second = *constraint.second;
 
             const double firstInverseMass = inverseMass(first);
             const double secondInverseMass = inverseMass(second);
-            const double inverseMassSum =
-                firstInverseMass + secondInverseMass;
+            const double inverseMassSum = firstInverseMass + secondInverseMass;
 
-            if (inverseMassSum <= 0.0 || !std::isfinite(inverseMassSum))
-                return false;
+            if (inverseMassSum <= 0.0 || !std::isfinite(inverseMassSum)) return false;
 
             CollisionManifold2D manifold;
 
-            if (!computeCollisionManifold(
-                *first.collider,
-                *second.collider,
-                manifold
-            ))
+            if (!computeCollisionManifold(*first.collider, *second.collider, manifold))
             {
                 return false;
             }
 
-            const double correctablePenetration = std::max(
-                static_cast<double>(manifold.penetration) -
-                    static_cast<double>(config.penetrationSlop),
-                0.0
-            );
+            const double correctablePenetration =
+                std::max(static_cast<double>(manifold.penetration) -
+                             static_cast<double>(config.penetrationSlop),
+                         0.0);
 
-            if (correctablePenetration <= 0.0)
-                return false;
+            if (correctablePenetration <= 0.0) return false;
 
             const double correctionDistance =
-                static_cast<double>(config.positionCorrectionPercent) *
-                correctablePenetration;
+                static_cast<double>(config.positionCorrectionPercent) * correctablePenetration;
 
-            if (correctionDistance <= 0.0)
-                return false;
+            if (correctionDistance <= 0.0) return false;
 
             bool moved = false;
 
             if (firstInverseMass > 0.0)
             {
-                moved = moveObject(
-                    first.object,
-                    manifold.normal,
-                    -correctionDistance *
-                        (firstInverseMass / inverseMassSum)
-                ) || moved;
+                moved = moveObject(first.object, manifold.normal,
+                                   -correctionDistance * (firstInverseMass / inverseMassSum)) ||
+                        moved;
             }
 
             if (secondInverseMass > 0.0)
             {
-                moved = moveObject(
-                    second.object,
-                    manifold.normal,
-                    correctionDistance *
-                        (secondInverseMass / inverseMassSum)
-                ) || moved;
+                moved = moveObject(second.object, manifold.normal,
+                                   correctionDistance * (secondInverseMass / inverseMassSum)) ||
+                        moved;
             }
 
             return moved;
         }
     }
 
-    PhysicsWorld2D::PhysicsWorld2D()
-        : PhysicsWorld2D(PhysicsWorld2DConfig{})
-    {
-    }
+    PhysicsWorld2D::PhysicsWorld2D() : PhysicsWorld2D(PhysicsWorld2DConfig{}) {}
 
     PhysicsWorld2D::PhysicsWorld2D(const PhysicsWorld2DConfig& config)
         : m_config(sanitizeConfig(config))
@@ -524,8 +362,7 @@ namespace l2d
         m_config = sanitizeConfig(config);
     }
 
-    const PhysicsBroadPhaseStats2D&
-    PhysicsWorld2D::broadPhaseStats() const
+    const PhysicsBroadPhaseStats2D& PhysicsWorld2D::broadPhaseStats() const
     {
         return m_broadPhaseStats;
     }
@@ -535,28 +372,21 @@ namespace l2d
         return m_contacts;
     }
 
-    const std::vector<PhysicsContactEvent2D>&
-    PhysicsWorld2D::contactEvents() const
+    const std::vector<PhysicsContactEvent2D>& PhysicsWorld2D::contactEvents() const
     {
         return m_contactEvents;
     }
 
-    bool PhysicsWorld2D::isTouching(
-        GameObjectId firstObjectId,
-        GameObjectId secondObjectId
-    ) const
+    bool PhysicsWorld2D::isTouching(GameObjectId firstObjectId, GameObjectId secondObjectId) const
     {
         for (const PhysicsContact2D& contact : m_contacts)
         {
             const bool forward =
-                contact.firstObjectId == firstObjectId &&
-                contact.secondObjectId == secondObjectId;
+                contact.firstObjectId == firstObjectId && contact.secondObjectId == secondObjectId;
             const bool reverse =
-                contact.firstObjectId == secondObjectId &&
-                contact.secondObjectId == firstObjectId;
+                contact.firstObjectId == secondObjectId && contact.secondObjectId == firstObjectId;
 
-            if (forward || reverse)
-                return true;
+            if (forward || reverse) return true;
         }
 
         return false;
@@ -578,8 +408,7 @@ namespace l2d
 
     void PhysicsWorld2D::step(Scene& scene, float deltaTime)
     {
-        if (!std::isfinite(deltaTime) || deltaTime <= 0.f)
-            return;
+        if (!std::isfinite(deltaTime) || deltaTime <= 0.f) return;
 
         const std::shared_ptr<void> sceneToken = scene.m_handleState;
 
@@ -603,49 +432,32 @@ namespace l2d
         std::vector<PhysicsProxy2D>& proxies = stepData.proxies;
         std::vector<ContactConstraint2D> constraints;
 
-        auto addPair = [this, &constraints](
-            PhysicsProxy2D& left,
-            PhysicsProxy2D& right
-        )
+        auto addPair = [this, &constraints](PhysicsProxy2D& left, PhysicsProxy2D& right)
         {
             PhysicsProxy2D* first = &left;
             PhysicsProxy2D* second = &right;
 
-            if (
-                first->object == nullptr ||
-                second->object == nullptr ||
-                first->collider == nullptr ||
-                second->collider == nullptr
-            )
+            if (first->object == nullptr || second->object == nullptr ||
+                first->collider == nullptr || second->collider == nullptr)
             {
                 return;
             }
 
-            if (second->object->id() < first->object->id())
-                std::swap(first, second);
+            if (second->object->id() < first->object->id()) std::swap(first, second);
 
-            if (!first->collider->canCollideWith(*second->collider))
-                return;
+            if (!first->collider->canCollideWith(*second->collider)) return;
 
             ++m_broadPhaseStats.narrowPhaseTestCount;
 
             CollisionManifold2D manifold;
 
-            if (!computeCollisionManifold(
-                *first->collider,
-                *second->collider,
-                manifold
-            ))
+            if (!computeCollisionManifold(*first->collider, *second->collider, manifold))
             {
                 return;
             }
 
-            if (
-                !isFinite(manifold.normal) ||
-                !isFinite(manifold.point) ||
-                !std::isfinite(manifold.penetration) ||
-                manifold.penetration < 0.f
-            )
+            if (!isFinite(manifold.normal) || !isFinite(manifold.point) ||
+                !std::isfinite(manifold.penetration) || manifold.penetration < 0.f)
             {
                 return;
             }
@@ -656,194 +468,126 @@ namespace l2d
             contact.firstColliderType = first->collider->type();
             contact.secondColliderType = second->collider->type();
             contact.manifold = manifold;
-            contact.sensor =
-                first->collider->isSensor() ||
-                second->collider->isSensor();
+            contact.sensor = first->collider->isSensor() || second->collider->isSensor();
 
             first->collider->setColliding(true);
             second->collider->setColliding(true);
 
             m_contacts.push_back(contact);
 
-            if (contact.sensor)
-                return;
+            if (contact.sensor) return;
 
-            const double inverseMassSum =
-                inverseMass(*first) + inverseMass(*second);
+            const double inverseMassSum = inverseMass(*first) + inverseMass(*second);
 
-            if (inverseMassSum <= 0.0)
-                return;
+            if (inverseMassSum <= 0.0) return;
 
-            const PhysicsMaterial2D& firstMaterial =
-                first->collider->material();
-            const PhysicsMaterial2D& secondMaterial =
-                second->collider->material();
+            const PhysicsMaterial2D& firstMaterial = first->collider->material();
+            const PhysicsMaterial2D& secondMaterial = second->collider->material();
 
-            const float restitution = std::max(
-                firstMaterial.restitution,
-                secondMaterial.restitution
-            );
+            const float restitution =
+                std::max(firstMaterial.restitution, secondMaterial.restitution);
 
-            const double initialNormalVelocity = relativeVelocityAlong(
-                *first,
-                *second,
-                manifold.normal
-            );
+            const double initialNormalVelocity =
+                relativeVelocityAlong(*first, *second, manifold.normal);
 
             double restitutionBias = 0.0;
 
-            if (
-                initialNormalVelocity <
-                -m_config.restitutionVelocityThreshold
-            )
+            if (initialNormalVelocity < -m_config.restitutionVelocityThreshold)
             {
-                restitutionBias =
-                    -static_cast<double>(restitution) *
-                    initialNormalVelocity;
+                restitutionBias = -static_cast<double>(restitution) * initialNormalVelocity;
             }
 
-            constraints.push_back({
-                first,
-                second,
-                contact,
-                restitutionBias,
-                std::sqrt(
-                    firstMaterial.staticFriction *
-                    secondMaterial.staticFriction
-                ),
-                std::sqrt(
-                    firstMaterial.dynamicFriction *
-                    secondMaterial.dynamicFriction
-                ),
-                0.0,
-                0.0
-            });
+            constraints.push_back(
+                {first, second, contact, restitutionBias,
+                 std::sqrt(firstMaterial.staticFriction * secondMaterial.staticFriction),
+                 std::sqrt(firstMaterial.dynamicFriction * secondMaterial.dynamicFriction), 0.0,
+                 0.0});
         };
 
-        for (const detail::BroadPhasePair2D& pair :
-            stepData.broadPhaseResult.pairs)
+        for (const detail::BroadPhasePair2D& pair : stepData.broadPhaseResult.pairs)
         {
             addPair(proxies[pair.first], proxies[pair.second]);
         }
 
-        std::sort(
-            m_contacts.begin(),
-            m_contacts.end(),
-            detail::physicsContactLess
-        );
-        std::sort(
-            constraints.begin(),
-            constraints.end(),
-            constraintLess
-        );
+        std::sort(m_contacts.begin(), m_contacts.end(), detail::physicsContactLess);
+        std::sort(constraints.begin(), constraints.end(), constraintLess);
 
-        for (std::uint32_t iteration = 0;
-            iteration < m_config.velocityIterations;
-            ++iteration)
+        for (std::uint32_t iteration = 0; iteration < m_config.velocityIterations; ++iteration)
         {
             for (ContactConstraint2D& constraint : constraints)
                 solveVelocity(constraint);
         }
 
-        for (std::uint32_t iteration = 0;
-            iteration < m_config.positionIterations;
-            ++iteration)
+        for (std::uint32_t iteration = 0; iteration < m_config.positionIterations; ++iteration)
         {
             bool correctedAny = false;
 
             for (ContactConstraint2D& constraint : constraints)
             {
-                if (solvePosition(constraint, m_config))
-                    correctedAny = true;
+                if (solvePosition(constraint, m_config)) correctedAny = true;
             }
 
-            if (!correctedAny)
-                break;
+            if (!correctedAny) break;
         }
 
         for (const ContactConstraint2D& constraint : constraints)
         {
-            const sf::Vector2f normal =
-                constraint.contact.manifold.normal;
+            const sf::Vector2f normal = constraint.contact.manifold.normal;
 
-            if (
-                constraint.first->body != nullptr &&
-                constraint.first->body->bodyType() ==
-                    BodyType2D::Dynamic &&
-                normal.y >= m_config.groundedNormalThreshold
-            )
+            if (constraint.first->body != nullptr &&
+                constraint.first->body->bodyType() == BodyType2D::Dynamic &&
+                normal.y >= m_config.groundedNormalThreshold)
             {
                 constraint.first->body->setGrounded(true);
             }
 
-            if (
-                constraint.second->body != nullptr &&
-                constraint.second->body->bodyType() ==
-                    BodyType2D::Dynamic &&
-                normal.y <= -m_config.groundedNormalThreshold
-            )
+            if (constraint.second->body != nullptr &&
+                constraint.second->body->bodyType() == BodyType2D::Dynamic &&
+                normal.y <= -m_config.groundedNormalThreshold)
             {
                 constraint.second->body->setGrounded(true);
             }
         }
 
-        detail::buildPhysicsContactEvents(
-            previousContacts,
-            m_contacts,
-            m_contactEvents
-        );
+        detail::buildPhysicsContactEvents(previousContacts, m_contacts, m_contactEvents);
     }
 
-    bool PhysicsWorld2D::isPhysicsParticipant(
-        const Scene& scene,
-        const GameObject* gameObject
-    ) const
+    bool PhysicsWorld2D::isPhysicsParticipant(const Scene& scene,
+                                              const GameObject* gameObject) const
     {
-        return gameObject != nullptr &&
-            gameObject->isActive() &&
-            !gameObject->isDestroyQueued() &&
-            scene.isFixedStepParticipant(*gameObject);
+        return gameObject != nullptr && gameObject->isActive() && !gameObject->isDestroyQueued() &&
+               scene.isFixedStepParticipant(*gameObject);
     }
 
     void PhysicsWorld2D::resetPhysicsStates(Scene& scene)
     {
-        for (const std::unique_ptr<GameObject>& gameObjectPtr :
-            scene.gameObjects())
+        for (const std::unique_ptr<GameObject>& gameObjectPtr : scene.gameObjects())
         {
             GameObject* gameObject = gameObjectPtr.get();
 
-            if (gameObject == nullptr)
-                continue;
+            if (gameObject == nullptr) continue;
 
             Collider2D* collider = gameObject->getComponent<Collider2D>();
 
-            if (collider != nullptr)
-                collider->setColliding(false);
+            if (collider != nullptr) collider->setColliding(false);
 
             RigidBody2D* body = gameObject->getComponent<RigidBody2D>();
 
-            if (body != nullptr)
-                body->setGrounded(false);
+            if (body != nullptr) body->setGrounded(false);
         }
     }
 
-    void PhysicsWorld2D::integrateRigidBodies(
-        Scene& scene,
-        float deltaTime
-    )
+    void PhysicsWorld2D::integrateRigidBodies(Scene& scene, float deltaTime)
     {
-        for (const std::unique_ptr<GameObject>& gameObjectPtr :
-            scene.gameObjects())
+        for (const std::unique_ptr<GameObject>& gameObjectPtr : scene.gameObjects())
         {
             GameObject* gameObject = gameObjectPtr.get();
 
-            if (!isPhysicsParticipant(scene, gameObject))
-                continue;
+            if (!isPhysicsParticipant(scene, gameObject)) continue;
 
             RigidBody2D* body = gameObject->getComponent<RigidBody2D>();
 
-            if (body == nullptr || !body->isActive())
-                continue;
+            if (body == nullptr || !body->isActive()) continue;
 
             body->integrate(deltaTime, m_config.gravity);
         }

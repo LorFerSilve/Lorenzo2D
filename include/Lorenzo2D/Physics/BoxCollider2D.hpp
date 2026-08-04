@@ -8,8 +8,8 @@ namespace l2d
 {
     class BoxCollider2D : public Collider2D
     {
-    public:
-        explicit BoxCollider2D(sf::Vector2f size = { 100.f, 100.f });
+      public:
+        explicit BoxCollider2D(sf::Vector2f size = {100.f, 100.f});
 
         const sf::Vector2f& size() const;
         void setSize(sf::Vector2f size);
@@ -19,7 +19,7 @@ namespace l2d
 
         bool overlaps(const BoxCollider2D& other) const;
 
-    private:
+      private:
         sf::Vector2f m_size;
     };
 }

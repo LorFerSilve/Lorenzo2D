@@ -59,16 +59,10 @@ int main()
 {
     int failures = 0;
 
-    runTest(
-        "action state uses aggregate transitions",
-        testActionStateUsesAggregateTransitions,
-        failures
-    );
-    runTest(
-        "previous button state reconstructs snapshots",
-        testPreviousButtonStateReconstructsSnapshots,
-        failures
-    );
+    runTest("action state uses aggregate transitions", testActionStateUsesAggregateTransitions,
+            failures);
+    runTest("previous button state reconstructs snapshots",
+            testPreviousButtonStateReconstructsSnapshots, failures);
 
     if (failures != 0)
     {

@@ -8,7 +8,7 @@ namespace l2d
 
     class Time
     {
-    public:
+      public:
         static float rawDeltaTime();
         static float frameDeltaTime();
         static float deltaTime();
@@ -39,24 +39,17 @@ namespace l2d
         // fixed ticks are selected. This is separate from dropped whole ticks.
         static double clampedFrameTime();
 
-    private:
+      private:
         static void reset(double fixedDeltaTime);
 
-        static void beginFrame(
-            double rawDeltaTime,
-            double frameDeltaTime
-        );
+        static void beginFrame(double rawDeltaTime, double frameDeltaTime);
 
         static void completeFixedTick();
 
-        static void endFrame(
-            double interpolationAlpha,
-            std::uint64_t droppedTicks,
-            double droppedSimulationTime,
-            double clampedFrameTime
-        );
+        static void endFrame(double interpolationAlpha, std::uint64_t droppedTicks,
+                             double droppedSimulationTime, double clampedFrameTime);
 
-    private:
+      private:
         static double s_rawDeltaTime;
         static double s_frameDeltaTime;
         static double s_fixedDeltaTime;

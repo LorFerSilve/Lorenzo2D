@@ -11,35 +11,27 @@ namespace l2d
 
         double sanitizeNonNegative(double value)
         {
-            if (!std::isfinite(value) || value < 0.0)
-                return 0.0;
+            if (!std::isfinite(value) || value < 0.0) return 0.0;
 
             return value;
         }
 
         double saturatingAdd(double left, double right)
         {
-            if (right <= 0.0)
-                return left;
+            if (right <= 0.0) return left;
 
             const double maximum = std::numeric_limits<double>::max();
 
-            if (left >= maximum - right)
-                return maximum;
+            if (left >= maximum - right) return maximum;
 
             return left + right;
         }
 
-        std::uint64_t saturatingAdd(
-            std::uint64_t left,
-            std::uint64_t right
-        )
+        std::uint64_t saturatingAdd(std::uint64_t left, std::uint64_t right)
         {
-            const std::uint64_t maximum =
-                std::numeric_limits<std::uint64_t>::max();
+            const std::uint64_t maximum = std::numeric_limits<std::uint64_t>::max();
 
-            if (left >= maximum - right)
-                return maximum;
+            if (left >= maximum - right) return maximum;
 
             return left + right;
         }
@@ -91,8 +83,7 @@ namespace l2d
     {
         const float alpha = static_cast<float>(s_interpolationAlpha);
 
-        if (alpha >= 1.f)
-            return std::nextafter(1.f, 0.f);
+        if (alpha >= 1.f) return std::nextafter(1.f, 0.f);
 
         return alpha;
     }
@@ -151,16 +142,10 @@ namespace l2d
     {
         float callbackFixedDeltaTime = static_cast<float>(fixedDeltaTime);
 
-        if (
-            !std::isfinite(fixedDeltaTime) ||
-            fixedDeltaTime <= 0.0 ||
-            !std::isfinite(callbackFixedDeltaTime) ||
-            callbackFixedDeltaTime <= 0.f
-        )
+        if (!std::isfinite(fixedDeltaTime) || fixedDeltaTime <= 0.0 ||
+            !std::isfinite(callbackFixedDeltaTime) || callbackFixedDeltaTime <= 0.f)
         {
-            callbackFixedDeltaTime = static_cast<float>(
-                DEFAULT_FIXED_DELTA_TIME
-            );
+            callbackFixedDeltaTime = static_cast<float>(DEFAULT_FIXED_DELTA_TIME);
         }
 
         s_rawDeltaTime = 0.0;
@@ -192,32 +177,18 @@ namespace l2d
         s_interpolationAlpha = 0.0;
         s_ticksThisFrame = 0;
 
-        s_elapsedTime = saturatingAdd(
-            s_elapsedTime,
-            s_frameDeltaTime
-        );
+        s_elapsedTime = saturatingAdd(s_elapsedTime, s_frameDeltaTime);
 
-        s_realElapsedTime = saturatingAdd(
-            s_realElapsedTime,
-            s_rawDeltaTime
-        );
+        s_realElapsedTime = saturatingAdd(s_realElapsedTime, s_rawDeltaTime);
 
-        s_totalFrameCount = saturatingAdd(
-            s_totalFrameCount,
-            std::uint64_t{ 1 }
-        );
+        s_totalFrameCount = saturatingAdd(s_totalFrameCount, std::uint64_t{1});
 
         s_fpsTimer = saturatingAdd(s_fpsTimer, s_rawDeltaTime);
-        s_fpsFrameCounter = saturatingAdd(
-            s_fpsFrameCounter,
-            std::uint64_t{ 1 }
-        );
+        s_fpsFrameCounter = saturatingAdd(s_fpsFrameCounter, std::uint64_t{1});
 
         if (s_fpsTimer >= 1.0)
         {
-            s_fps = static_cast<float>(
-                static_cast<double>(s_fpsFrameCounter) / s_fpsTimer
-            );
+            s_fps = static_cast<float>(static_cast<double>(s_fpsFrameCounter) / s_fpsTimer);
 
             s_fpsTimer = 0.0;
             s_fpsFrameCounter = 0;
@@ -226,26 +197,15 @@ namespace l2d
 
     void Time::completeFixedTick()
     {
-        s_totalTickCount = saturatingAdd(
-            s_totalTickCount,
-            std::uint64_t{ 1 }
-        );
+        s_totalTickCount = saturatingAdd(s_totalTickCount, std::uint64_t{1});
 
-        if (s_ticksThisFrame < std::numeric_limits<std::uint32_t>::max())
-            ++s_ticksThisFrame;
+        if (s_ticksThisFrame < std::numeric_limits<std::uint32_t>::max()) ++s_ticksThisFrame;
 
-        s_simulationTime = saturatingAdd(
-            s_simulationTime,
-            s_fixedDeltaTime
-        );
+        s_simulationTime = saturatingAdd(s_simulationTime, s_fixedDeltaTime);
     }
 
-    void Time::endFrame(
-        double interpolationAlpha,
-        std::uint64_t droppedTicks,
-        double droppedSimulationTime,
-        double clampedFrameTime
-    )
+    void Time::endFrame(double interpolationAlpha, std::uint64_t droppedTicks,
+                        double droppedSimulationTime, double clampedFrameTime)
     {
         interpolationAlpha = sanitizeNonNegative(interpolationAlpha);
 
@@ -256,19 +216,12 @@ namespace l2d
 
         s_interpolationAlpha = interpolationAlpha;
 
-        s_droppedTickCount = saturatingAdd(
-            s_droppedTickCount,
-            droppedTicks
-        );
+        s_droppedTickCount = saturatingAdd(s_droppedTickCount, droppedTicks);
 
-        s_droppedSimulationTime = saturatingAdd(
-            s_droppedSimulationTime,
-            sanitizeNonNegative(droppedSimulationTime)
-        );
+        s_droppedSimulationTime =
+            saturatingAdd(s_droppedSimulationTime, sanitizeNonNegative(droppedSimulationTime));
 
-        s_clampedFrameTime = saturatingAdd(
-            s_clampedFrameTime,
-            sanitizeNonNegative(clampedFrameTime)
-        );
+        s_clampedFrameTime =
+            saturatingAdd(s_clampedFrameTime, sanitizeNonNegative(clampedFrameTime));
     }
 }

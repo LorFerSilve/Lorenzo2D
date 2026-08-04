@@ -18,9 +18,7 @@ namespace
 
 namespace l2d
 {
-    GameObject::GameObject(std::string name)
-        : m_id(allocateGameObjectId()),
-        m_name(std::move(name))
+    GameObject::GameObject(std::string name) : m_id(allocateGameObjectId()), m_name(std::move(name))
     {
     }
 
@@ -92,20 +90,17 @@ namespace l2d
 
     void GameObject::update(float deltaTime)
     {
-        if (!m_active || m_destroyQueued)
-            return;
+        if (!m_active || m_destroyQueued) return;
 
         const std::size_t componentCount = m_components.size();
 
         for (std::size_t index = 0; index < componentCount; ++index)
         {
-            if (!m_active || m_destroyQueued)
-                return;
+            if (!m_active || m_destroyQueued) return;
 
             Component* component = m_components[index].get();
 
-            if (component->isActive())
-                component->onUpdate(deltaTime);
+            if (component->isActive()) component->onUpdate(deltaTime);
         }
     }
 
@@ -114,25 +109,19 @@ namespace l2d
         render(window, 1.f);
     }
 
-    void GameObject::render(
-        sf::RenderWindow& window,
-        float interpolationAlpha
-    )
+    void GameObject::render(sf::RenderWindow& window, float interpolationAlpha)
     {
-        if (!m_active || m_destroyQueued)
-            return;
+        if (!m_active || m_destroyQueued) return;
 
         const std::size_t componentCount = m_components.size();
 
         for (std::size_t index = 0; index < componentCount; ++index)
         {
-            if (!m_active || m_destroyQueued)
-                return;
+            if (!m_active || m_destroyQueued) return;
 
             Component* component = m_components[index].get();
 
-            if (component->isActive())
-                component->onRender(window, interpolationAlpha);
+            if (component->isActive()) component->onRender(window, interpolationAlpha);
         }
     }
 }

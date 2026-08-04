@@ -10,8 +10,8 @@ namespace l2d
 {
     class RectangleRenderer : public Component
     {
-    public:
-        RectangleRenderer(sf::Vector2f size = { 100.f, 100.f }, sf::Color color = sf::Color::White);
+      public:
+        RectangleRenderer(sf::Vector2f size = {100.f, 100.f}, sf::Color color = sf::Color::White);
 
         // Each nonfinite or negative axis becomes zero. Mirroring remains a
         // Transform scale concern rather than a negative geometry size.
@@ -22,12 +22,9 @@ namespace l2d
         sf::Color fillColor() const;
 
         void onRender(sf::RenderWindow& window) override;
-        void onRender(
-            sf::RenderWindow& window,
-            float interpolationAlpha
-        ) override;
+        void onRender(sf::RenderWindow& window, float interpolationAlpha) override;
 
-    private:
+      private:
         sf::RectangleShape m_shape;
     };
 }

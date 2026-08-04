@@ -12,14 +12,14 @@ namespace l2d
 {
     class Camera2D
     {
-    public:
-        explicit Camera2D(sf::Vector2f size = { 1280.f, 720.f });
+      public:
+        explicit Camera2D(sf::Vector2f size = {1280.f, 720.f});
 
         // Nonfinite or out-of-domain coordinates are rejected.
         void setCenter(sf::Vector2f center);
         const sf::Vector2f& center() const;
 
-        void move(sf::Vector2f offset); 
+        void move(sf::Vector2f offset);
 
         // Each axis is kept finite and positive. Extreme values are clamped
         // so the effective SFML view remains invertible.
@@ -46,11 +46,12 @@ namespace l2d
         void applyTo(sf::RenderWindow& window) const;
 
         const sf::View& view() const;
-    private:
+
+      private:
         void updateViewSize();
         sf::Vector2f clampedCenter(sf::Vector2f center) const;
 
-    private:
+      private:
         sf::View m_view;
 
         sf::Vector2f m_center;

@@ -2,8 +2,7 @@
 
 namespace l2d
 {
-    RenderLayerStack2D::RenderLayerStack2D()
-        : m_enabledLayers{}
+    RenderLayerStack2D::RenderLayerStack2D() : m_enabledLayers{}
     {
         enableAll();
     }
@@ -12,8 +11,7 @@ namespace l2d
     {
         const std::size_t index = layerToIndex(layer);
 
-        if (index >= m_enabledLayers.size())
-            return;
+        if (index >= m_enabledLayers.size()) return;
 
         m_enabledLayers[index] = enabled;
     }
@@ -22,8 +20,7 @@ namespace l2d
     {
         const std::size_t index = layerToIndex(layer);
 
-        if (index >= m_enabledLayers.size())
-            return false;
+        if (index >= m_enabledLayers.size()) return false;
 
         return m_enabledLayers[index];
     }

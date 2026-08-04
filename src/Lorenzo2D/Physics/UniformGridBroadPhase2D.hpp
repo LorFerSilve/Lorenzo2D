@@ -12,8 +12,8 @@ namespace l2d
     {
         struct BroadPhaseProxy2D
         {
-            sf::Vector2f minimum = { 0.f, 0.f };
-            sf::Vector2f maximum = { 0.f, 0.f };
+            sf::Vector2f minimum = {0.f, 0.f};
+            sf::Vector2f maximum = {0.f, 0.f};
             bool boundsValid = false;
             bool moving = false;
         };
@@ -31,18 +31,12 @@ namespace l2d
             std::size_t fallbackProxyCount = 0;
         };
 
-        std::size_t countBruteForcePairs(
-            const std::vector<BroadPhaseProxy2D>& proxies
-        );
+        std::size_t countBruteForcePairs(const std::vector<BroadPhaseProxy2D>& proxies);
 
-        BroadPhaseBuildResult2D buildBruteForcePairs(
-            const std::vector<BroadPhaseProxy2D>& proxies
-        );
+        BroadPhaseBuildResult2D buildBruteForcePairs(const std::vector<BroadPhaseProxy2D>& proxies);
 
-        BroadPhaseBuildResult2D buildUniformGridPairs(
-            const std::vector<BroadPhaseProxy2D>& proxies,
-            float cellSize,
-            std::uint32_t maxCellsPerProxy
-        );
+        BroadPhaseBuildResult2D buildUniformGridPairs(const std::vector<BroadPhaseProxy2D>& proxies,
+                                                      float cellSize,
+                                                      std::uint32_t maxCellsPerProxy);
     }
 }

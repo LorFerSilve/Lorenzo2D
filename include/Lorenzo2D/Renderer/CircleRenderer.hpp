@@ -9,7 +9,7 @@ namespace l2d
 {
     class CircleRenderer : public Component
     {
-    public:
+      public:
         CircleRenderer(float radius = 50.f, sf::Color color = sf::Color::White);
 
         // Nonfinite and negative radii become zero. Extreme finite radii are
@@ -21,12 +21,9 @@ namespace l2d
         sf::Color fillColor() const;
 
         void onRender(sf::RenderWindow& window) override;
-        void onRender(
-            sf::RenderWindow& window,
-            float interpolationAlpha
-        ) override;
+        void onRender(sf::RenderWindow& window, float interpolationAlpha) override;
 
-    private:
+      private:
         sf::CircleShape m_shape;
     };
 }

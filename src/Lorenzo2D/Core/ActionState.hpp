@@ -4,7 +4,7 @@ namespace l2d::core_detail
 {
     class ActionState
     {
-    public:
+      public:
         constexpr void include(bool currentPressed, bool previousPressed) noexcept
         {
             m_currentPressed = m_currentPressed || currentPressed;
@@ -26,16 +26,13 @@ namespace l2d::core_detail
             return !m_currentPressed && m_previousPressed;
         }
 
-    private:
+      private:
         bool m_currentPressed = false;
         bool m_previousPressed = false;
     };
 
-    [[nodiscard]] constexpr bool previousButtonState(
-        bool currentPressed,
-        bool wasPressed,
-        bool wasReleased
-    ) noexcept
+    [[nodiscard]] constexpr bool previousButtonState(bool currentPressed, bool wasPressed,
+                                                     bool wasReleased) noexcept
     {
         return currentPressed ? !wasPressed : wasReleased;
     }
