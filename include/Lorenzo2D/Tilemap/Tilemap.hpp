@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Lorenzo2D/Scene/GameObjectHandle.hpp>
+#include <Lorenzo2D/Tilemap/TileSet.hpp>
 
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -22,6 +23,8 @@ namespace l2d
     struct TileMapBuildStats
     {
         std::size_t solidTileCount = 0;
+        std::size_t renderedTileCount = 0;
+        std::size_t texturedTileCount = 0;
         std::size_t renderChunkCount = 0;
         std::size_t collisionRectangleCount = 0;
     };
@@ -76,6 +79,13 @@ namespace l2d
         // Returns the configuration for the next load.
         sf::Color solidTileColor() const;
 
+        // Atlas mappings are snapshot with the next successful load. Mapped
+        // characters render with texture coordinates; an unmapped solid cell
+        // retains the configured flat-color fallback.
+        void setTileSet(TileSet tileSet);
+        const TileSet& tileSet() const;
+        const TileSet& loadedTileSet() const;
+
         void loadFromLayout(Scene& scene, const Layout& layout, char solidChar = '#',
                             const std::string& objectPrefix = "Tile");
 
@@ -115,6 +125,8 @@ namespace l2d
         sf::Vector2u m_renderChunkSize;
         sf::Vector2u m_loadedRenderChunkSize;
         sf::Color m_solidTileColor;
+        TileSet m_tileSet;
+        TileSet m_loadedTileSet;
         sf::Vector2f m_worldSize;
         TileMapBuildStats m_buildStats;
 

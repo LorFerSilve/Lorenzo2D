@@ -1,4 +1,5 @@
 #include <Lorenzo2D/Assets/AssetManager.hpp>
+#include <Lorenzo2D/Assets/ResourceLocator.hpp>
 
 #include <memory>
 #include <utility>
@@ -12,6 +13,13 @@ namespace l2d
         if (!font->openFromFile(filepath)) return false;
 
         return storeFont(name, FontHandle(std::move(font)));
+    }
+
+    bool AssetManager::loadFont(const std::string& name, const ResourceLocator& locator,
+                                const std::string& resource)
+    {
+        const std::optional<ResourceLocator::Path> path = locator.locate(resource);
+        return path && loadFont(name, path->string());
     }
 
     bool AssetManager::storeFont(const std::string& name, FontHandle font)
@@ -55,6 +63,13 @@ namespace l2d
 
         texture->setSmooth(smooth);
         return storeTexture(name, TextureHandle(std::move(texture)));
+    }
+
+    bool AssetManager::loadTexture(const std::string& name, const ResourceLocator& locator,
+                                   const std::string& resource, bool smooth)
+    {
+        const std::optional<ResourceLocator::Path> path = locator.locate(resource);
+        return path && loadTexture(name, path->string(), smooth);
     }
 
     bool AssetManager::storeTexture(const std::string& name, TextureHandle texture)

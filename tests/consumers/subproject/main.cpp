@@ -1,4 +1,10 @@
+#include <Lorenzo2D/Animation/AnimationClip.hpp>
+#include <Lorenzo2D/Assets/ResourceLocator.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
+#include <Lorenzo2D/Scene/LevelSerializer.hpp>
+#include <Lorenzo2D/Tilemap/TileSet.hpp>
+
+#include <sstream>
 
 int main()
 {
@@ -7,5 +13,22 @@ int main()
 
     const sf::Vector2f position = transform.position();
 
-    return position == sf::Vector2f{6.f, 8.f} ? 0 : 1;
+    l2d::AnimationClip clip("idle");
+    const bool frameAdded = clip.addFrame({{0, 0}, {16, 16}});
+
+    l2d::TileSet tileSet;
+    const bool tileAdded = tileSet.setTileFromGrid('#', {1u, 0u}, {16u, 16u});
+
+    l2d::LevelDocument level;
+    level.objects.push_back(l2d::Prefab{});
+    std::ostringstream serialized;
+    const bool levelSaved = l2d::LevelSerializer::save(serialized, level);
+
+    l2d::ResourceLocator resources;
+    const bool resourceRootAdded = resources.addRoot("assets");
+
+    return position == sf::Vector2f{6.f, 8.f} && frameAdded && tileAdded && levelSaved &&
+                   resourceRootAdded
+               ? 0
+               : 1;
 }

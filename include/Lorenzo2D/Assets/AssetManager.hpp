@@ -11,6 +11,8 @@
 
 namespace l2d
 {
+    class ResourceLocator;
+
     class AssetManager
     {
       public:
@@ -25,6 +27,8 @@ namespace l2d
         // Loading is transactional: a failure leaves any existing asset with
         // the same name unchanged.
         bool loadFont(const std::string& name, const std::string& filepath);
+        bool loadFont(const std::string& name, const ResourceLocator& locator,
+                      const std::string& resource);
         bool storeFont(const std::string& name, FontHandle font);
 
         FontHandle getFont(const std::string& name) const;
@@ -34,6 +38,8 @@ namespace l2d
         std::size_t fontCount() const;
 
         bool loadTexture(const std::string& name, const std::string& filepath, bool smooth = true);
+        bool loadTexture(const std::string& name, const ResourceLocator& locator,
+                         const std::string& resource, bool smooth = true);
         bool storeTexture(const std::string& name, TextureHandle texture);
 
         TextureHandle getTexture(const std::string& name) const;

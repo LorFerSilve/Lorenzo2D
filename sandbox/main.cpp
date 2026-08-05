@@ -1,4 +1,5 @@
 #include <Lorenzo2D/Assets/AssetManager.hpp>
+#include <Lorenzo2D/Assets/ResourceLocator.hpp>
 #include <Lorenzo2D/Core/ActionMap.hpp>
 #include <Lorenzo2D/Core/Application.hpp>
 #include <Lorenzo2D/Core/Input.hpp>
@@ -28,15 +29,12 @@
 #include <SFML/Graphics.hpp>
 
 #include <iomanip>
+#include <optional>
 #include <cstdint>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <filesystem>
-
-#ifndef L2D_ASSET_ROOT
-#define L2D_ASSET_ROOT "assets"
-#endif
 
 namespace GameActions
 {
@@ -198,11 +196,13 @@ class EnemyPatrol : public l2d::Component
 class SandboxApp : public l2d::Application
 {
   public:
-    SandboxApp()
+    explicit SandboxApp(const std::filesystem::path& executablePath)
         : l2d::Application(1280, 720, "Lorenzo2D Engine"), m_camera({1280.f, 720.f}),
           m_cameraController(m_camera)
     {
         m_workingDirectory = std::filesystem::current_path().string();
+        m_resources.addRoot(std::filesystem::current_path() / "assets");
+        m_resources.addRoot(l2d::ResourceLocator::executableDirectory(executablePath) / "assets");
 
         setupInputActions();
         setupAssets();
@@ -550,10 +550,13 @@ class SandboxApp : public l2d::Application
         m_tileMap.setRenderChunkSize({16u, 16u});
         m_tileMap.setSolidTileColor(sf::Color::White);
 
-        const std::filesystem::path levelPath =
-            std::filesystem::path(L2D_ASSET_ROOT) / "levels" / "level1.txt";
+        const std::filesystem::path relativeLevelPath = "levels/level1.txt";
+        const std::optional<std::filesystem::path> locatedLevel =
+            m_resources.locate(relativeLevelPath);
+        const std::filesystem::path levelPath = locatedLevel.value_or(relativeLevelPath);
 
-        m_levelLoadedFromFile = m_tileMap.loadFromFile(*m_levelScene, levelPath.string());
+        m_levelLoadedFromFile =
+            locatedLevel && m_tileMap.loadFromFile(*m_levelScene, locatedLevel->string());
 
         if (m_levelLoadedFromFile)
         {
@@ -606,10 +609,9 @@ class SandboxApp : public l2d::Application
 
     void setupAssets()
     {
-        const std::filesystem::path assetRoot = L2D_ASSET_ROOT;
+        m_assets.loadFont("debug", m_resources, "fonts/DejaVuSans.ttf");
 
-        std::vector<std::filesystem::path> fontCandidates = {assetRoot / "fonts" /
-                                                             "DejaVuSans.ttf"};
+        std::vector<std::filesystem::path> fontCandidates;
 
 #if defined(_WIN32)
         fontCandidates.emplace_back("C:/Windows/Fonts/arial.ttf");
@@ -624,13 +626,14 @@ class SandboxApp : public l2d::Application
 
         for (const std::filesystem::path& fontPath : fontCandidates)
         {
+            if (m_assets.hasFont("debug")) break;
             if (m_assets.loadFont("debug", fontPath.string())) break;
         }
 
-        m_assets.loadTexture("player", (assetRoot / "textures" / "player.png").string(), true);
+        m_assets.loadTexture("player", m_resources, "textures/player.png", true);
 
         // Optional. Shape renderers are used when these files are unavailable.
-        m_assets.loadTexture("coin", (assetRoot / "textures" / "coin.png").string(), true);
+        m_assets.loadTexture("coin", m_resources, "textures/coin.png", true);
     }
 
     void setupDebugOverlay()
@@ -1033,6 +1036,7 @@ class SandboxApp : public l2d::Application
     }
 
   private:
+    l2d::ResourceLocator m_resources;
     l2d::AssetManager m_assets;
     l2d::ActionMap m_actions;
 
@@ -1079,9 +1083,10 @@ class SandboxApp : public l2d::Application
     l2d::DebugOverlay m_debugOverlay;
 };
 
-int main()
+int main(int argc, char* argv[])
 {
-    SandboxApp app;
+    const std::filesystem::path executablePath = argc > 0 ? argv[0] : std::filesystem::path{};
+    SandboxApp app(executablePath);
     app.run();
 
     return 0;

@@ -2,6 +2,7 @@
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
+#include <Lorenzo2D/Tilemap/TileSet.hpp>
 
 #include <SFML/Graphics/View.hpp>
 #include <SFML/System/Angle.hpp>
@@ -361,6 +362,51 @@ namespace
         L2D_REQUIRE(scene.gameObjectCount() == previousObjectCount);
         L2D_REQUIRE(scene.destroyQueuedGameObjectCount() == 0u);
     }
+
+    void testTileSetAtlasMappingsRenderMultipleLayoutCharacters()
+    {
+        l2d::TileSet tileSet;
+        L2D_REQUIRE(!tileSet.setTile('#', {{0, 0}, {0, 16}}));
+        L2D_REQUIRE(!tileSet.setTileFromGrid('#', {0u, 0u}, {0u, 16u}));
+        L2D_REQUIRE(tileSet.setTileFromGrid('#', {0u, 0u}, {16u, 16u}));
+        L2D_REQUIRE(tileSet.setTileFromGrid('G', {2u, 1u}, {16u, 16u}));
+        L2D_REQUIRE(tileSet.tileCount() == 2u);
+        L2D_REQUIRE(tileSet.textureRect('G') ==
+                    std::optional<sf::IntRect>(sf::IntRect({32, 16}, {16, 16})));
+
+        l2d::Scene scene;
+        l2d::TileMap tileMap;
+        tileMap.setTileSize({8.f, 8.f});
+        tileMap.setRenderChunkSize({2u, 2u});
+        tileMap.setTileSet(tileSet);
+        tileMap.loadFromLayout(scene, {"#G.P"});
+
+        L2D_REQUIRE(tileMap.buildStats().solidTileCount == 1u);
+        L2D_REQUIRE(tileMap.buildStats().renderedTileCount == 2u);
+        L2D_REQUIRE(tileMap.buildStats().texturedTileCount == 2u);
+        L2D_REQUIRE(tileMap.buildStats().renderChunkCount == 1u);
+        L2D_REQUIRE(tileMap.buildStats().collisionRectangleCount == 1u);
+        L2D_REQUIRE(tileMap.loadedTileSet().tileCount() == 2u);
+
+        const sf::View view({16.f, 4.f}, {32.f, 8.f});
+        const l2d::TileMapRenderStats stats = tileMap.renderStatsForView(view);
+        L2D_REQUIRE(stats.solidTileCount == 1u);
+        L2D_REQUIRE(stats.submittedTileCount == 2u);
+        L2D_REQUIRE(stats.submittedVertexCount == 12u);
+        L2D_REQUIRE(stats.drawCallCount == 1u);
+
+        l2d::TileSet replacement;
+        L2D_REQUIRE(replacement.setTileFromGrid('W', {3u, 0u}, {16u, 16u}));
+        tileMap.setTileSet(replacement);
+        L2D_REQUIRE(tileMap.tileSet().contains('W'));
+        L2D_REQUIRE(!tileMap.loadedTileSet().contains('W'));
+        L2D_REQUIRE(tileMap.loadedTileSet().contains('G'));
+
+        L2D_REQUIRE(tileSet.removeTile('G'));
+        L2D_REQUIRE(!tileSet.removeTile('G'));
+        tileSet.clearTiles();
+        L2D_REQUIRE(tileSet.tileCount() == 0u);
+    }
 }
 
 int main()
@@ -377,6 +423,8 @@ int main()
             failures);
     runTest("tilemap files preserve blank rows",
             testTileMapFileLoadingPreservesBlankRowsAndIsTransactional, failures);
+    runTest("tilesets map atlas cells onto layout characters",
+            testTileSetAtlasMappingsRenderMultipleLayoutCharacters, failures);
 
     if (failures != 0)
     {

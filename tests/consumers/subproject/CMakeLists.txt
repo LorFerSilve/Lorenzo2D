@@ -16,12 +16,18 @@ if(L2D_BUILD_TESTS)
     message(FATAL_ERROR "L2D_BUILD_TESTS must default to OFF in dependency mode")
 endif()
 
+if(L2D_BUILD_EXAMPLES)
+    message(FATAL_ERROR "L2D_BUILD_EXAMPLES must default to OFF in dependency mode")
+endif()
+
 if(L2D_INSTALL)
     message(FATAL_ERROR "L2D_INSTALL must default to OFF in dependency mode")
 endif()
 
 foreach(unexpected_target
     Sandbox
+    Lorenzo2DMinimalExample
+    Lorenzo2DAnimationExample
     Lorenzo2DTests
     Lorenzo2DTimingAccountingTests
     Lorenzo2DPhysicsTests

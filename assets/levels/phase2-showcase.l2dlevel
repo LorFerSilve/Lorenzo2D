@@ -1,0 +1,25 @@
+LORENZO2D_LEVEL 1
+level "Phase 2 showcase"
+objects 2
+object
+name "Floor"
+tag "world"
+active 1
+transform 120 280 0 1 1
+rectangle 1 400 32 80 130 210 255
+circle 0
+rigid_body 1 0 0 0 0 0 1 0 1
+box_collider 1 400 32 0 0 0 0.6 0.4 1 4294967295 0
+circle_collider 0
+end
+object
+name "Pickup"
+tag "pickup"
+active 1
+transform 300 180 0 1 1
+rectangle 0
+circle 1 16 255 200 60 255
+rigid_body 0
+box_collider 0
+circle_collider 1 16 0 0 0 0 0 8 2 1
+end

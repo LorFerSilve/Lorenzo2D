@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.1.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.2.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -14,6 +14,11 @@ option(
 option(
     L2D_BUILD_TESTS
     "Build the Lorenzo2D regression tests"
+    ${PROJECT_IS_TOP_LEVEL}
+)
+option(
+    L2D_BUILD_EXAMPLES
+    "Build the focused Lorenzo2D example applications"
     ${PROJECT_IS_TOP_LEVEL}
 )
 option(L2D_USE_SYSTEM_SFML "Use an installed SFML 3 package instead of FetchContent" OFF)
@@ -134,7 +139,10 @@ else()
 endif()
 
 set(LORENZO2D_SOURCES
+    src/Lorenzo2D/Animation/AnimationClip.cpp
+    src/Lorenzo2D/Animation/Animator.cpp
     src/Lorenzo2D/Assets/AssetManager.cpp
+    src/Lorenzo2D/Assets/ResourceLocator.cpp
     src/Lorenzo2D/Core/ActionMap.cpp
     src/Lorenzo2D/Core/Application.cpp
     src/Lorenzo2D/Core/FixedStepScheduler.cpp
@@ -163,9 +171,12 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Renderer/RenderLayerStack2D.cpp
     src/Lorenzo2D/Renderer/SpriteRenderer.cpp
     src/Lorenzo2D/Scene/GameObjectHandle.cpp
+    src/Lorenzo2D/Scene/LevelSerializer.cpp
+    src/Lorenzo2D/Scene/Prefab.cpp
     src/Lorenzo2D/Scene/Scene.cpp
     src/Lorenzo2D/Scene/SceneManager.cpp
     src/Lorenzo2D/Tilemap/Tilemap.cpp
+    src/Lorenzo2D/Tilemap/TileSet.cpp
 )
 
 add_library(Lorenzo2D STATIC ${LORENZO2D_SOURCES})
@@ -192,11 +203,6 @@ l2d_enable_clang_tidy(Lorenzo2D)
 if(L2D_BUILD_SANDBOX)
     add_executable(Sandbox sandbox/main.cpp)
 
-    target_compile_definitions(Sandbox
-        PRIVATE
-            L2D_ASSET_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/assets"
-    )
-
     target_link_libraries(Sandbox PRIVATE Lorenzo2D::Lorenzo2D)
     l2d_enable_warnings(Sandbox)
     l2d_enable_sanitizers(Sandbox)
@@ -207,6 +213,18 @@ if(L2D_BUILD_SANDBOX)
     set_target_properties(Sandbox PROPERTIES
         VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
+
+    add_custom_command(
+        TARGET Sandbox POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+            "$<TARGET_FILE_DIR:Sandbox>/assets"
+        VERBATIM
+    )
+endif()
+
+if(L2D_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
 
 if(L2D_BUILD_TESTS)

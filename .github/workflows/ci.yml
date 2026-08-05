@@ -74,6 +74,7 @@ jobs:
           cmake -S . -B build
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DL2D_BUILD_SANDBOX=ON
+          -DL2D_BUILD_EXAMPLES=ON
           -DL2D_BUILD_TESTS=ON
           -DL2D_WARNINGS_AS_ERRORS=ON
           -DL2D_ENABLE_ASAN=${{ matrix.asan }}
@@ -88,12 +89,13 @@ jobs:
           cmake -S . -B build
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DL2D_BUILD_SANDBOX=ON
+          -DL2D_BUILD_EXAMPLES=ON
           -DL2D_BUILD_TESTS=ON
           -DL2D_WARNINGS_AS_ERRORS=ON
           -DL2D_ENABLE_ASAN=${{ matrix.asan }}
           -DL2D_ENABLE_UBSAN=${{ matrix.ubsan }}
 
-      - name: Build engine, sandbox, and tests
+      - name: Build engine, sandbox, examples, and tests
         run: cmake --build build --config ${{ matrix.build_type }} --parallel
 
       - name: Run tests (Windows)
@@ -166,6 +168,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
           -DL2D_BUILD_SANDBOX=OFF
+          -DL2D_BUILD_EXAMPLES=OFF
           -DL2D_BUILD_TESTS=OFF
           -DL2D_WARNINGS_AS_ERRORS=ON
           -DL2D_INSTALL=ON
@@ -195,6 +198,9 @@ jobs:
         run: |
           test -f install/lib/libLorenzo2D.a
           test -f install/include/Lorenzo2D/ECS/Transform.hpp
+          test -f install/include/Lorenzo2D/Animation/Animator.hpp
+          test -f install/include/Lorenzo2D/Scene/LevelSerializer.hpp
+          test -f install/include/Lorenzo2D/Tilemap/TileSet.hpp
           test -f install/lib/cmake/Lorenzo2D/Lorenzo2DConfig.cmake
           test -f install/lib/cmake/Lorenzo2D/Lorenzo2DTargets.cmake
           find install/lib/cmake/Lorenzo2D -maxdepth 1 -type f -print

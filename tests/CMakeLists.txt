@@ -179,6 +179,33 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DAnimationTests
+    SOURCE Lorenzo2DAnimationTests.cpp
+    LABELS xvfb animation assets renderer ecs
+    TIMEOUT 60
+)
+
+l2d_add_regression_test(
+    Lorenzo2DResourceTests
+    SOURCE Lorenzo2DResourceTests.cpp
+    LABELS headless assets resources
+    TIMEOUT 30
+)
+
+l2d_add_regression_test(
+    Lorenzo2DSerializationTests
+    SOURCE Lorenzo2DSerializationTests.cpp
+    LABELS headless scene prefabs serialization physics renderer
+    TIMEOUT 60
+)
+
+configure_file(
+    "${PROJECT_SOURCE_DIR}/assets/levels/phase2-showcase.l2dlevel"
+    "${CMAKE_CURRENT_BINARY_DIR}/phase2-showcase.l2dlevel"
+    COPYONLY
+)
+
+l2d_add_regression_test(
     Lorenzo2DRendererTests
     SOURCE Lorenzo2DRendererTests.cpp
     LABELS headless renderer
