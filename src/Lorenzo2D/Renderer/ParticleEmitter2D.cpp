@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <utility>
 
 namespace l2d
 {
@@ -38,14 +37,14 @@ namespace l2d
     ParticleEmitter2D::ParticleEmitter2D() : ParticleEmitter2D(ParticleEmitterConfig2D{}) {}
 
     ParticleEmitter2D::ParticleEmitter2D(ParticleEmitterConfig2D config)
-        : m_config(sanitize(std::move(config))), m_random(m_config.seed)
+        : m_config(sanitize(config)), m_random(m_config.seed)
     {
     }
 
     void ParticleEmitter2D::setConfig(ParticleEmitterConfig2D config)
     {
         const std::uint32_t previousSeed = m_config.seed;
-        m_config = sanitize(std::move(config));
+        m_config = sanitize(config);
 
         if (m_config.seed != previousSeed) m_random.seed(m_config.seed);
 
