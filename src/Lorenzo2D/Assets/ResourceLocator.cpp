@@ -51,7 +51,7 @@ namespace l2d
 
         if (resource.is_absolute())
         {
-            const std::optional<Path> normalized = normalizeAbsolute(resource);
+            std::optional<Path> normalized = normalizeAbsolute(resource);
 
             if (!normalized || !std::filesystem::exists(*normalized, error) || error)
             {
@@ -63,7 +63,7 @@ namespace l2d
 
         for (const Path& root : m_roots)
         {
-            const Path candidate = (root / resource).lexically_normal();
+            Path candidate = (root / resource).lexically_normal();
             error.clear();
 
             if (std::filesystem::exists(candidate, error) && !error)
