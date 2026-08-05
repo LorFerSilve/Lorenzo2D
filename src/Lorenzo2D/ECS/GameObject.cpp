@@ -77,6 +77,16 @@ namespace l2d
         m_active = active;
     }
 
+    std::int32_t GameObject::zOrder() const
+    {
+        return m_zOrder;
+    }
+
+    void GameObject::setZOrder(std::int32_t zOrder)
+    {
+        m_zOrder = zOrder;
+    }
+
     void GameObject::destroy()
     {
         m_destroyQueued = true;

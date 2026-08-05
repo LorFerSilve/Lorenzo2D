@@ -1,14 +1,19 @@
 #include <Lorenzo2D/Assets/AssetHandle.hpp>
 #include <Lorenzo2D/Assets/AssetManager.hpp>
+#include <Lorenzo2D/Assets/AssetPipeline.hpp>
 #include <Lorenzo2D/Renderer/DebugOverlay.hpp>
 #include <Lorenzo2D/Renderer/SpriteRenderer.hpp>
 
 #include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/Image.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
+#include <chrono>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <thread>
 #include <utility>
 
 #include "TestSupport.hpp"
@@ -341,6 +346,15 @@ namespace
         L2D_REQUIRE(secondWeak.expired());
         L2D_REQUIRE(!overlay.hasFont());
         L2D_REQUIRE(!overlay.fontHandle());
+
+        l2d::LiveFontHandle live = assets.liveFont("live-debug");
+        L2D_REQUIRE(!overlay.setLiveFont(live));
+        L2D_REQUIRE(assets.storeFont("live-debug", makeFontHandle()));
+        L2D_REQUIRE(overlay.setLiveFont(live));
+        L2D_REQUIRE(overlay.liveFontHandle());
+        L2D_REQUIRE(overlay.liveFontHandle().generation() == 1u);
+        overlay.clearFont();
+        L2D_REQUIRE(!overlay.liveFontHandle());
     }
 
     void testAssetManagerMoveContract()
@@ -373,6 +387,94 @@ namespace
         L2D_REQUIRE(replaced);
     }
 
+    void testLiveHandlesTrackOptInRegistryGenerations()
+    {
+        l2d::AssetManager assets;
+        l2d::LiveTextureHandle live = assets.liveTexture("hero");
+        L2D_REQUIRE(live);
+        L2D_REQUIRE(!live.snapshot());
+        L2D_REQUIRE(live.generation() == 0u);
+
+        const l2d::TextureHandle first = makeTextureHandle();
+        L2D_REQUIRE(assets.storeTexture("hero", first));
+        L2D_REQUIRE(live.generation() == 1u);
+        L2D_REQUIRE(live.snapshot() == first);
+
+        const l2d::TextureHandle retainedSnapshot = live.snapshot();
+        const l2d::TextureHandle second = makeTextureHandle();
+        L2D_REQUIRE(assets.storeTexture("hero", second));
+        L2D_REQUIRE(live.generation() == 2u);
+        L2D_REQUIRE(live.snapshot() == second);
+        L2D_REQUIRE(retainedSnapshot == first);
+
+        L2D_REQUIRE(assets.unloadTexture("hero"));
+        L2D_REQUIRE(live.generation() == 3u);
+        L2D_REQUIRE(!live.snapshot());
+        L2D_REQUIRE(retainedSnapshot == first);
+    }
+
+    void testAssetDependencyGraphRejectsCyclesAndInvalidatesTransitively()
+    {
+        l2d::AssetDependencyGraph graph;
+        L2D_REQUIRE(graph.addDependency("material.hero", "texture.hero"));
+        L2D_REQUIRE(graph.addDependency("sprite.hero", "material.hero"));
+        L2D_REQUIRE(!graph.addDependency("texture.hero", "sprite.hero"));
+        L2D_REQUIRE(!graph.addDependency("texture.hero", "texture.hero"));
+        L2D_REQUIRE(!graph.addDependency("material.hero", "texture.hero"));
+
+        const std::vector<std::string> dependents = graph.dependentsOf("texture.hero");
+        L2D_REQUIRE(dependents.size() == 2u);
+        L2D_REQUIRE(dependents[0] == "material.hero");
+        L2D_REQUIRE(dependents[1] == "sprite.hero");
+
+        L2D_REQUIRE(graph.removeDependency("sprite.hero", "material.hero"));
+        L2D_REQUIRE(graph.dependentsOf("texture.hero").size() == 1u);
+        graph.removeAsset("material.hero");
+        L2D_REQUIRE(graph.dependentsOf("texture.hero").empty());
+    }
+
+    void testAssetPipelineDecodesInBackgroundAndPublishesOnPoll()
+    {
+        const l2d::test::TemporaryFile temporary("lorenzo2d_async_texture");
+        std::filesystem::path imagePath = temporary.path();
+        imagePath += ".png";
+        const sf::Image image({2u, 2u}, sf::Color::Magenta);
+        L2D_REQUIRE(image.saveToFile(imagePath));
+
+        l2d::AssetManager assets;
+        const l2d::LiveTextureHandle live = assets.liveTexture("texture.hero");
+        l2d::AssetPipeline pipeline(assets);
+        L2D_REQUIRE(pipeline.dependencies().addDependency("sprite.hero", "texture.hero"));
+        L2D_REQUIRE(pipeline.watchTexture("texture.hero", imagePath, false));
+        L2D_REQUIRE(!pipeline.watchTexture("missing", imagePath.string() + ".missing"));
+        L2D_REQUIRE(pipeline.requestTexture("texture.hero", imagePath, false));
+        L2D_REQUIRE(!pipeline.requestTexture("texture.hero", imagePath, false));
+
+        for (std::size_t attempt = 0; attempt < 2000u && pipeline.pendingCount() > 0u; ++attempt)
+        {
+            pipeline.poll();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        L2D_REQUIRE(pipeline.pendingCount() == 0u);
+        L2D_REQUIRE(assets.hasTexture("texture.hero"));
+        L2D_REQUIRE(live.generation() == 1u);
+        L2D_REQUIRE(live.snapshot());
+        L2D_REQUIRE(live.snapshot()->getSize() == sf::Vector2u(2u, 2u));
+        L2D_REQUIRE(!live.snapshot()->isSmooth());
+        L2D_REQUIRE(pipeline.events().size() == 1u);
+        L2D_REQUIRE(pipeline.events()[0].succeeded);
+        L2D_REQUIRE(pipeline.events()[0].invalidatedDependents.size() == 1u);
+        L2D_REQUIRE(pipeline.events()[0].invalidatedDependents[0] == "sprite.hero");
+        L2D_REQUIRE(pipeline.unwatchTexture("texture.hero"));
+        L2D_REQUIRE(!pipeline.unwatchTexture("texture.hero"));
+        pipeline.clearEvents();
+        L2D_REQUIRE(pipeline.events().empty());
+
+        std::error_code ignored;
+        std::filesystem::remove(imagePath, ignored);
+    }
+
 }
 
 int main()
@@ -395,6 +497,12 @@ int main()
     runTest("debug overlay retains and clears leases", testDebugOverlayRetainsAndClearsLeases,
             failures);
     runTest("asset manager move contract", testAssetManagerMoveContract, failures);
+    runTest("live handles track registry generations", testLiveHandlesTrackOptInRegistryGenerations,
+            failures);
+    runTest("asset dependency graph rejects cycles",
+            testAssetDependencyGraphRejectsCyclesAndInvalidatesTransitively, failures);
+    runTest("asset pipeline publishes background texture loads",
+            testAssetPipelineDecodesInBackgroundAndPublishesOnPoll, failures);
 
     if (failures != 0)
     {

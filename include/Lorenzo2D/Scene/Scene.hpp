@@ -16,6 +16,7 @@ namespace l2d
 {
     class PhysicsWorld2D;
     class SceneManager;
+    class TileMap;
 
     class Scene
     {
@@ -93,5 +94,6 @@ namespace l2d
 
         friend class PhysicsWorld2D;
         friend class SceneManager;
+        friend class TileMap;
     };
 }

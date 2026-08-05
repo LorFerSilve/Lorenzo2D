@@ -28,6 +28,7 @@ namespace
         prefab.transform.position = {12.5f, -8.f};
         prefab.transform.rotation = 15.f;
         prefab.transform.scale = {-1.f, 2.f};
+        prefab.zOrder = 12;
         prefab.rectangleRenderer =
             l2d::RectangleRendererPrefab{{32.f, 48.f}, sf::Color(20, 80, 220, 200)};
         prefab.rigidBody = l2d::RigidBodyPrefab{
@@ -62,7 +63,7 @@ namespace
 
         std::stringstream serialized;
         L2D_REQUIRE(l2d::LevelSerializer::save(serialized, source));
-        L2D_REQUIRE(serialized.str().find("LORENZO2D_LEVEL 1") == 0u);
+        L2D_REQUIRE(serialized.str().find("LORENZO2D_LEVEL 2") == 0u);
 
         l2d::LevelDocument loaded;
         L2D_REQUIRE(l2d::LevelSerializer::load(serialized, loaded));
@@ -72,6 +73,7 @@ namespace
         const l2d::Prefab& playerPrefab = loaded.objects[0];
         L2D_REQUIRE(playerPrefab.name == "Player One");
         L2D_REQUIRE(playerPrefab.tag == "player");
+        L2D_REQUIRE(playerPrefab.zOrder == 12);
         L2D_REQUIRE(playerPrefab.rectangleRenderer.has_value());
         L2D_REQUIRE(playerPrefab.rigidBody.has_value());
         L2D_REQUIRE(playerPrefab.boxCollider.has_value());
@@ -88,6 +90,7 @@ namespace
         l2d::GameObject* player = objects[0].get();
         L2D_REQUIRE(player != nullptr);
         L2D_REQUIRE(player->hasTag("player"));
+        L2D_REQUIRE(player->zOrder() == 12);
         L2D_REQUIRE(player->getComponent<l2d::RectangleRenderer>() != nullptr);
 
         const l2d::RigidBody2D* body = player->getComponent<l2d::RigidBody2D>();
@@ -167,6 +170,8 @@ namespace
         L2D_REQUIRE(l2d::LevelSerializer::loadFromFile("phase2-showcase.l2dlevel", level));
         L2D_REQUIRE(level.name == "Phase 2 showcase");
         L2D_REQUIRE(level.objects.size() == 2u);
+        L2D_REQUIRE(level.objects[0].zOrder == 0);
+        L2D_REQUIRE(level.objects[1].zOrder == 0);
         L2D_REQUIRE(level.objects[0].boxCollider.has_value());
         L2D_REQUIRE(level.objects[1].circleCollider.has_value());
     }

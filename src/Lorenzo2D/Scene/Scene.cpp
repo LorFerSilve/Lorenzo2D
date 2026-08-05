@@ -2,6 +2,8 @@
 
 #include "Lorenzo2D/Scene/SceneManager.hpp"
 
+#include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -355,16 +357,14 @@ namespace l2d
 
         try
         {
-            const std::size_t gameObjectCount = m_gameObjects.size();
+            RenderQueue2D queue;
+            queue.build(*this);
 
-            for (std::size_t index = 0; index < gameObjectCount; ++index)
+            for (const RenderQueueEntry2D& entry : queue.entries())
             {
                 if (m_clearDeferred) break;
 
-                GameObject* gameObject = m_gameObjects[index].get();
-
-                if (gameObject != nullptr && gameObject->isActive() &&
-                    !gameObject->isDestroyQueued())
+                if (GameObject* gameObject = entry.gameObject.get())
                 {
                     gameObject->render(window, interpolationAlpha);
                 }

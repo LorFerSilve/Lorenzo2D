@@ -37,7 +37,28 @@ namespace l2d
         // Rebind the sprite before releasing the lease for its old texture.
         m_sprite.setTexture(*texture, resetRect);
         m_texture = std::move(texture);
+        m_liveTexture.reset();
+        m_liveGeneration = 0;
         return true;
+    }
+
+    bool SpriteRenderer::setLiveTexture(LiveTextureHandle texture, bool resetRect)
+    {
+        const std::uint64_t generation = texture.generation();
+        const TextureHandle snapshot = texture.snapshot();
+
+        if (!snapshot) return false;
+
+        m_sprite.setTexture(*snapshot, resetRect);
+        m_texture = snapshot;
+        m_liveGeneration = generation;
+        m_liveTexture = std::move(texture);
+        return true;
+    }
+
+    LiveTextureHandle SpriteRenderer::liveTextureHandle() const
+    {
+        return m_liveTexture;
     }
 
     TextureHandle SpriteRenderer::textureHandle() const
@@ -91,6 +112,8 @@ namespace l2d
 
     void SpriteRenderer::onRender(sf::RenderWindow& window, float interpolationAlpha)
     {
+        syncLiveTexture();
+
         GameObject* gameObject = owner();
 
         if (gameObject == nullptr) return;
@@ -114,5 +137,22 @@ namespace l2d
         m_sprite.setScale({m_sizeScale.x * state.scale.x, m_sizeScale.y * state.scale.y});
 
         window.draw(m_sprite);
+    }
+
+    void SpriteRenderer::syncLiveTexture()
+    {
+        if (!m_liveTexture) return;
+
+        const std::uint64_t generation = m_liveTexture.generation();
+
+        if (generation == m_liveGeneration) return;
+
+        const TextureHandle snapshot = m_liveTexture.snapshot();
+        m_liveGeneration = generation;
+
+        if (!snapshot) return;
+
+        m_sprite.setTexture(*snapshot, false);
+        m_texture = snapshot;
     }
 }

@@ -40,17 +40,28 @@ namespace l2d
 
         struct RenderChunk
         {
+            struct AnimatedTileSpan
+            {
+                char tile = '\0';
+                std::size_t firstVertex = 0;
+            };
+
             sf::VertexArray coloredVertices;
             sf::VertexArray texturedVertices;
             Bounds worldBounds;
+            std::size_t chunkRow = 0;
+            std::size_t chunkColumn = 0;
             std::size_t coloredTileCount = 0;
             std::size_t texturedTileCount = 0;
+            std::vector<AnimatedTileSpan> animatedTiles;
 
             RenderChunk(sf::VertexArray&& colored, sf::VertexArray&& textured, Bounds bounds,
-                        std::size_t coloredCount, std::size_t texturedCount)
+                        std::size_t row, std::size_t column, std::size_t coloredCount,
+                        std::size_t texturedCount, std::vector<AnimatedTileSpan>&& animated)
                 : coloredVertices(std::move(colored)), texturedVertices(std::move(textured)),
-                  worldBounds(bounds), coloredTileCount(coloredCount),
-                  texturedTileCount(texturedCount)
+                  worldBounds(bounds), chunkRow(row), chunkColumn(column),
+                  coloredTileCount(coloredCount), texturedTileCount(texturedCount),
+                  animatedTiles(std::move(animated))
             {
             }
 
@@ -67,6 +78,7 @@ namespace l2d
             Bounds worldBounds;
             std::size_t coloredTileCount = 0;
             std::size_t texturedTileCount = 0;
+            std::vector<RenderChunk::AnimatedTileSpan> animatedTiles;
 
             std::size_t tileCount() const
             {
@@ -184,8 +196,8 @@ namespace l2d
             vertices.append(vertex);
         }
 
-        void appendTile(RenderChunkBuilder& chunk, std::size_t column, std::size_t row,
-                        sf::Vector2f tileSize, sf::Color color,
+        void appendTile(RenderChunkBuilder& chunk, std::size_t column, std::size_t row, char tile,
+                        sf::Vector2f tileSize, sf::Color color, const TileSet& tileSet,
                         const std::optional<sf::IntRect>& textureRect)
         {
             const float left = checkedTileExtent(column, tileSize.x);
@@ -204,6 +216,11 @@ namespace l2d
 
             if (textureRect)
             {
+                if (tileSet.isAnimated(tile))
+                {
+                    chunk.animatedTiles.push_back({tile, vertices.getVertexCount()});
+                }
+
                 const float textureLeft = static_cast<float>(textureRect->position.x);
                 const float textureTop = static_cast<float>(textureRect->position.y);
                 const float textureRight =
@@ -243,6 +260,42 @@ namespace l2d
             }
         }
 
+        std::optional<RenderChunk> buildRenderChunk(const TileMap::Layout& layout, char solidChar,
+                                                    sf::Vector2f tileSize, sf::Vector2u chunkSize,
+                                                    sf::Color color, const TileSet& tileSet,
+                                                    std::size_t chunkRow, std::size_t chunkColumn)
+        {
+            RenderChunkBuilder builder;
+            const std::size_t firstRow = chunkRow * static_cast<std::size_t>(chunkSize.y);
+            const std::size_t firstColumn = chunkColumn * static_cast<std::size_t>(chunkSize.x);
+            const std::size_t rowEnd =
+                std::min(layout.size(), firstRow + static_cast<std::size_t>(chunkSize.y));
+
+            for (std::size_t row = firstRow; row < rowEnd; ++row)
+            {
+                const std::size_t columnEnd = std::min(
+                    layout[row].size(), firstColumn + static_cast<std::size_t>(chunkSize.x));
+
+                for (std::size_t column = firstColumn; column < columnEnd; ++column)
+                {
+                    const char tile = layout[row][column];
+                    const std::optional<sf::IntRect> textureRect = tileSet.textureRect(tile);
+
+                    if (!textureRect && tile != solidChar) continue;
+
+                    appendTile(builder, column, row, tile, tileSize,
+                               textureRect ? sf::Color::White : color, tileSet, textureRect);
+                }
+            }
+
+            if (builder.tileCount() == 0u) return std::nullopt;
+
+            return RenderChunk(std::move(builder.coloredVertices),
+                               std::move(builder.texturedVertices), builder.worldBounds, chunkRow,
+                               chunkColumn, builder.coloredTileCount, builder.texturedTileCount,
+                               std::move(builder.animatedTiles));
+        }
+
         RenderBuild buildRenderChunks(const TileMap::Layout& layout, char solidChar,
                                       sf::Vector2f tileSize, sf::Vector2u chunkSize,
                                       sf::Color color, const TileSet& tileSet)
@@ -263,8 +316,8 @@ namespace l2d
                                                         column /
                                                             static_cast<std::size_t>(chunkSize.x)};
 
-                    appendTile(builders[coordinate], column, row, tileSize,
-                               textureRect ? sf::Color::White : color, textureRect);
+                    appendTile(builders[coordinate], column, row, tile, tileSize,
+                               textureRect ? sf::Color::White : color, tileSet, textureRect);
                 }
             }
 
@@ -278,7 +331,9 @@ namespace l2d
                 build.texturedTileCount += builder.texturedTileCount;
                 build.chunks.emplace_back(std::move(builder.coloredVertices),
                                           std::move(builder.texturedVertices), builder.worldBounds,
-                                          builder.coloredTileCount, builder.texturedTileCount);
+                                          entry.first.first, entry.first.second,
+                                          builder.coloredTileCount, builder.texturedTileCount,
+                                          std::move(builder.animatedTiles));
             }
 
             return build;
@@ -392,10 +447,61 @@ namespace l2d
         {
           public:
             TileMapRenderComponent(std::vector<RenderChunk>&& chunks, TextureHandle texture,
+                                   TileSet tileSet, sf::Vector2u chunkSize,
                                    std::size_t solidTileCount)
                 : m_chunks(std::move(chunks)), m_texture(std::move(texture)),
+                  m_tileSet(std::move(tileSet)), m_chunkSize(chunkSize),
                   m_solidTileCount(solidTileCount)
             {
+            }
+
+            void replaceChunk(std::size_t chunkRow, std::size_t chunkColumn,
+                              std::optional<RenderChunk> replacement)
+            {
+                const auto iterator = std::find_if(
+                    m_chunks.begin(), m_chunks.end(),
+                    [chunkRow, chunkColumn](const RenderChunk& chunk)
+                    { return chunk.chunkRow == chunkRow && chunk.chunkColumn == chunkColumn; });
+
+                if (iterator != m_chunks.end())
+                {
+                    if (replacement)
+                        *iterator = std::move(*replacement);
+                    else
+                        m_chunks.erase(iterator);
+                }
+                else if (replacement)
+                {
+                    m_chunks.push_back(std::move(*replacement));
+                }
+
+                std::sort(m_chunks.begin(), m_chunks.end(),
+                          [](const RenderChunk& left, const RenderChunk& right)
+                          {
+                              if (left.chunkRow != right.chunkRow)
+                                  return left.chunkRow < right.chunkRow;
+                              return left.chunkColumn < right.chunkColumn;
+                          });
+            }
+
+            void setSolidTileCount(std::size_t count)
+            {
+                m_solidTileCount = count;
+            }
+
+            std::size_t chunkCount() const
+            {
+                return m_chunks.size();
+            }
+
+            void setStreamRegion(std::optional<TileMapRegion> region)
+            {
+                m_streamRegion = region;
+            }
+
+            std::optional<TileMapRegion> streamRegion() const
+            {
+                return m_streamRegion;
             }
 
             TileMapRenderStats statsForView(const sf::View& view) const
@@ -406,6 +512,15 @@ namespace l2d
 
                 for (const RenderChunk& chunk : m_chunks)
                 {
+                    if (!isResident(chunk))
+                    {
+                        stats.nonResidentChunkCount++;
+                        stats.culledChunkCount++;
+                        continue;
+                    }
+
+                    stats.residentChunkCount++;
+
                     if (isVisible(chunk, cullingArea))
                     {
                         addVisibleChunk(stats, chunk);
@@ -424,6 +539,44 @@ namespace l2d
                 return m_lastRenderStats;
             }
 
+            void onUpdate(float deltaTime) override
+            {
+                if (!std::isfinite(deltaTime) || deltaTime <= 0.f) return;
+
+                const double nextAnimationTime =
+                    static_cast<double>(m_animationTime) + static_cast<double>(deltaTime);
+                m_animationTime = static_cast<float>(std::fmod(nextAnimationTime, 86400.0));
+
+                for (RenderChunk& chunk : m_chunks)
+                {
+                    for (const RenderChunk::AnimatedTileSpan& animated : chunk.animatedTiles)
+                    {
+                        const std::optional<sf::IntRect> rectangle =
+                            m_tileSet.textureRect(animated.tile, m_animationTime);
+
+                        if (!rectangle || animated.firstVertex + VERTICES_PER_TILE >
+                                              chunk.texturedVertices.getVertexCount())
+                        {
+                            continue;
+                        }
+
+                        const float left = static_cast<float>(rectangle->position.x);
+                        const float top = static_cast<float>(rectangle->position.y);
+                        const float right =
+                            static_cast<float>(rectangle->position.x + rectangle->size.x);
+                        const float bottom =
+                            static_cast<float>(rectangle->position.y + rectangle->size.y);
+                        const std::size_t first = animated.firstVertex;
+                        chunk.texturedVertices[first + 0u].texCoords = {left, top};
+                        chunk.texturedVertices[first + 1u].texCoords = {left, bottom};
+                        chunk.texturedVertices[first + 2u].texCoords = {right, bottom};
+                        chunk.texturedVertices[first + 3u].texCoords = {left, top};
+                        chunk.texturedVertices[first + 4u].texCoords = {right, bottom};
+                        chunk.texturedVertices[first + 5u].texCoords = {right, top};
+                    }
+                }
+            }
+
             void onRender(sf::RenderWindow& window) override
             {
                 onRender(window, 1.f);
@@ -438,6 +591,15 @@ namespace l2d
 
                 for (const RenderChunk& chunk : m_chunks)
                 {
+                    if (!isResident(chunk))
+                    {
+                        stats.nonResidentChunkCount++;
+                        stats.culledChunkCount++;
+                        continue;
+                    }
+
+                    stats.residentChunkCount++;
+
                     if (!isVisible(chunk, cullingArea))
                     {
                         stats.culledChunkCount++;
@@ -471,6 +633,28 @@ namespace l2d
                 return stats;
             }
 
+            bool isResident(const RenderChunk& chunk) const
+            {
+                if (!m_streamRegion) return true;
+
+                const std::size_t chunkFirstColumn =
+                    chunk.chunkColumn * static_cast<std::size_t>(m_chunkSize.x);
+                const std::size_t chunkFirstRow =
+                    chunk.chunkRow * static_cast<std::size_t>(m_chunkSize.y);
+                const std::size_t chunkLastColumn =
+                    chunkFirstColumn + static_cast<std::size_t>(m_chunkSize.x);
+                const std::size_t chunkLastRow =
+                    chunkFirstRow + static_cast<std::size_t>(m_chunkSize.y);
+                const std::size_t regionLastColumn =
+                    m_streamRegion->firstColumn + m_streamRegion->columnCount;
+                const std::size_t regionLastRow =
+                    m_streamRegion->firstRow + m_streamRegion->rowCount;
+
+                return chunkFirstColumn < regionLastColumn &&
+                       chunkLastColumn > m_streamRegion->firstColumn &&
+                       chunkFirstRow < regionLastRow && chunkLastRow > m_streamRegion->firstRow;
+            }
+
             static void addVisibleChunk(TileMapRenderStats& stats, const RenderChunk& chunk)
             {
                 stats.visibleChunkCount++;
@@ -483,14 +667,19 @@ namespace l2d
           private:
             std::vector<RenderChunk> m_chunks;
             TextureHandle m_texture;
+            TileSet m_tileSet;
+            sf::Vector2u m_chunkSize;
             std::size_t m_solidTileCount = 0;
+            float m_animationTime = 0.f;
+            std::optional<TileMapRegion> m_streamRegion;
             TileMapRenderStats m_lastRenderStats;
         };
     }
 
     TileMap::TileMap()
         : m_tileSize(40.f, 40.f), m_loadedTileSize(0.f, 0.f), m_renderChunkSize(16u, 16u),
-          m_loadedRenderChunkSize(0u, 0u), m_solidTileColor(sf::Color::White), m_worldSize(0.f, 0.f)
+          m_loadedRenderChunkSize(0u, 0u), m_solidTileColor(sf::Color::White),
+          m_loadedSolidTileColor(sf::Color::White), m_worldSize(0.f, 0.f)
     {
     }
 
@@ -503,19 +692,29 @@ namespace l2d
         : m_tileSize(other.m_tileSize), m_loadedTileSize(other.m_loadedTileSize),
           m_renderChunkSize(other.m_renderChunkSize),
           m_loadedRenderChunkSize(other.m_loadedRenderChunkSize),
-          m_solidTileColor(other.m_solidTileColor), m_tileSet(std::move(other.m_tileSet)),
-          m_loadedTileSet(std::move(other.m_loadedTileSet)), m_worldSize(other.m_worldSize),
-          m_buildStats(other.m_buildStats), m_layout(std::move(other.m_layout)),
+          m_solidTileColor(other.m_solidTileColor),
+          m_loadedSolidTileColor(other.m_loadedSolidTileColor),
+          m_tileSet(std::move(other.m_tileSet)), m_loadedTileSet(std::move(other.m_loadedTileSet)),
+          m_worldSize(other.m_worldSize), m_buildStats(other.m_buildStats),
+          m_lastUpdateStats(other.m_lastUpdateStats), m_layout(std::move(other.m_layout)),
           m_generatedObjects(std::move(other.m_generatedObjects)),
-          m_renderObject(std::move(other.m_renderObject))
+          m_collisionObjects(std::move(other.m_collisionObjects)),
+          m_renderObject(std::move(other.m_renderObject)),
+          m_sceneState(std::move(other.m_sceneState)), m_loadedSolidChar(other.m_loadedSolidChar),
+          m_loadedObjectPrefix(std::move(other.m_loadedObjectPrefix)),
+          m_streamRegion(other.m_streamRegion)
     {
         other.m_loadedTileSize = {0.f, 0.f};
         other.m_loadedRenderChunkSize = {0u, 0u};
         other.m_worldSize = {0.f, 0.f};
         other.m_buildStats = {};
+        other.m_lastUpdateStats = {};
         other.m_layout.clear();
         other.m_generatedObjects.clear();
+        other.m_collisionObjects.clear();
         other.m_renderObject.reset();
+        other.m_sceneState.reset();
+        other.m_streamRegion.reset();
     }
 
     TileMap& TileMap::operator=(TileMap&& other) noexcept
@@ -529,21 +728,32 @@ namespace l2d
         m_renderChunkSize = other.m_renderChunkSize;
         m_loadedRenderChunkSize = other.m_loadedRenderChunkSize;
         m_solidTileColor = other.m_solidTileColor;
+        m_loadedSolidTileColor = other.m_loadedSolidTileColor;
         m_tileSet = std::move(other.m_tileSet);
         m_loadedTileSet = std::move(other.m_loadedTileSet);
         m_worldSize = other.m_worldSize;
         m_buildStats = other.m_buildStats;
+        m_lastUpdateStats = other.m_lastUpdateStats;
         m_layout = std::move(other.m_layout);
         m_generatedObjects = std::move(other.m_generatedObjects);
+        m_collisionObjects = std::move(other.m_collisionObjects);
         m_renderObject = std::move(other.m_renderObject);
+        m_sceneState = std::move(other.m_sceneState);
+        m_loadedSolidChar = other.m_loadedSolidChar;
+        m_loadedObjectPrefix = std::move(other.m_loadedObjectPrefix);
+        m_streamRegion = other.m_streamRegion;
 
         other.m_loadedTileSize = {0.f, 0.f};
         other.m_loadedRenderChunkSize = {0u, 0u};
         other.m_worldSize = {0.f, 0.f};
         other.m_buildStats = {};
+        other.m_lastUpdateStats = {};
         other.m_layout.clear();
         other.m_generatedObjects.clear();
+        other.m_collisionObjects.clear();
         other.m_renderObject.reset();
+        other.m_sceneState.reset();
+        other.m_streamRegion.reset();
 
         return *this;
     }
@@ -623,6 +833,7 @@ namespace l2d
         Layout newLayout = layout;
         const sf::Vector2f newLoadedTileSize = m_tileSize;
         const sf::Vector2u newLoadedRenderChunkSize = m_renderChunkSize;
+        const sf::Color newLoadedSolidTileColor = m_solidTileColor;
         TileSet newLoadedTileSet = m_tileSet;
 
         std::size_t maxColumns = 0;
@@ -666,7 +877,7 @@ namespace l2d
 
         RenderBuild renderBuild =
             buildRenderChunks(newLayout, solidChar, newLoadedTileSize, newLoadedRenderChunkSize,
-                              m_solidTileColor, newLoadedTileSet);
+                              newLoadedSolidTileColor, newLoadedTileSet);
         const std::vector<CollisionRectangle> collisionRectangles =
             buildCollisionRectangles(newLayout, solidChar);
         const std::vector<CollisionGeometry> collisionGeometry =
@@ -680,6 +891,7 @@ namespace l2d
         newBuildStats.collisionRectangleCount = collisionRectangles.size();
 
         std::vector<GameObjectHandle> newGeneratedObjects;
+        std::vector<GameObjectHandle> newCollisionObjects;
         newGeneratedObjects.reserve(collisionRectangles.size() +
                                     (renderBuild.chunks.empty() ? 0u : 1u));
         GameObjectHandle newRenderObject;
@@ -692,7 +904,8 @@ namespace l2d
                 newRenderObject = scene.createHandle(renderObject);
                 newGeneratedObjects.push_back(newRenderObject);
                 renderObject.addComponent<TileMapRenderComponent>(
-                    std::move(renderBuild.chunks), newLoadedTileSet.texture(), solidTileCount);
+                    std::move(renderBuild.chunks), newLoadedTileSet.texture(), newLoadedTileSet,
+                    newLoadedRenderChunkSize, solidTileCount);
             }
 
             for (std::size_t index = 0; index < collisionRectangles.size(); ++index)
@@ -701,7 +914,9 @@ namespace l2d
 
                 GameObject& collisionObject =
                     scene.createGameObject(objectPrefix + "_Collision_" + std::to_string(index));
-                newGeneratedObjects.push_back(scene.createHandle(collisionObject));
+                const GameObjectHandle collisionHandle = scene.createHandle(collisionObject);
+                newGeneratedObjects.push_back(collisionHandle);
+                newCollisionObjects.push_back(collisionHandle);
                 collisionObject.transform.setPosition(geometry.position);
                 BoxCollider2D& collider =
                     collisionObject.addComponent<BoxCollider2D>(geometry.size);
@@ -719,11 +934,18 @@ namespace l2d
         m_layout = std::move(newLayout);
         m_loadedTileSize = newLoadedTileSize;
         m_loadedRenderChunkSize = newLoadedRenderChunkSize;
+        m_loadedSolidTileColor = newLoadedSolidTileColor;
         m_loadedTileSet = std::move(newLoadedTileSet);
         m_worldSize = newWorldSize;
         m_buildStats = newBuildStats;
+        m_lastUpdateStats = {};
         m_generatedObjects = std::move(newGeneratedObjects);
+        m_collisionObjects = std::move(newCollisionObjects);
         m_renderObject = std::move(newRenderObject);
+        m_sceneState = scene.m_handleState;
+        m_loadedSolidChar = solidChar;
+        m_loadedObjectPrefix = objectPrefix;
+        m_streamRegion.reset();
     }
 
     bool TileMap::loadFromFile(Scene& scene, const std::string& filepath, char solidChar,
@@ -737,18 +959,230 @@ namespace l2d
         return true;
     }
 
+    bool TileMap::setTile(std::size_t row, std::size_t column, char tile)
+    {
+        m_lastUpdateStats = {};
+
+        if (row >= m_layout.size() || column >= m_layout[row].size()) return false;
+
+        const std::shared_ptr<detail::SceneHandleState> sceneState = m_sceneState.lock();
+        GameObject* renderObject = m_renderObject.get();
+        Scene* scene = sceneState == nullptr ? nullptr : sceneState->scene;
+
+        if (scene == nullptr) return false;
+
+        TileMapRenderComponent* renderer =
+            renderObject == nullptr ? nullptr
+                                    : renderObject->getComponent<TileMapRenderComponent>();
+
+        if (renderObject != nullptr && renderer == nullptr) return false;
+
+        const char previousTile = m_layout[row][column];
+
+        if (previousTile == tile) return true;
+
+        const bool renderChunkChanged =
+            previousTile == m_loadedSolidChar || tile == m_loadedSolidChar ||
+            m_loadedTileSet.contains(previousTile) || m_loadedTileSet.contains(tile);
+
+        Layout updatedLayout = m_layout;
+        updatedLayout[row][column] = tile;
+
+        const std::size_t chunkRow = row / static_cast<std::size_t>(m_loadedRenderChunkSize.y);
+        const std::size_t chunkColumn =
+            column / static_cast<std::size_t>(m_loadedRenderChunkSize.x);
+        std::optional<RenderChunk> replacement;
+
+        if (renderChunkChanged)
+        {
+            replacement = buildRenderChunk(updatedLayout, m_loadedSolidChar, m_loadedTileSize,
+                                           m_loadedRenderChunkSize, m_loadedSolidTileColor,
+                                           m_loadedTileSet, chunkRow, chunkColumn);
+        }
+
+        const bool solidityChanged =
+            (previousTile == m_loadedSolidChar) != (tile == m_loadedSolidChar);
+        std::vector<CollisionRectangle> collisionRectangles;
+        std::vector<CollisionGeometry> collisionGeometry;
+        std::vector<GameObjectHandle> newCollisionObjects;
+        std::vector<GameObjectHandle> newGeneratedObjects;
+        GameObjectHandle newRenderObject;
+        bool rendererCreated = false;
+
+        const bool previousSolid = previousTile == m_loadedSolidChar;
+        const bool nextSolid = tile == m_loadedSolidChar;
+        const bool previousTextured = m_loadedTileSet.contains(previousTile);
+        const bool nextTextured = m_loadedTileSet.contains(tile);
+        const bool previousRendered = previousSolid || previousTextured;
+        const bool nextRendered = nextSolid || nextTextured;
+        const auto updatedCount = [](std::size_t count, bool previous, bool next)
+        {
+            if (previous == next) return count;
+            return next ? count + 1u : count - 1u;
+        };
+        const std::size_t solidTileCount =
+            updatedCount(m_buildStats.solidTileCount, previousSolid, nextSolid);
+        const std::size_t renderedTileCount =
+            updatedCount(m_buildStats.renderedTileCount, previousRendered, nextRendered);
+        const std::size_t texturedTileCount =
+            updatedCount(m_buildStats.texturedTileCount, previousTextured, nextTextured);
+
+        if (solidityChanged)
+        {
+            collisionRectangles = buildCollisionRectangles(updatedLayout, m_loadedSolidChar);
+            collisionGeometry = buildCollisionGeometry(collisionRectangles, m_loadedTileSize);
+            newCollisionObjects.reserve(collisionGeometry.size());
+        }
+
+        try
+        {
+            if (renderer == nullptr && replacement)
+            {
+                GameObject& newRender = scene->createGameObject(m_loadedObjectPrefix + "_Render");
+                newRenderObject = scene->createHandle(newRender);
+                newGeneratedObjects.push_back(newRenderObject);
+                std::vector<RenderChunk> chunks;
+                chunks.push_back(std::move(*replacement));
+                renderer = &newRender.addComponent<TileMapRenderComponent>(
+                    std::move(chunks), m_loadedTileSet.texture(), m_loadedTileSet,
+                    m_loadedRenderChunkSize, solidTileCount);
+                renderer->setStreamRegion(m_streamRegion);
+                rendererCreated = true;
+            }
+
+            if (solidityChanged)
+            {
+                for (std::size_t index = 0; index < collisionGeometry.size(); ++index)
+                {
+                    const CollisionGeometry& geometry = collisionGeometry[index];
+                    GameObject& collisionObject = scene->createGameObject(
+                        m_loadedObjectPrefix + "_Collision_" + std::to_string(index));
+                    const GameObjectHandle collisionHandle = scene->createHandle(collisionObject);
+                    newCollisionObjects.push_back(collisionHandle);
+                    newGeneratedObjects.push_back(collisionHandle);
+                    collisionObject.transform.setPosition(geometry.position);
+                    BoxCollider2D& collider =
+                        collisionObject.addComponent<BoxCollider2D>(geometry.size);
+                    collider.setOffset(geometry.size * 0.5f);
+                }
+            }
+
+            if (!rendererCreated && renderer != nullptr && renderChunkChanged)
+            {
+                renderer->replaceChunk(chunkRow, chunkColumn, std::move(replacement));
+            }
+        }
+        catch (...)
+        {
+            queueGeneratedObjectsForDestruction(newGeneratedObjects);
+            throw;
+        }
+
+        if (rendererCreated)
+        {
+            m_renderObject = newRenderObject;
+        }
+
+        if (renderer != nullptr) renderer->setSolidTileCount(solidTileCount);
+
+        m_layout = std::move(updatedLayout);
+        m_buildStats.solidTileCount = solidTileCount;
+        m_buildStats.renderedTileCount = renderedTileCount;
+        m_buildStats.texturedTileCount = texturedTileCount;
+        m_buildStats.renderChunkCount = renderer == nullptr ? 0u : renderer->chunkCount();
+        m_lastUpdateStats.rebuiltRenderChunkCount = static_cast<std::size_t>(renderChunkChanged);
+
+        if (solidityChanged)
+        {
+            queueGeneratedObjectsForDestruction(m_collisionObjects);
+            m_collisionObjects = std::move(newCollisionObjects);
+            m_buildStats.collisionRectangleCount = collisionRectangles.size();
+            m_lastUpdateStats.rebuiltCollisionRectangleCount = collisionRectangles.size();
+            m_lastUpdateStats.collisionGeometryRebuilt = true;
+        }
+
+        if (rendererCreated || solidityChanged)
+        {
+            m_generatedObjects.clear();
+
+            if (m_renderObject.isValid()) m_generatedObjects.push_back(m_renderObject);
+
+            m_generatedObjects.insert(m_generatedObjects.end(), m_collisionObjects.begin(),
+                                      m_collisionObjects.end());
+        }
+
+        return true;
+    }
+
+    std::optional<char> TileMap::tileAt(std::size_t row, std::size_t column) const
+    {
+        if (row >= m_layout.size() || column >= m_layout[row].size()) return std::nullopt;
+        return m_layout[row][column];
+    }
+
+    const TileMapUpdateStats& TileMap::lastUpdateStats() const
+    {
+        return m_lastUpdateStats;
+    }
+
+    bool TileMap::setStreamRegion(TileMapRegion region)
+    {
+        if (region.columnCount == 0u || region.rowCount == 0u ||
+            region.firstColumn > std::numeric_limits<std::size_t>::max() - region.columnCount ||
+            region.firstRow > std::numeric_limits<std::size_t>::max() - region.rowCount)
+        {
+            return false;
+        }
+
+        const std::shared_ptr<detail::SceneHandleState> sceneState = m_sceneState.lock();
+
+        if (sceneState == nullptr || sceneState->scene == nullptr) return false;
+
+        GameObject* renderObject = m_renderObject.get();
+        TileMapRenderComponent* renderer =
+            renderObject == nullptr ? nullptr
+                                    : renderObject->getComponent<TileMapRenderComponent>();
+
+        if (renderObject != nullptr && renderer == nullptr) return false;
+
+        m_streamRegion = region;
+        if (renderer != nullptr) renderer->setStreamRegion(region);
+        return true;
+    }
+
+    void TileMap::clearStreamRegion()
+    {
+        m_streamRegion.reset();
+        GameObject* renderObject = m_renderObject.get();
+
+        if (renderObject == nullptr) return;
+
+        TileMapRenderComponent* renderer = renderObject->getComponent<TileMapRenderComponent>();
+        if (renderer != nullptr) renderer->setStreamRegion(std::nullopt);
+    }
+
+    std::optional<TileMapRegion> TileMap::streamRegion() const
+    {
+        return m_streamRegion;
+    }
+
     void TileMap::unload()
     {
         queueGeneratedObjectsForDestruction(m_generatedObjects);
 
         m_generatedObjects.clear();
+        m_collisionObjects.clear();
         m_renderObject.reset();
+        m_sceneState.reset();
         m_layout.clear();
         m_loadedTileSize = {0.f, 0.f};
         m_loadedRenderChunkSize = {0u, 0u};
+        m_loadedSolidTileColor = sf::Color::White;
         m_loadedTileSet = {};
         m_worldSize = {0.f, 0.f};
         m_buildStats = {};
+        m_lastUpdateStats = {};
+        m_streamRegion.reset();
     }
 
     bool TileMap::findFirstTilePosition(char tileChar, sf::Vector2f& outPosition,

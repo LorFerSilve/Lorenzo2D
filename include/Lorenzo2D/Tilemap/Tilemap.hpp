@@ -7,6 +7,7 @@
 #include <SFML/System/Vector2.hpp>
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -34,12 +35,29 @@ namespace l2d
     struct TileMapRenderStats
     {
         std::size_t chunkCount = 0;
+        std::size_t residentChunkCount = 0;
+        std::size_t nonResidentChunkCount = 0;
         std::size_t visibleChunkCount = 0;
         std::size_t culledChunkCount = 0;
         std::size_t solidTileCount = 0;
         std::size_t submittedTileCount = 0;
         std::size_t submittedVertexCount = 0;
         std::size_t drawCallCount = 0;
+    };
+
+    struct TileMapRegion
+    {
+        std::size_t firstColumn = 0;
+        std::size_t firstRow = 0;
+        std::size_t columnCount = 0;
+        std::size_t rowCount = 0;
+    };
+
+    struct TileMapUpdateStats
+    {
+        std::size_t rebuiltRenderChunkCount = 0;
+        std::size_t rebuiltCollisionRectangleCount = 0;
+        bool collisionGeometryRebuilt = false;
     };
 
     class TileMap
@@ -97,6 +115,19 @@ namespace l2d
         bool loadFromFile(Scene& scene, const std::string& filepath, char solidChar = '#',
                           const std::string& objectPrefix = "Tile");
 
+        // Updates one existing cell and rebuilds only its render chunk. Static
+        // collision rectangles are rebuilt transactionally when solidity
+        // changes, preserving exact merged collision geometry.
+        bool setTile(std::size_t row, std::size_t column, char tile);
+        std::optional<char> tileAt(std::size_t row, std::size_t column) const;
+        const TileMapUpdateStats& lastUpdateStats() const;
+
+        // Limits resident render chunks independently from view culling.
+        // The region is expressed in tile coordinates.
+        bool setStreamRegion(TileMapRegion region);
+        void clearStreamRegion();
+        std::optional<TileMapRegion> streamRegion() const;
+
         bool findFirstTilePosition(char tileChar, sf::Vector2f& outPosition,
                                    bool centered = true) const;
 
@@ -125,13 +156,20 @@ namespace l2d
         sf::Vector2u m_renderChunkSize;
         sf::Vector2u m_loadedRenderChunkSize;
         sf::Color m_solidTileColor;
+        sf::Color m_loadedSolidTileColor;
         TileSet m_tileSet;
         TileSet m_loadedTileSet;
         sf::Vector2f m_worldSize;
         TileMapBuildStats m_buildStats;
+        TileMapUpdateStats m_lastUpdateStats;
 
         Layout m_layout;
         std::vector<GameObjectHandle> m_generatedObjects;
+        std::vector<GameObjectHandle> m_collisionObjects;
         GameObjectHandle m_renderObject;
+        std::weak_ptr<detail::SceneHandleState> m_sceneState;
+        char m_loadedSolidChar = '#';
+        std::string m_loadedObjectPrefix = "Tile";
+        std::optional<TileMapRegion> m_streamRegion;
     };
 }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.3.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.4.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -142,6 +142,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Animation/AnimationClip.cpp
     src/Lorenzo2D/Animation/Animator.cpp
     src/Lorenzo2D/Assets/AssetManager.cpp
+    src/Lorenzo2D/Assets/AssetPipeline.cpp
     src/Lorenzo2D/Assets/ResourceLocator.cpp
     src/Lorenzo2D/Core/ActionMap.cpp
     src/Lorenzo2D/Core/Application.cpp
@@ -168,8 +169,11 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Renderer/CircleRenderer.cpp
     src/Lorenzo2D/Renderer/DebugOverlay.cpp
     src/Lorenzo2D/Renderer/OrthographicCameraController2D.cpp
+    src/Lorenzo2D/Renderer/ParticleEmitter2D.cpp
+    src/Lorenzo2D/Renderer/PostProcessStack2D.cpp
     src/Lorenzo2D/Renderer/RectangleRenderer.cpp
     src/Lorenzo2D/Renderer/RenderLayerStack2D.cpp
+    src/Lorenzo2D/Renderer/RenderQueue2D.cpp
     src/Lorenzo2D/Renderer/SpriteRenderer.cpp
     src/Lorenzo2D/Scene/GameObjectHandle.cpp
     src/Lorenzo2D/Scene/LevelSerializer.cpp

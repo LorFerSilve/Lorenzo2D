@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <mutex>
 #include <utility>
 
 namespace sf
@@ -94,6 +96,63 @@ namespace l2d
         left.swap(right);
     }
 
+    namespace detail
+    {
+        template <typename Asset> struct LiveAssetState
+        {
+            mutable std::mutex mutex;
+            AssetHandle<Asset> current;
+            std::uint64_t generation = 0;
+        };
+    }
+
+    // An opt-in binding to a named registry slot. snapshot() returns a safe
+    // immutable lease for the slot's current generation; ordinary AssetHandle
+    // values retain their original snapshot semantics.
+    template <typename Asset> class LiveAssetHandle
+    {
+      public:
+        LiveAssetHandle() noexcept = default;
+
+        AssetHandle<Asset> snapshot() const
+        {
+            if (!m_state) return {};
+
+            const std::lock_guard<std::mutex> lock(m_state->mutex);
+            return m_state->current;
+        }
+
+        std::uint64_t generation() const
+        {
+            if (!m_state) return 0;
+
+            const std::lock_guard<std::mutex> lock(m_state->mutex);
+            return m_state->generation;
+        }
+
+        explicit operator bool() const noexcept
+        {
+            return m_state != nullptr;
+        }
+
+        void reset() noexcept
+        {
+            m_state.reset();
+        }
+
+      private:
+        explicit LiveAssetHandle(std::shared_ptr<detail::LiveAssetState<Asset>> state) noexcept
+            : m_state(std::move(state))
+        {
+        }
+
+        std::shared_ptr<detail::LiveAssetState<Asset>> m_state;
+
+        friend class AssetManager;
+    };
+
     using FontHandle = AssetHandle<sf::Font>;
     using TextureHandle = AssetHandle<sf::Texture>;
+    using LiveFontHandle = LiveAssetHandle<sf::Font>;
+    using LiveTextureHandle = LiveAssetHandle<sf::Texture>;
 }

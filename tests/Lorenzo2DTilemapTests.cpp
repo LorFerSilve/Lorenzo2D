@@ -407,6 +407,125 @@ namespace
         tileSet.clearTiles();
         L2D_REQUIRE(tileSet.tileCount() == 0u);
     }
+
+    void testAnimatedTileDefinitionsSelectFramesTransactionally()
+    {
+        l2d::TileSet tileSet;
+        const std::vector<l2d::TileAnimationFrame> frames{{{{0, 0}, {16, 16}}, 0.1f},
+                                                          {{{16, 0}, {16, 16}}, 0.2f}};
+
+        L2D_REQUIRE(tileSet.setAnimatedTile('W', frames));
+        L2D_REQUIRE(tileSet.contains('W'));
+        L2D_REQUIRE(tileSet.isAnimated('W'));
+        L2D_REQUIRE(tileSet.animatedTileCount() == 1u);
+        L2D_REQUIRE(tileSet.animation('W') != nullptr);
+        L2D_REQUIRE(tileSet.animation('W')->size() == 2u);
+        L2D_REQUIRE(tileSet.textureRect('W', 0.f) ==
+                    std::optional<sf::IntRect>(frames[0].textureRect));
+        L2D_REQUIRE(tileSet.textureRect('W', 0.1f) ==
+                    std::optional<sf::IntRect>(frames[1].textureRect));
+        L2D_REQUIRE(tileSet.textureRect('W', 0.31f) ==
+                    std::optional<sf::IntRect>(frames[0].textureRect));
+
+        const std::vector<l2d::TileAnimationFrame> invalid{{{{32, 0}, {16, 16}}, -1.f}};
+        L2D_REQUIRE(!tileSet.setAnimatedTile('W', invalid));
+        L2D_REQUIRE(tileSet.animation('W')->size() == 2u);
+
+        L2D_REQUIRE(tileSet.setTile('W', {{48, 0}, {16, 16}}));
+        L2D_REQUIRE(!tileSet.isAnimated('W'));
+        L2D_REQUIRE(tileSet.animatedTileCount() == 0u);
+    }
+
+    void testTileMapEditsOneChunkAndStreamsResidentRegions()
+    {
+        l2d::Scene scene;
+        l2d::TileMap tileMap;
+        tileMap.setTileSize({1.f, 1.f});
+        tileMap.setRenderChunkSize({2u, 2u});
+        tileMap.loadFromLayout(scene, l2d::TileMap::Layout(4u, std::string(4u, '#')));
+
+        L2D_REQUIRE(tileMap.tileAt(0u, 0u) == std::optional<char>('#'));
+        L2D_REQUIRE(!tileMap.tileAt(99u, 0u));
+        L2D_REQUIRE(tileMap.setStreamRegion({0u, 0u, 2u, 2u}));
+        L2D_REQUIRE(tileMap.streamRegion());
+        L2D_REQUIRE(tileMap.streamRegion()->columnCount == 2u);
+        L2D_REQUIRE(!tileMap.setStreamRegion({0u, 0u, 0u, 2u}));
+
+        const sf::View allVisible({2.f, 2.f}, {4.f, 4.f});
+        const l2d::TileMapRenderStats streamed = tileMap.renderStatsForView(allVisible);
+        L2D_REQUIRE(streamed.chunkCount == 4u);
+        L2D_REQUIRE(streamed.residentChunkCount == 1u);
+        L2D_REQUIRE(streamed.nonResidentChunkCount == 3u);
+        L2D_REQUIRE(streamed.visibleChunkCount == 1u);
+        L2D_REQUIRE(streamed.culledChunkCount == 3u);
+        L2D_REQUIRE(streamed.submittedTileCount == 4u);
+
+        L2D_REQUIRE(tileMap.setTile(0u, 0u, '.'));
+        L2D_REQUIRE(tileMap.tileAt(0u, 0u) == std::optional<char>('.'));
+        L2D_REQUIRE(tileMap.lastUpdateStats().rebuiltRenderChunkCount == 1u);
+        L2D_REQUIRE(tileMap.lastUpdateStats().collisionGeometryRebuilt);
+        L2D_REQUIRE(tileMap.buildStats().solidTileCount == 15u);
+        L2D_REQUIRE(tileMap.buildStats().renderedTileCount == 15u);
+        L2D_REQUIRE(tileMap.buildStats().renderChunkCount == 4u);
+        L2D_REQUIRE(scene.destroyQueuedGameObjectCount() == 1u);
+
+        scene.destroyQueuedGameObjects();
+        L2D_REQUIRE(scene.gameObjectCount() == 1u + tileMap.buildStats().collisionRectangleCount);
+
+        L2D_REQUIRE(tileMap.setTile(0u, 0u, '.'));
+        L2D_REQUIRE(tileMap.lastUpdateStats().rebuiltRenderChunkCount == 0u);
+        L2D_REQUIRE(!tileMap.setTile(99u, 0u, '#'));
+
+        tileMap.clearStreamRegion();
+        L2D_REQUIRE(!tileMap.streamRegion());
+        const l2d::TileMapRenderStats fullyResident = tileMap.renderStatsForView(allVisible);
+        L2D_REQUIRE(fullyResident.residentChunkCount == 4u);
+        L2D_REQUIRE(fullyResident.nonResidentChunkCount == 0u);
+        L2D_REQUIRE(fullyResident.visibleChunkCount == 4u);
+    }
+
+    void testMappedTileEditAvoidsCollisionRebuild()
+    {
+        l2d::TileSet tileSet;
+        L2D_REQUIRE(tileSet.setTile('G', {{0, 0}, {8, 8}}));
+        L2D_REQUIRE(tileSet.setTile('H', {{8, 0}, {8, 8}}));
+
+        l2d::Scene scene;
+        l2d::TileMap tileMap;
+        tileMap.setRenderChunkSize({2u, 1u});
+        tileMap.setTileSet(tileSet);
+        tileMap.loadFromLayout(scene, {"GGGG"});
+
+        L2D_REQUIRE(tileMap.buildStats().renderChunkCount == 2u);
+        L2D_REQUIRE(tileMap.setTile(0u, 1u, 'H'));
+        L2D_REQUIRE(tileMap.lastUpdateStats().rebuiltRenderChunkCount == 1u);
+        L2D_REQUIRE(!tileMap.lastUpdateStats().collisionGeometryRebuilt);
+        L2D_REQUIRE(tileMap.buildStats().renderChunkCount == 2u);
+        L2D_REQUIRE(tileMap.buildStats().texturedTileCount == 4u);
+        L2D_REQUIRE(scene.destroyQueuedGameObjectCount() == 0u);
+    }
+
+    void testEmptyLoadedMapCanCreateItsFirstRenderChunk()
+    {
+        l2d::Scene scene;
+        l2d::TileMap tileMap;
+        tileMap.setRenderChunkSize({2u, 2u});
+        tileMap.loadFromLayout(scene, {"...."});
+
+        L2D_REQUIRE(scene.gameObjectCount() == 0u);
+        L2D_REQUIRE(tileMap.setStreamRegion({0u, 0u, 2u, 1u}));
+        L2D_REQUIRE(tileMap.setTile(0u, 1u, 'P'));
+        L2D_REQUIRE(tileMap.lastUpdateStats().rebuiltRenderChunkCount == 0u);
+        L2D_REQUIRE(scene.gameObjectCount() == 0u);
+
+        L2D_REQUIRE(tileMap.setTile(0u, 0u, '#'));
+        L2D_REQUIRE(tileMap.buildStats().solidTileCount == 1u);
+        L2D_REQUIRE(tileMap.buildStats().renderChunkCount == 1u);
+        L2D_REQUIRE(tileMap.buildStats().collisionRectangleCount == 1u);
+        L2D_REQUIRE(tileMap.lastUpdateStats().rebuiltRenderChunkCount == 1u);
+        L2D_REQUIRE(tileMap.lastUpdateStats().collisionGeometryRebuilt);
+        L2D_REQUIRE(scene.activeGameObjectCount() == 2u);
+    }
 }
 
 int main()
@@ -425,6 +544,14 @@ int main()
             testTileMapFileLoadingPreservesBlankRowsAndIsTransactional, failures);
     runTest("tilesets map atlas cells onto layout characters",
             testTileSetAtlasMappingsRenderMultipleLayoutCharacters, failures);
+    runTest("animated tilesets select frames transactionally",
+            testAnimatedTileDefinitionsSelectFramesTransactionally, failures);
+    runTest("tilemap edits one chunk and streams regions",
+            testTileMapEditsOneChunkAndStreamsResidentRegions, failures);
+    runTest("mapped tile edits avoid collision rebuilds", testMappedTileEditAvoidsCollisionRebuild,
+            failures);
+    runTest("empty loaded tilemaps create their first chunk",
+            testEmptyLoadedMapCanCreateItsFirstRenderChunk, failures);
 
     if (failures != 0)
     {

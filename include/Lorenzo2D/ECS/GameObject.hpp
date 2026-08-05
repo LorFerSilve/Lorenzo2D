@@ -45,6 +45,11 @@ namespace l2d
         bool isActive() const;
         void setActive(bool active);
 
+        // Lower values are rendered first. Equal values preserve scene
+        // insertion order.
+        std::int32_t zOrder() const;
+        void setZOrder(std::int32_t zOrder);
+
         void destroy();
         bool isDestroyQueued() const;
 
@@ -148,6 +153,7 @@ namespace l2d
 
         bool m_active = true;
         bool m_destroyQueued = false;
+        std::int32_t m_zOrder = 0;
         std::uint64_t m_fixedUpdateGeneration = 0;
 
         std::vector<std::unique_ptr<Component>> m_components;

@@ -90,7 +90,7 @@ namespace l2d
                    << (properties.sensor ? 1 : 0);
         }
 
-        bool readObject(std::istream& input, Prefab& prefab)
+        bool readObject(std::istream& input, Prefab& prefab, std::uint32_t version)
         {
             if (!parseLine(input, "object", [](std::istream&) { return true; }) ||
                 !parseLine(input, "name", [&](std::istream& line)
@@ -98,8 +98,18 @@ namespace l2d
                 !parseLine(input, "tag", [&](std::istream& line)
                            { return static_cast<bool>(line >> std::quoted(prefab.tag)); }) ||
                 !parseLine(input, "active",
-                           [&](std::istream& line) { return parseBoolean(line, prefab.active); }) ||
-                !parseLine(input, "transform",
+                           [&](std::istream& line) { return parseBoolean(line, prefab.active); }))
+            {
+                return false;
+            }
+
+            if (version >= 2u && !parseLine(input, "z_order", [&](std::istream& line)
+                                            { return static_cast<bool>(line >> prefab.zOrder); }))
+            {
+                return false;
+            }
+
+            if (!parseLine(input, "transform",
                            [&](std::istream& line)
                            {
                                return static_cast<bool>(
@@ -206,6 +216,7 @@ namespace l2d
             output << "name " << std::quoted(prefab.name) << '\n';
             output << "tag " << std::quoted(prefab.tag) << '\n';
             output << "active " << (prefab.active ? 1 : 0) << '\n';
+            output << "z_order " << prefab.zOrder << '\n';
             output << "transform " << prefab.transform.position.x << ' '
                    << prefab.transform.position.y << ' ' << prefab.transform.rotation << ' '
                    << prefab.transform.scale.x << ' ' << prefab.transform.scale.y << '\n';
@@ -298,9 +309,12 @@ namespace l2d
         std::uint32_t version = 0;
         std::size_t objectCount = 0;
 
-        if (!parseLine(
-                input, "LORENZO2D_LEVEL", [&](std::istream& line)
-                { return static_cast<bool>(line >> version) && version == CurrentVersion; }) ||
+        if (!parseLine(input, "LORENZO2D_LEVEL",
+                       [&](std::istream& line)
+                       {
+                           return static_cast<bool>(line >> version) &&
+                                  version >= MinimumSupportedVersion && version <= CurrentVersion;
+                       }) ||
             !parseLine(input, "level", [&](std::istream& line)
                        { return static_cast<bool>(line >> std::quoted(parsed.name)); }) ||
             !parseLine(input, "objects",
@@ -317,7 +331,7 @@ namespace l2d
         {
             Prefab prefab;
 
-            if (!readObject(input, prefab)) return false;
+            if (!readObject(input, prefab, version)) return false;
 
             parsed.objects.push_back(std::move(prefab));
         }
