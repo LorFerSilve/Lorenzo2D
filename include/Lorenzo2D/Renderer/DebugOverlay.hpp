@@ -18,7 +18,7 @@ namespace l2d
 {
     class DebugOverlay
     {
-    public:
+      public:
         DebugOverlay();
 
         DebugOverlay(const DebugOverlay&) = delete;
@@ -45,7 +45,7 @@ namespace l2d
 
         void render(sf::RenderWindow& window) const;
 
-    private:
+      private:
         // The lease must outlive the SFML drawable that borrows from it.
         FontHandle m_font;
         sf::Text m_text;

@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The regression executables use a small first-party harness. All nine suites
+The regression executables use a small first-party harness. All fifteen suites
 share assertion and named-test execution support through `TestSupport.hpp`.
 Physics and renderer assertions use the same value-rich diagnostics while
 keeping their subsystem comparison tolerances explicit in the owning source.
@@ -15,17 +15,24 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | --- | --- | --- | --- |
 | `Lorenzo2DTestSupportTests` | Harness diagnostics, explicit tolerances, 2D comparison, and temporary-file cleanup | `headless` | 30 s |
 | `Lorenzo2DCoreTimingTests` | Identity contracts, fixed-step scheduling, and transform interpolation | `headless` | 60 s |
+| `Lorenzo2DInputTests` | Action-map sampling, multi-key bindings, frame edges, and consumption | `headless` | 30 s |
 | `Lorenzo2DEcsSceneTests` | Component mutation, activation, scene dispatch, handles, indexing, and deferred destruction | `headless` | 90 s |
 | `Lorenzo2DPhysicsIntegrationTests` | Scene-to-physics fixed-tick participation and render-cadence independence | `headless` | 90 s |
 | `Lorenzo2DTilemapTests` | Chunk statistics, view culling, collision merging, reload ownership, moves, and file loading | `headless` | 90 s |
 | `Lorenzo2DTimingAccountingTests` | Cumulative fixed-step and frame-clamp accounting | `headless` | 30 s |
-| `Lorenzo2DPhysicsTests` | Collision geometry, materials, contacts, solver behavior, and broad phase | `headless` | 180 s |
+| `Lorenzo2DPhysicsBodyTests` | Body configuration, integration, impulses, restitution, and friction | `headless` | 90 s |
+| `Lorenzo2DPhysicsCollisionTests` | Manifolds, filters, sensors, contacts, grounded state, and extreme values | `headless` | 120 s |
+| `Lorenzo2DPhysicsWorldTests` | Scene identity, reset behavior, collider participation, stacks, and legacy response | `headless` | 90 s |
+| `Lorenzo2DPhysicsBroadPhaseTests` | Uniform-grid boundaries, deduplication, fallback, equivalence, and telemetry | `headless` | 120 s |
+| `Lorenzo2DPhysicsTilemapTests` | Physics continuity across merged tile-map collision geometry | `headless` | 90 s |
+| `Lorenzo2DPhysicsStabilityTests` | Long-horizon contacts, stacks, determinism, broad-phase equivalence, and tunnelling baseline | `headless` | 240 s |
 | `Lorenzo2DAssetTests` | Font and texture handle lifetime, registries, and renderer leases | `xvfb` | 60 s |
 | `Lorenzo2DRendererTests` | Camera, transform, and renderer numeric contracts without GPU resources | `headless` | 60 s |
 
-The previous `Lorenzo2DTests.cpp` target mixed unrelated core, scene, physics,
-and tilemap regressions. Its individual test cases and assertion bodies are now
-owned by the four focused suites above. New regressions should be added to the
+The previous broad regression targets mixed unrelated core, scene, physics,
+and tilemap behavior. Their individual cases are now owned by focused suites;
+the physics fixtures shared by those suites live in
+`physics/PhysicsTestSupport.hpp`. New regressions should be added to the
 narrowest applicable suite or to a new focused executable.
 
 ## Shared support

@@ -17,31 +17,26 @@ namespace l2d
         }
     }
 
-    DebugOverlay::DebugOverlay()
-        : m_font(makeEmptyFontHandle()),
-        m_text(*m_font),
-        m_hasFont(false)
+    DebugOverlay::DebugOverlay() : m_font(makeEmptyFontHandle()), m_text(*m_font), m_hasFont(false)
     {
         m_text.setString("");
         m_text.setCharacterSize(18);
         m_text.setFillColor(sf::Color::White);
-        m_text.setPosition({ 10.f, 10.f });
+        m_text.setPosition({10.f, 10.f});
     }
 
     bool DebugOverlay::loadFontFromFile(const std::string& filepath)
     {
         std::shared_ptr<sf::Font> font = std::make_shared<sf::Font>();
 
-        if (!font->openFromFile(filepath))
-            return false;
+        if (!font->openFromFile(filepath)) return false;
 
         return setFont(FontHandle(std::move(font)));
     }
 
     bool DebugOverlay::setFont(FontHandle font)
     {
-        if (!font)
-            return false;
+        if (!font) return false;
 
         // Rebind the text before releasing the lease for its old font.
         m_text.setFont(*font);
@@ -52,8 +47,7 @@ namespace l2d
 
     FontHandle DebugOverlay::fontHandle() const
     {
-        if (!m_hasFont)
-            return {};
+        if (!m_hasFont) return {};
 
         return m_font;
     }
@@ -78,8 +72,7 @@ namespace l2d
 
     void DebugOverlay::setPosition(sf::Vector2f position)
     {
-        if (!renderer_detail::isSafeDrawablePosition(position))
-            return;
+        if (!renderer_detail::isSafeDrawablePosition(position)) return;
 
         m_text.setPosition(position);
     }
@@ -91,8 +84,7 @@ namespace l2d
 
     void DebugOverlay::setCharacterSize(unsigned int size)
     {
-        if (size == 0u)
-            size = 1u;
+        if (size == 0u) size = 1u;
 
         m_text.setCharacterSize(size);
     }
@@ -109,8 +101,7 @@ namespace l2d
 
     void DebugOverlay::render(sf::RenderWindow& window) const
     {
-        if (!m_hasFont)
-            return;
+        if (!m_hasFont) return;
 
         window.draw(m_text);
     }

@@ -20,8 +20,7 @@ namespace
     struct TrackedAsset
     {
         TrackedAsset(int assetValue, int& destructionCounter)
-            : value(assetValue),
-            destructionCount(&destructionCounter)
+            : value(assetValue), destructionCount(&destructionCounter)
         {
         }
 
@@ -48,10 +47,8 @@ namespace
     {
         static_assert(std::is_copy_constructible<l2d::AssetHandle<int>>::value);
         static_assert(std::is_copy_assignable<l2d::AssetHandle<int>>::value);
-        static_assert(std::is_nothrow_move_constructible<
-            l2d::AssetHandle<int>>::value);
-        static_assert(std::is_nothrow_move_assignable<
-            l2d::AssetHandle<int>>::value);
+        static_assert(std::is_nothrow_move_constructible<l2d::AssetHandle<int>>::value);
+        static_assert(std::is_nothrow_move_assignable<l2d::AssetHandle<int>>::value);
 
         int destructionCount = 0;
 
@@ -173,8 +170,7 @@ namespace
     {
         const std::string missingTexturePath =
             "lorenzo2d_missing_asset_directory/missing_texture.png";
-        const std::string missingFontPath =
-            "lorenzo2d_missing_asset_directory/missing_font.ttf";
+        const std::string missingFontPath = "lorenzo2d_missing_asset_directory/missing_font.ttf";
 
         l2d::AssetManager assets;
         const l2d::TextureHandle texture = makeTextureHandle();
@@ -183,21 +179,14 @@ namespace
         L2D_REQUIRE(assets.storeTexture("hero", texture));
         L2D_REQUIRE(assets.storeFont("ui", font));
 
-        L2D_REQUIRE(!assets.loadTexture(
-            "hero",
-            missingTexturePath,
-            false
-        ));
+        L2D_REQUIRE(!assets.loadTexture("hero", missingTexturePath, false));
         L2D_REQUIRE(!assets.loadFont("ui", missingFontPath));
         L2D_REQUIRE(assets.getTexture("hero") == texture);
         L2D_REQUIRE(assets.getFont("ui") == font);
         L2D_REQUIRE(assets.textureCount() == 1u);
         L2D_REQUIRE(assets.fontCount() == 1u);
 
-        L2D_REQUIRE(!assets.loadTexture(
-            "missing",
-            missingTexturePath
-        ));
+        L2D_REQUIRE(!assets.loadTexture("missing", missingTexturePath));
         L2D_REQUIRE(!assets.loadFont("missing", missingFontPath));
         L2D_REQUIRE(!assets.hasTexture("missing"));
         L2D_REQUIRE(!assets.hasFont("missing"));
@@ -249,8 +238,7 @@ namespace
 
         {
             l2d::AssetManager assets;
-            std::shared_ptr<sf::Texture> firstAsset =
-                std::make_shared<sf::Texture>();
+            std::shared_ptr<sf::Texture> firstAsset = std::make_shared<sf::Texture>();
             const std::weak_ptr<const sf::Texture> firstWeak = firstAsset;
             l2d::TextureHandle first(std::move(firstAsset));
             const sf::Texture* firstAddress = first.get();
@@ -263,13 +251,11 @@ namespace
             L2D_REQUIRE(renderer.textureHandle());
             L2D_REQUIRE(renderer.textureHandle().get() == firstAddress);
 
-            l2d::TextureHandle bindingBeforeInvalidSet =
-                renderer.textureHandle();
+            l2d::TextureHandle bindingBeforeInvalidSet = renderer.textureHandle();
             L2D_REQUIRE(!renderer.setTexture({}));
             L2D_REQUIRE(renderer.textureHandle() == bindingBeforeInvalidSet);
 
-            std::shared_ptr<sf::Texture> secondAsset =
-                std::make_shared<sf::Texture>();
+            std::shared_ptr<sf::Texture> secondAsset = std::make_shared<sf::Texture>();
             secondWeak = secondAsset;
             l2d::TextureHandle second(std::move(secondAsset));
             const sf::Texture* secondAddress = second.get();
@@ -289,19 +275,15 @@ namespace
 
     void testSpriteRendererSizesAgainstTheActiveTextureRect()
     {
-        l2d::TextureHandle first(std::make_shared<sf::Texture>(
-            sf::Vector2u{ 100u, 80u }
-        ));
-        l2d::TextureHandle second(std::make_shared<sf::Texture>(
-            sf::Vector2u{ 200u, 160u }
-        ));
+        l2d::TextureHandle first(std::make_shared<sf::Texture>(sf::Vector2u{100u, 80u}));
+        l2d::TextureHandle second(std::make_shared<sf::Texture>(sf::Vector2u{200u, 160u}));
 
         l2d::SpriteRenderer renderer(first);
-        renderer.setSize({ 50.f, 20.f });
+        renderer.setSize({50.f, 20.f});
         L2D_REQUIRE_EQUAL(renderer.sizeScale(), sf::Vector2f(0.5f, 0.25f));
 
         L2D_REQUIRE(renderer.setTexture(second, false));
-        renderer.setSize({ 100.f, 40.f });
+        renderer.setSize({100.f, 40.f});
 
         // resetRect=false retains the 100x80 sprite rect from the first
         // texture, so the requested size must be divided by that active rect.
@@ -322,8 +304,7 @@ namespace
         L2D_REQUIRE(!overlay.hasFont());
 
         l2d::AssetManager assets;
-        std::shared_ptr<sf::Font> firstAsset =
-            std::make_shared<sf::Font>();
+        std::shared_ptr<sf::Font> firstAsset = std::make_shared<sf::Font>();
         const std::weak_ptr<const sf::Font> firstWeak = firstAsset;
         l2d::FontHandle first(std::move(firstAsset));
         const sf::Font* firstAddress = first.get();
@@ -340,12 +321,10 @@ namespace
         L2D_REQUIRE(!overlay.setFont({}));
         L2D_REQUIRE(overlay.fontHandle() == bindingBeforeInvalidSet);
         L2D_REQUIRE(!overlay.loadFontFromFile(
-            "lorenzo2d_missing_asset_directory/missing_overlay_font.ttf"
-        ));
+            "lorenzo2d_missing_asset_directory/missing_overlay_font.ttf"));
         L2D_REQUIRE(overlay.fontHandle() == bindingBeforeInvalidSet);
 
-        std::shared_ptr<sf::Font> secondAsset =
-            std::make_shared<sf::Font>();
+        std::shared_ptr<sf::Font> secondAsset = std::make_shared<sf::Font>();
         const std::weak_ptr<const sf::Font> secondWeak = secondAsset;
         l2d::FontHandle second(std::move(secondAsset));
         const sf::Font* secondAddress = second.get();
@@ -368,10 +347,8 @@ namespace
     {
         static_assert(!std::is_copy_constructible<l2d::AssetManager>::value);
         static_assert(!std::is_copy_assignable<l2d::AssetManager>::value);
-        static_assert(std::is_nothrow_move_constructible<
-            l2d::AssetManager>::value);
-        static_assert(std::is_nothrow_move_assignable<
-            l2d::AssetManager>::value);
+        static_assert(std::is_nothrow_move_constructible<l2d::AssetManager>::value);
+        static_assert(std::is_nothrow_move_assignable<l2d::AssetManager>::value);
 
         l2d::AssetManager source;
         const l2d::TextureHandle texture = makeTextureHandle();
@@ -403,23 +380,21 @@ int main()
     int failures = 0;
 
     runTest("generic handle ownership and value semantics",
-        testGenericHandleOwnershipAndValueSemantics, failures);
-    runTest("texture registry generations and removal",
-        testTextureRegistryGenerationsAndRemoval, failures);
-    runTest("font registry generations and clearing",
-        testFontRegistryGenerationsAndClearing, failures);
+            testGenericHandleOwnershipAndValueSemantics, failures);
+    runTest("texture registry generations and removal", testTextureRegistryGenerationsAndRemoval,
+            failures);
+    runTest("font registry generations and clearing", testFontRegistryGenerationsAndClearing,
+            failures);
     runTest("failed loads preserve registered generations",
-        testFailedLoadsPreserveRegisteredGenerations, failures);
-    runTest("handles survive manager destruction",
-        testHandlesSurviveManagerDestruction, failures);
-    runTest("sprite renderer retains and rebinds leases",
-        testSpriteRendererRetainsAndRebindsLeases, failures);
+            testFailedLoadsPreserveRegisteredGenerations, failures);
+    runTest("handles survive manager destruction", testHandlesSurviveManagerDestruction, failures);
+    runTest("sprite renderer retains and rebinds leases", testSpriteRendererRetainsAndRebindsLeases,
+            failures);
     runTest("sprite renderer sizes against the active texture rect",
-        testSpriteRendererSizesAgainstTheActiveTextureRect, failures);
-    runTest("debug overlay retains and clears leases",
-        testDebugOverlayRetainsAndClearsLeases, failures);
-    runTest("asset manager move contract",
-        testAssetManagerMoveContract, failures);
+            testSpriteRendererSizesAgainstTheActiveTextureRect, failures);
+    runTest("debug overlay retains and clears leases", testDebugOverlayRetainsAndClearsLeases,
+            failures);
+    runTest("asset manager move contract", testAssetManagerMoveContract, failures);
 
     if (failures != 0)
     {

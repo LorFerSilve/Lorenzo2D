@@ -25,11 +25,7 @@ namespace
         return std::isfinite(value.x) && std::isfinite(value.y);
     }
 
-    void fixedStep(
-        l2d::Scene& scene,
-        l2d::PhysicsWorld2D& world,
-        float deltaTime = 1.f / 120.f
-    )
+    void fixedStep(l2d::Scene& scene, l2d::PhysicsWorld2D& world, float deltaTime = 1.f / 120.f)
     {
         scene.fixedUpdate(deltaTime);
         world.step(scene, deltaTime);
@@ -42,14 +38,9 @@ namespace
         l2d::RigidBody2D* body = nullptr;
     };
 
-    BoxBody createBox(
-        l2d::Scene& scene,
-        const std::string& name,
-        sf::Vector2f position,
-        sf::Vector2f size,
-        bool withBody = true,
-        l2d::BodyType2D bodyType = l2d::BodyType2D::Dynamic
-    )
+    BoxBody createBox(l2d::Scene& scene, const std::string& name, sf::Vector2f position,
+                      sf::Vector2f size, bool withBody = true,
+                      l2d::BodyType2D bodyType = l2d::BodyType2D::Dynamic)
     {
         l2d::GameObject& object = scene.createGameObject(name);
         object.transform.setPosition(position);
@@ -62,10 +53,9 @@ namespace
             body->setBodyType(bodyType);
         }
 
-        l2d::BoxCollider2D& collider =
-            object.addComponent<l2d::BoxCollider2D>(size);
+        l2d::BoxCollider2D& collider = object.addComponent<l2d::BoxCollider2D>(size);
 
-        return { &object, &collider, body };
+        return {&object, &collider, body};
     }
 
     struct CircleBody
@@ -75,14 +65,9 @@ namespace
         l2d::RigidBody2D* body = nullptr;
     };
 
-    CircleBody createCircle(
-        l2d::Scene& scene,
-        const std::string& name,
-        sf::Vector2f position,
-        float radius,
-        bool withBody = true,
-        l2d::BodyType2D bodyType = l2d::BodyType2D::Dynamic
-    )
+    CircleBody createCircle(l2d::Scene& scene, const std::string& name, sf::Vector2f position,
+                            float radius, bool withBody = true,
+                            l2d::BodyType2D bodyType = l2d::BodyType2D::Dynamic)
     {
         l2d::GameObject& object = scene.createGameObject(name);
         object.transform.setPosition(position);
@@ -95,36 +80,24 @@ namespace
             body->setBodyType(bodyType);
         }
 
-        l2d::CircleCollider2D& collider =
-            object.addComponent<l2d::CircleCollider2D>(radius);
+        l2d::CircleCollider2D& collider = object.addComponent<l2d::CircleCollider2D>(radius);
 
-        return { &object, &collider, body };
+        return {&object, &collider, body};
     }
 
     void testLongDurationRestingContactRemainsStable()
     {
         l2d::PhysicsWorld2DConfig config;
-        config.gravity = { 0.f, 30.f };
+        config.gravity = {0.f, 30.f};
         config.velocityIterations = 12;
         config.positionIterations = 6;
 
         l2d::Scene scene;
         l2d::PhysicsWorld2D world(config);
 
-        createBox(
-            scene,
-            "Floor",
-            { 0.f, 5.f },
-            { 5.f, 1.f },
-            false
-        );
+        createBox(scene, "Floor", {0.f, 5.f}, {5.f, 1.f}, false);
 
-        BoxBody resting = createBox(
-            scene,
-            "Resting",
-            { 2.f, 4.f },
-            { 1.f, 1.f }
-        );
+        BoxBody resting = createBox(scene, "Resting", {2.f, 4.f}, {1.f, 1.f});
         resting.body->setUseGravity(true);
 
         constexpr std::size_t warmupTicks = 600;
@@ -141,11 +114,9 @@ namespace
 
             if (tick >= warmupTicks)
             {
-                if (!world.contacts().empty())
-                    ++contactTicks;
+                if (!world.contacts().empty()) ++contactTicks;
 
-                if (resting.body->isGrounded())
-                    ++groundedTicks;
+                if (resting.body->isGrounded()) ++groundedTicks;
             }
         }
 
@@ -154,10 +125,7 @@ namespace
         L2D_REQUIRE(groundedTicks >= observedTicks * 99u / 100u);
         L2D_REQUIRE_EQUAL(world.contacts().size(), 1u);
         L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1u);
-        L2D_REQUIRE_EQUAL(
-            world.contactEvents()[0].phase,
-            l2d::PhysicsContactPhase2D::Stay
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Stay);
         L2D_REQUIRE(resting.body->isGrounded());
         L2D_REQUIRE(resting.object->transform.position().y > 3.9f);
         L2D_REQUIRE(resting.object->transform.position().y < 4.1f);
@@ -167,20 +135,14 @@ namespace
     void testLongerDynamicBoxStackRemainsFiniteAndOrdered()
     {
         l2d::PhysicsWorld2DConfig config;
-        config.gravity = { 0.f, 30.f };
+        config.gravity = {0.f, 30.f};
         config.velocityIterations = 16;
         config.positionIterations = 8;
 
         l2d::Scene scene;
         l2d::PhysicsWorld2D world(config);
 
-        createBox(
-            scene,
-            "Floor",
-            { 0.f, 10.f },
-            { 8.f, 1.f },
-            false
-        );
+        createBox(scene, "Floor", {0.f, 10.f}, {8.f, 1.f}, false);
 
         constexpr std::size_t boxCount = 8;
         std::vector<BoxBody> boxes;
@@ -188,12 +150,8 @@ namespace
 
         for (std::size_t index = 0; index < boxCount; ++index)
         {
-            BoxBody box = createBox(
-                scene,
-                "StackBox" + std::to_string(index),
-                { 3.f, 9.f - static_cast<float>(index) },
-                { 1.f, 1.f }
-            );
+            BoxBody box = createBox(scene, "StackBox" + std::to_string(index),
+                                    {3.f, 9.f - static_cast<float>(index)}, {1.f, 1.f});
             box.body->setUseGravity(true);
             boxes.push_back(box);
         }
@@ -220,10 +178,8 @@ namespace
 
             if (index > 0)
             {
-                L2D_REQUIRE(
-                    box.object->transform.position().y <
-                    boxes[index - 1].object->transform.position().y
-                );
+                L2D_REQUIRE(box.object->transform.position().y <
+                            boxes[index - 1].object->transform.position().y);
             }
         }
     }
@@ -234,15 +190,13 @@ namespace
         std::vector<sf::Vector2f> velocities;
         std::vector<bool> groundedStates;
         std::vector<std::size_t> contactCounts;
-        std::array<std::size_t, 3> eventPhaseCounts{ 0u, 0u, 0u };
+        std::array<std::size_t, 3> eventPhaseCounts{0u, 0u, 0u};
     };
 
-    ScenarioResult runDeterministicScenario(
-        l2d::PhysicsBroadPhaseMode2D broadPhaseMode
-    )
+    ScenarioResult runDeterministicScenario(l2d::PhysicsBroadPhaseMode2D broadPhaseMode)
     {
         l2d::PhysicsWorld2DConfig config;
-        config.gravity = { 0.f, 30.f };
+        config.gravity = {0.f, 30.f};
         config.velocityIterations = 12;
         config.positionIterations = 6;
         config.broadPhaseMode = broadPhaseMode;
@@ -251,13 +205,7 @@ namespace
         l2d::Scene scene;
         l2d::PhysicsWorld2D world(config);
 
-        createBox(
-            scene,
-            "Floor",
-            { -8.f, 10.f },
-            { 16.f, 1.f },
-            false
-        );
+        createBox(scene, "Floor", {-8.f, 10.f}, {16.f, 1.f}, false);
 
         std::vector<BoxBody> boxes;
         boxes.reserve(5);
@@ -265,19 +213,11 @@ namespace
         for (std::size_t index = 0; index < 5; ++index)
         {
             BoxBody box = createBox(
-                scene,
-                "DeterministicBox" + std::to_string(index),
-                {
-                    -2.f + static_cast<float>(index),
-                    2.f - static_cast<float>(index) * 0.25f
-                },
-                { 1.f, 1.f }
-            );
+                scene, "DeterministicBox" + std::to_string(index),
+                {-2.f + static_cast<float>(index), 2.f - static_cast<float>(index) * 0.25f},
+                {1.f, 1.f});
             box.body->setUseGravity(true);
-            box.body->setVelocity({
-                static_cast<float>(index) * 0.2f - 0.4f,
-                0.f
-            });
+            box.body->setVelocity({static_cast<float>(index) * 0.2f - 0.4f, 0.f});
             boxes.push_back(box);
         }
 
@@ -305,9 +245,7 @@ namespace
 
                 for (const BoxBody& box : boxes)
                 {
-                    result.positions.push_back(
-                        box.object->transform.position()
-                    );
+                    result.positions.push_back(box.object->transform.position());
                     result.velocities.push_back(box.body->velocity());
                     result.groundedStates.push_back(box.body->isGrounded());
                 }
@@ -317,68 +255,41 @@ namespace
         return result;
     }
 
-    void requireEquivalentScenarioResults(
-        const ScenarioResult& left,
-        const ScenarioResult& right
-    )
+    void requireEquivalentScenarioResults(const ScenarioResult& left, const ScenarioResult& right)
     {
         L2D_REQUIRE_EQUAL(left.positions.size(), right.positions.size());
         L2D_REQUIRE_EQUAL(left.velocities.size(), right.velocities.size());
-        L2D_REQUIRE_EQUAL(
-            left.groundedStates.size(),
-            right.groundedStates.size()
-        );
-        L2D_REQUIRE_EQUAL(
-            left.contactCounts.size(),
-            right.contactCounts.size()
-        );
+        L2D_REQUIRE_EQUAL(left.groundedStates.size(), right.groundedStates.size());
+        L2D_REQUIRE_EQUAL(left.contactCounts.size(), right.contactCounts.size());
 
         for (std::size_t index = 0; index < left.positions.size(); ++index)
         {
-            L2D_REQUIRE_APPROX(
-                left.positions[index],
-                right.positions[index],
-                kDeterminismComparisonEpsilon
-            );
-            L2D_REQUIRE_APPROX(
-                left.velocities[index],
-                right.velocities[index],
-                kDeterminismComparisonEpsilon
-            );
-            L2D_REQUIRE_EQUAL(
-                left.groundedStates[index],
-                right.groundedStates[index]
-            );
+            L2D_REQUIRE_APPROX(left.positions[index], right.positions[index],
+                               kDeterminismComparisonEpsilon);
+            L2D_REQUIRE_APPROX(left.velocities[index], right.velocities[index],
+                               kDeterminismComparisonEpsilon);
+            L2D_REQUIRE_EQUAL(left.groundedStates[index], right.groundedStates[index]);
         }
 
         for (std::size_t index = 0; index < left.contactCounts.size(); ++index)
         {
-            L2D_REQUIRE_EQUAL(
-                left.contactCounts[index],
-                right.contactCounts[index]
-            );
+            L2D_REQUIRE_EQUAL(left.contactCounts[index], right.contactCounts[index]);
         }
 
         for (std::size_t index = 0; index < left.eventPhaseCounts.size(); ++index)
         {
-            L2D_REQUIRE_EQUAL(
-                left.eventPhaseCounts[index],
-                right.eventPhaseCounts[index]
-            );
+            L2D_REQUIRE_EQUAL(left.eventPhaseCounts[index], right.eventPhaseCounts[index]);
         }
     }
 
     void testRepeatedSimulationsRemainDeterministicOverManyTicks()
     {
-        const ScenarioResult first = runDeterministicScenario(
-            l2d::PhysicsBroadPhaseMode2D::UniformGrid
-        );
-        const ScenarioResult second = runDeterministicScenario(
-            l2d::PhysicsBroadPhaseMode2D::UniformGrid
-        );
-        const ScenarioResult third = runDeterministicScenario(
-            l2d::PhysicsBroadPhaseMode2D::UniformGrid
-        );
+        const ScenarioResult first =
+            runDeterministicScenario(l2d::PhysicsBroadPhaseMode2D::UniformGrid);
+        const ScenarioResult second =
+            runDeterministicScenario(l2d::PhysicsBroadPhaseMode2D::UniformGrid);
+        const ScenarioResult third =
+            runDeterministicScenario(l2d::PhysicsBroadPhaseMode2D::UniformGrid);
 
         requireEquivalentScenarioResults(first, second);
         requireEquivalentScenarioResults(first, third);
@@ -386,12 +297,10 @@ namespace
 
     void testUniformGridMatchesBruteForceOverManyTicks()
     {
-        const ScenarioResult uniformGrid = runDeterministicScenario(
-            l2d::PhysicsBroadPhaseMode2D::UniformGrid
-        );
-        const ScenarioResult bruteForce = runDeterministicScenario(
-            l2d::PhysicsBroadPhaseMode2D::BruteForce
-        );
+        const ScenarioResult uniformGrid =
+            runDeterministicScenario(l2d::PhysicsBroadPhaseMode2D::UniformGrid);
+        const ScenarioResult bruteForce =
+            runDeterministicScenario(l2d::PhysicsBroadPhaseMode2D::BruteForce);
 
         requireEquivalentScenarioResults(uniformGrid, bruteForce);
     }
@@ -399,40 +308,23 @@ namespace
     void testHighSpeedMotionDocumentsDiscreteTunnelling()
     {
         l2d::PhysicsWorld2DConfig config;
-        config.gravity = { 0.f, 0.f };
+        config.gravity = {0.f, 0.f};
 
         l2d::Scene scene;
         l2d::PhysicsWorld2D world(config);
 
-        CircleBody mover = createCircle(
-            scene,
-            "FastMover",
-            { 0.f, 0.f },
-            0.5f
-        );
-        createBox(
-            scene,
-            "ThinWall",
-            { 5.f, -5.f },
-            { 0.1f, 10.f },
-            false
-        );
+        CircleBody mover = createCircle(scene, "FastMover", {0.f, 0.f}, 0.5f);
+        createBox(scene, "ThinWall", {5.f, -5.f}, {0.1f, 10.f}, false);
 
-        mover.body->setVelocity({ 1000.f, 0.f });
+        mover.body->setVelocity({1000.f, 0.f});
         fixedStep(scene, world, 0.01f);
 
         L2D_REQUIRE(isFinite(mover.object->transform.position()));
         L2D_REQUIRE(isFinite(mover.body->velocity()));
-        L2D_REQUIRE_APPROX(
-            mover.object->transform.position(),
-            (sf::Vector2f{ 10.f, 0.f }),
-            kPhysicsComparisonEpsilon
-        );
-        L2D_REQUIRE_APPROX(
-            mover.body->velocity(),
-            (sf::Vector2f{ 1000.f, 0.f }),
-            kPhysicsComparisonEpsilon
-        );
+        L2D_REQUIRE_APPROX(mover.object->transform.position(), (sf::Vector2f{10.f, 0.f}),
+                           kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(mover.body->velocity(), (sf::Vector2f{1000.f, 0.f}),
+                           kPhysicsComparisonEpsilon);
         L2D_REQUIRE(world.contacts().empty());
         L2D_REQUIRE(world.contactEvents().empty());
         L2D_REQUIRE(!mover.collider->isColliding());
@@ -441,64 +333,40 @@ namespace
     void testDeactivatedRigidBodyEndsAndReactivationBeginsContact()
     {
         l2d::PhysicsWorld2DConfig config;
-        config.gravity = { 0.f, 0.f };
+        config.gravity = {0.f, 0.f};
 
         l2d::Scene scene;
         l2d::PhysicsWorld2D world(config);
 
-        CircleBody mover = createCircle(
-            scene,
-            "Mover",
-            { 0.f, 0.f },
-            1.f
-        );
-        createBox(
-            scene,
-            "Floor",
-            { -5.f, 1.8f },
-            { 10.f, 1.f },
-            false
-        );
+        CircleBody mover = createCircle(scene, "Mover", {0.f, 0.f}, 1.f);
+        createBox(scene, "Floor", {-5.f, 1.8f}, {10.f, 1.f}, false);
 
-        mover.body->setVelocity({ 0.f, 4.f });
+        mover.body->setVelocity({0.f, 4.f});
         fixedStep(scene, world, 0.01f);
 
         L2D_REQUIRE_EQUAL(world.contacts().size(), 1u);
         L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1u);
-        L2D_REQUIRE_EQUAL(
-            world.contactEvents()[0].phase,
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
 
-        const sf::Vector2f positionBeforeDeactivation =
-            mover.object->transform.position();
+        const sf::Vector2f positionBeforeDeactivation = mover.object->transform.position();
         mover.body->setActive(false);
         fixedStep(scene, world, 0.01f);
 
         L2D_REQUIRE(world.contacts().empty());
         L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1u);
-        L2D_REQUIRE_EQUAL(
-            world.contactEvents()[0].phase,
-            l2d::PhysicsContactPhase2D::End
-        );
-        L2D_REQUIRE_APPROX(
-            mover.object->transform.position(),
-            positionBeforeDeactivation,
-            kPhysicsComparisonEpsilon
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::End);
+        L2D_REQUIRE_APPROX(mover.object->transform.position(), positionBeforeDeactivation,
+                           kPhysicsComparisonEpsilon);
         L2D_REQUIRE(!mover.body->isGrounded());
         L2D_REQUIRE(!mover.collider->isColliding());
 
         mover.body->setActive(true);
-        mover.body->setVelocity({ 0.f, 0.f });
+        mover.body->setVelocity({0.f, 0.f});
         fixedStep(scene, world, 0.01f);
 
         L2D_REQUIRE_EQUAL(world.contacts().size(), 1u);
         L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1u);
-        L2D_REQUIRE_EQUAL(
-            world.contactEvents()[0].phase,
-            l2d::PhysicsContactPhase2D::Begin
-        );
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
     }
 }
 
@@ -506,36 +374,18 @@ int main()
 {
     int failures = 0;
 
-    runTest(
-        "long-duration resting contact remains stable",
-        testLongDurationRestingContactRemainsStable,
-        failures
-    );
-    runTest(
-        "longer dynamic box stack remains finite and ordered",
-        testLongerDynamicBoxStackRemainsFiniteAndOrdered,
-        failures
-    );
-    runTest(
-        "repeated simulations remain deterministic over many ticks",
-        testRepeatedSimulationsRemainDeterministicOverManyTicks,
-        failures
-    );
-    runTest(
-        "uniform grid matches brute force over many ticks",
-        testUniformGridMatchesBruteForceOverManyTicks,
-        failures
-    );
-    runTest(
-        "high-speed motion documents discrete tunnelling",
-        testHighSpeedMotionDocumentsDiscreteTunnelling,
-        failures
-    );
-    runTest(
-        "deactivated rigid body ends and reactivation begins contact",
-        testDeactivatedRigidBodyEndsAndReactivationBeginsContact,
-        failures
-    );
+    runTest("long-duration resting contact remains stable",
+            testLongDurationRestingContactRemainsStable, failures);
+    runTest("longer dynamic box stack remains finite and ordered",
+            testLongerDynamicBoxStackRemainsFiniteAndOrdered, failures);
+    runTest("repeated simulations remain deterministic over many ticks",
+            testRepeatedSimulationsRemainDeterministicOverManyTicks, failures);
+    runTest("uniform grid matches brute force over many ticks",
+            testUniformGridMatchesBruteForceOverManyTicks, failures);
+    runTest("high-speed motion documents discrete tunnelling",
+            testHighSpeedMotionDocumentsDiscreteTunnelling, failures);
+    runTest("deactivated rigid body ends and reactivation begins contact",
+            testDeactivatedRigidBodyEndsAndReactivationBeginsContact, failures);
 
     return failures == 0 ? 0 : 1;
 }

@@ -21,13 +21,12 @@ namespace l2d
     struct CollisionFilter2D
     {
         std::uint32_t categoryBits = 1u;
-        std::uint32_t maskBits =
-            std::numeric_limits<std::uint32_t>::max();
+        std::uint32_t maskBits = std::numeric_limits<std::uint32_t>::max();
     };
 
     class Collider2D : public Component
     {
-    public:
+      public:
         explicit Collider2D(ColliderType type);
         virtual ~Collider2D() = default;
 
@@ -50,10 +49,10 @@ namespace l2d
 
         bool isColliding() const;
 
-    private:
+      private:
         void setColliding(bool colliding);
 
-    private:
+      private:
         ColliderType m_type;
         sf::Vector2f m_offset;
         PhysicsMaterial2D m_material;

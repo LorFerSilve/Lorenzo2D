@@ -12,7 +12,7 @@ namespace l2d
 {
     class SpriteRenderer : public Component
     {
-    public:
+      public:
         explicit SpriteRenderer(TextureHandle texture);
 
         // Invalid handles are rejected without changing the current binding.
@@ -27,12 +27,9 @@ namespace l2d
         sf::Color color() const;
 
         void onRender(sf::RenderWindow& window) override;
-        void onRender(
-            sf::RenderWindow& window,
-            float interpolationAlpha
-        ) override;
+        void onRender(sf::RenderWindow& window, float interpolationAlpha) override;
 
-    private:
+      private:
         // The lease must outlive the SFML drawable that borrows from it.
         TextureHandle m_texture;
         sf::Sprite m_sprite;

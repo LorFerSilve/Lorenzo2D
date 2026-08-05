@@ -13,35 +13,25 @@ namespace l2d
 {
     namespace
     {
-        std::uint64_t addDroppedTicks(
-            std::uint64_t droppedTicks,
-            std::uint32_t abandonedTicks
-        )
+        std::uint64_t addDroppedTicks(std::uint64_t droppedTicks, std::uint32_t abandonedTicks)
         {
-            const std::uint64_t maximum =
-                std::numeric_limits<std::uint64_t>::max();
+            const std::uint64_t maximum = std::numeric_limits<std::uint64_t>::max();
 
-            if (droppedTicks >= maximum - abandonedTicks)
-                return maximum;
+            if (droppedTicks >= maximum - abandonedTicks) return maximum;
 
             return droppedTicks + abandonedTicks;
         }
 
-        double addDroppedSimulationTime(
-            double droppedSimulationTime,
-            std::uint32_t abandonedTicks,
-            double fixedDeltaTime
-        )
+        double addDroppedSimulationTime(double droppedSimulationTime, std::uint32_t abandonedTicks,
+                                        double fixedDeltaTime)
         {
             const double abandonedSimulationTime =
                 static_cast<double>(abandonedTicks) * fixedDeltaTime;
 
             const double maximum = std::numeric_limits<double>::max();
 
-            if (
-                !std::isfinite(abandonedSimulationTime) ||
-                droppedSimulationTime >= maximum - abandonedSimulationTime
-            )
+            if (!std::isfinite(abandonedSimulationTime) ||
+                droppedSimulationTime >= maximum - abandonedSimulationTime)
             {
                 return maximum;
             }
@@ -55,14 +45,9 @@ namespace l2d
     {
     }
 
-    Application::Application(
-        unsigned int width,
-        unsigned int height,
-        const std::string& title,
-        const ApplicationConfig& config
-    )
-        : m_window(sf::VideoMode({ width, height }), title),
-        m_fixedStepScheduler(config.fixedStep)
+    Application::Application(unsigned int width, unsigned int height, const std::string& title,
+                             const ApplicationConfig& config)
+        : m_window(sf::VideoMode({width, height}), title), m_fixedStepScheduler(config.fixedStep)
     {
         m_window.setFramerateLimit(config.frameRateLimit);
     }
@@ -78,17 +63,11 @@ namespace l2d
 
         while (m_window.isOpen() && !m_closeRequested)
         {
-            const double rawDeltaTime = static_cast<double>(
-                m_clock.restart().asSeconds()
-            );
+            const double rawDeltaTime = static_cast<double>(m_clock.restart().asSeconds());
 
-            const FixedStepFrame frame =
-                m_fixedStepScheduler.advance(rawDeltaTime);
+            const FixedStepFrame frame = m_fixedStepScheduler.advance(rawDeltaTime);
 
-            Time::beginFrame(
-                frame.rawDeltaTime,
-                frame.frameDeltaTime
-            );
+            Time::beginFrame(frame.rawDeltaTime, frame.frameDeltaTime);
 
             WindowEvents::beginFrame();
             processEvents();
@@ -105,11 +84,7 @@ namespace l2d
             {
                 const float fixedDeltaTime = Time::fixedDeltaTime();
 
-                for (
-                    std::uint32_t tick = 0;
-                    tick < frame.ticksToRun;
-                    ++tick
-                )
+                for (std::uint32_t tick = 0; tick < frame.ticksToRun; ++tick)
                 {
                     // A close requested by one fixed phase takes effect only
                     // after the complete simulation tick remains consistent.
@@ -119,45 +94,34 @@ namespace l2d
 
                     Time::completeFixedTick();
 
-                    if (shouldClose())
-                        break;
+                    if (shouldClose()) break;
                 }
             }
 
-            const std::uint32_t abandonedTicks =
-                frame.ticksToRun - Time::ticksThisFrame();
+            const std::uint32_t abandonedTicks = frame.ticksToRun - Time::ticksThisFrame();
 
-            Time::endFrame(
-                frame.interpolationAlpha,
-                addDroppedTicks(frame.droppedTicks, abandonedTicks),
-                addDroppedSimulationTime(
-                    frame.droppedSimulationTime,
-                    abandonedTicks,
-                    m_fixedStepScheduler.config().fixedDeltaTime
-                ),
-                frame.clampedFrameTime
-            );
+            Time::endFrame(frame.interpolationAlpha,
+                           addDroppedTicks(frame.droppedTicks, abandonedTicks),
+                           addDroppedSimulationTime(frame.droppedSimulationTime, abandonedTicks,
+                                                    m_fixedStepScheduler.config().fixedDeltaTime),
+                           frame.clampedFrameTime);
 
-            if (shouldClose())
-                break;
+            if (shouldClose()) break;
 
             onUpdate(Time::frameDeltaTime());
 
-            if (shouldClose())
-                break;
+            if (shouldClose()) break;
 
             m_window.clear(sf::Color::Black);
 
             onRender(m_window, Time::interpolationAlpha());
 
-            if (shouldClose())
-                break;
+            if (shouldClose()) break;
 
             m_window.display();
         }
 
-        if (m_closeRequested && m_window.isOpen())
-            m_window.close();
+        if (m_closeRequested && m_window.isOpen()) m_window.close();
     }
 
     void Application::requestClose()
@@ -208,10 +172,7 @@ namespace l2d
         (void)deltaTime;
     }
 
-    void Application::onRender(
-        sf::RenderWindow& window,
-        float interpolationAlpha
-    )
+    void Application::onRender(sf::RenderWindow& window, float interpolationAlpha)
     {
         (void)interpolationAlpha;
 

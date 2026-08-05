@@ -9,8 +9,7 @@ namespace l2d
     {
         const std::size_t index = keyToIndex(key);
 
-        if (index >= s_currentKeys.size())
-            return false;
+        if (index >= s_currentKeys.size()) return false;
 
         return s_currentKeys[index];
     }
@@ -19,8 +18,7 @@ namespace l2d
     {
         const std::size_t index = keyToIndex(key);
 
-        if (index >= s_currentKeys.size())
-            return false;
+        if (index >= s_currentKeys.size()) return false;
 
         return s_currentKeys[index] && !s_previousKeys[index];
     }
@@ -29,8 +27,7 @@ namespace l2d
     {
         const std::size_t index = keyToIndex(key);
 
-        if (index >= s_currentKeys.size())
-            return false;
+        if (index >= s_currentKeys.size()) return false;
 
         return !s_currentKeys[index] && s_previousKeys[index];
     }

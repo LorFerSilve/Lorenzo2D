@@ -9,18 +9,16 @@ namespace l2d
     {
         float sanitizeRadius(float radius)
         {
-            if (!std::isfinite(radius) || radius < 0.f)
-                return 0.f;
+            if (!std::isfinite(radius) || radius < 0.f) return 0.f;
 
             return radius;
         }
     }
 
     CircleCollider2D::CircleCollider2D(float radius)
-        : Collider2D(ColliderType::Circle),
-        m_radius(sanitizeRadius(radius))
+        : Collider2D(ColliderType::Circle), m_radius(sanitizeRadius(radius))
     {
-        setOffset({ m_radius, m_radius });
+        setOffset({m_radius, m_radius});
     }
 
     float CircleCollider2D::radius() const
@@ -31,7 +29,7 @@ namespace l2d
     void CircleCollider2D::setRadius(float radius)
     {
         m_radius = sanitizeRadius(radius);
-        setOffset({ m_radius, m_radius });
+        setOffset({m_radius, m_radius});
     }
 
     sf::Vector2f CircleCollider2D::center() const
@@ -55,12 +53,9 @@ namespace l2d
     {
         CollisionManifold2D manifold;
 
-        if (!computeCollisionManifold(*this, box, manifold))
-            return { 0.f, 0.f };
+        if (!computeCollisionManifold(*this, box, manifold)) return {0.f, 0.f};
 
-        return {
-            -manifold.normal.x * manifold.penetration,
-            -manifold.normal.y * manifold.penetration
-        };
+        return {-manifold.normal.x * manifold.penetration,
+                -manifold.normal.y * manifold.penetration};
     }
 }

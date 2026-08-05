@@ -20,13 +20,9 @@ namespace l2d
 
     void CircleRenderer::setRadius(float radius)
     {
-        constexpr float maximumRadius =
-            std::numeric_limits<float>::max() / 4.f;
+        constexpr float maximumRadius = std::numeric_limits<float>::max() / 4.f;
 
-        radius = std::min(
-            renderer_detail::sanitizeNonNegative(radius),
-            maximumRadius
-        );
+        radius = std::min(renderer_detail::sanitizeNonNegative(radius), maximumRadius);
 
         m_shape.setRadius(radius);
     }
@@ -51,31 +47,22 @@ namespace l2d
         onRender(window, 1.f);
     }
 
-    void CircleRenderer::onRender(
-        sf::RenderWindow& window,
-        float interpolationAlpha
-    )
+    void CircleRenderer::onRender(sf::RenderWindow& window, float interpolationAlpha)
     {
         GameObject* gameObject = owner();
 
-        if (gameObject == nullptr)
-            return;
+        if (gameObject == nullptr) return;
 
-        const TransformState state =
-            gameObject->transform.interpolated(interpolationAlpha);
+        const TransformState state = gameObject->transform.interpolated(interpolationAlpha);
 
-        if (!renderer_detail::hasSafeTransformedBounds(
-            m_shape.getLocalBounds(),
-            state
-        ))
+        if (!renderer_detail::hasSafeTransformedBounds(m_shape.getLocalBounds(), state))
         {
             return;
         }
 
         m_shape.setPosition(state.position);
-        m_shape.setRotation(sf::degrees(
-            renderer_detail::normalizedRotationDegrees(state.rotation)
-        ));
+        m_shape.setRotation(
+            sf::degrees(renderer_detail::normalizedRotationDegrees(state.rotation)));
         m_shape.setScale(state.scale);
 
         window.draw(m_shape);

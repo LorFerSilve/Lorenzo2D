@@ -16,7 +16,7 @@ namespace l2d
 
     class RenderLayerStack2D
     {
-    public:
+      public:
         RenderLayerStack2D();
 
         void setLayerEnabled(RenderLayer2D layer, bool enabled);
@@ -25,10 +25,10 @@ namespace l2d
         void enableAll();
         void disableAll();
 
-    private:
+      private:
         static std::size_t layerToIndex(RenderLayer2D layer);
 
-    private:
+      private:
         std::array<bool, static_cast<std::size_t>(RenderLayer2D::Count)> m_enabledLayers;
     };
 }

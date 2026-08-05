@@ -22,7 +22,7 @@ namespace l2d
 
     class GameObject
     {
-    public:
+      public:
         explicit GameObject(std::string name = "GameObject");
 
         GameObject(const GameObject&) = delete;
@@ -48,14 +48,12 @@ namespace l2d
         void destroy();
         bool isDestroyQueued() const;
 
-        template <typename T, typename... Args>
-        T& addComponent(Args&&... args)
+        template <typename T, typename... Args> T& addComponent(Args&&... args)
         {
             static_assert(std::is_base_of<Component, T>::value,
-                "T must derive from l2d::Component.");
+                          "T must derive from l2d::Component.");
 
-            std::unique_ptr<T> component =
-                std::make_unique<T>(std::forward<Args>(args)...);
+            std::unique_ptr<T> component = std::make_unique<T>(std::forward<Args>(args)...);
 
             component->setOwner(this);
 
@@ -65,42 +63,37 @@ namespace l2d
             return *rawComponent;
         }
 
-        template <typename T>
-        T* getComponent()
+        template <typename T> T* getComponent()
         {
             static_assert(std::is_base_of<Component, T>::value,
-                "T must derive from l2d::Component.");
+                          "T must derive from l2d::Component.");
 
             for (const std::unique_ptr<Component>& component : m_components)
             {
                 T* casted = dynamic_cast<T*>(component.get());
 
-                if (casted != nullptr)
-                    return casted;
+                if (casted != nullptr) return casted;
             }
 
             return nullptr;
         }
 
-        template <typename T>
-        const T* getComponent() const
+        template <typename T> const T* getComponent() const
         {
             static_assert(std::is_base_of<Component, T>::value,
-                "T must derive from l2d::Component.");
+                          "T must derive from l2d::Component.");
 
             for (const std::unique_ptr<Component>& component : m_components)
             {
                 const T* casted = dynamic_cast<const T*>(component.get());
 
-                if (casted != nullptr)
-                    return casted;
+                if (casted != nullptr) return casted;
             }
 
             return nullptr;
         }
 
-        template <typename T>
-        bool hasComponent() const
+        template <typename T> bool hasComponent() const
         {
             return getComponent<T>() != nullptr;
         }
@@ -111,7 +104,7 @@ namespace l2d
 
         Transform transform;
 
-    private:
+      private:
         GameObjectId m_id = InvalidGameObjectId;
 
         std::string m_name;

@@ -17,7 +17,7 @@ namespace l2d
 
     class PhysicsDebugRenderer2D
     {
-    public:
+      public:
         PhysicsDebugRenderer2D();
 
         void setEnabled(bool enabled);
@@ -36,30 +36,17 @@ namespace l2d
         sf::Color sensorColor() const;
 
         void render(Scene& scene, sf::RenderWindow& window) const;
-        void render(
-            Scene& scene,
-            sf::RenderWindow& window,
-            float interpolationAlpha
-        ) const;
+        void render(Scene& scene, sf::RenderWindow& window, float interpolationAlpha) const;
 
-    private:
-        void renderGameObject(
-            GameObject& gameObject,
-            sf::RenderWindow& window,
-            float interpolationAlpha
-        ) const;
-        void renderBoxCollider(
-            const BoxCollider2D& collider,
-            sf::Vector2f ownerPosition,
-            sf::RenderWindow& window
-        ) const;
-        void renderCircleCollider(
-            const CircleCollider2D& collider,
-            sf::Vector2f ownerPosition,
-            sf::RenderWindow& window
-        ) const;
+      private:
+        void renderGameObject(GameObject& gameObject, sf::RenderWindow& window,
+                              float interpolationAlpha) const;
+        void renderBoxCollider(const BoxCollider2D& collider, sf::Vector2f ownerPosition,
+                               sf::RenderWindow& window) const;
+        void renderCircleCollider(const CircleCollider2D& collider, sf::Vector2f ownerPosition,
+                                  sf::RenderWindow& window) const;
 
-    private:
+      private:
         bool m_enabled;
         float m_outlineThickness;
 

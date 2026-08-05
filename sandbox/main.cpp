@@ -25,7 +25,7 @@
 #include <Lorenzo2D/Scene/GameObjectHandle.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
 
-#include <SFML/Graphics.hpp>    
+#include <SFML/Graphics.hpp>
 
 #include <iomanip>
 #include <cstdint>
@@ -64,11 +64,8 @@ namespace PhysicsLayers
 
 class PlayerController : public l2d::Component
 {
-public:
-    explicit PlayerController(const l2d::ActionMap& actions)
-        : m_actions(&actions)
-    {
-    }
+  public:
+    explicit PlayerController(const l2d::ActionMap& actions) : m_actions(&actions) {}
 
     void requestJump()
     {
@@ -81,14 +78,11 @@ public:
 
         l2d::GameObject* gameObject = owner();
 
-        if (gameObject == nullptr)
-            return;
+        if (gameObject == nullptr) return;
 
-        l2d::RigidBody2D* rigidBody =
-            gameObject->getComponent<l2d::RigidBody2D>();
+        l2d::RigidBody2D* rigidBody = gameObject->getComponent<l2d::RigidBody2D>();
 
-        if (rigidBody == nullptr)
-            return;
+        if (rigidBody == nullptr) return;
 
         constexpr float moveSpeed = 350.f;
         constexpr float jumpSpeed = 650.f;
@@ -113,27 +107,25 @@ public:
         rigidBody->setVelocity(velocity);
     }
 
-private:
+  private:
     const l2d::ActionMap* m_actions;
     bool m_jumpRequested = false;
 };
 
 class CollisionColorDebug : public l2d::Component
 {
-public:
+  public:
     void onRender(sf::RenderWindow& window) override
     {
         (void)window;
 
         l2d::GameObject* gameObject = owner();
 
-        if (gameObject == nullptr)
-            return;
+        if (gameObject == nullptr) return;
 
         auto* collider = gameObject->getComponent<l2d::CircleCollider2D>();
 
-        if (collider == nullptr)
-            return;
+        if (collider == nullptr) return;
 
         const bool colliding = collider->isColliding();
 
@@ -151,13 +143,10 @@ public:
 
 class EnemyPatrol : public l2d::Component
 {
-public:
+  public:
     EnemyPatrol(float speed = 80.f, float patrolDistance = 120.f)
-        : m_speed(speed),
-        m_patrolDistance(patrolDistance),
-        m_direction(1.f),
-        m_initialized(false),
-        m_startPosition(0.f, 0.f)
+        : m_speed(speed), m_patrolDistance(patrolDistance), m_direction(1.f), m_initialized(false),
+          m_startPosition(0.f, 0.f)
     {
     }
 
@@ -167,13 +156,11 @@ public:
 
         l2d::GameObject* gameObject = owner();
 
-        if (gameObject == nullptr)
-            return;
+        if (gameObject == nullptr) return;
 
         auto* rigidBody = gameObject->getComponent<l2d::RigidBody2D>();
 
-        if (rigidBody == nullptr)
-            return;
+        if (rigidBody == nullptr) return;
 
         if (!m_initialized)
         {
@@ -181,8 +168,7 @@ public:
             m_initialized = true;
         }
 
-        const float distanceFromStart =
-            gameObject->transform.position().x - m_startPosition.x;
+        const float distanceFromStart = gameObject->transform.position().x - m_startPosition.x;
 
         if (distanceFromStart > m_patrolDistance)
         {
@@ -200,7 +186,7 @@ public:
         rigidBody->setVelocity(velocity);
     }
 
-private:
+  private:
     float m_speed;
     float m_patrolDistance;
     float m_direction;
@@ -211,11 +197,10 @@ private:
 
 class SandboxApp : public l2d::Application
 {
-public:
+  public:
     SandboxApp()
-        : l2d::Application(1280, 720, "Lorenzo2D Engine"),
-        m_camera({ 1280.f, 720.f }),
-        m_cameraController(m_camera)
+        : l2d::Application(1280, 720, "Lorenzo2D Engine"), m_camera({1280.f, 720.f}),
+          m_cameraController(m_camera)
     {
         m_workingDirectory = std::filesystem::current_path().string();
 
@@ -229,7 +214,7 @@ public:
         createCoins();
         createEnemies();
 
-        m_camera.setBounds({ 0.f, 0.f }, m_tileMap.worldSize());
+        m_camera.setBounds({0.f, 0.f}, m_tileMap.worldSize());
         m_camera.setFollowSmoothness(6.f);
 
         m_cameraController.setZoomLimits(0.5f, 2.0f);
@@ -240,7 +225,7 @@ public:
         setupDebugOverlay();
     }
 
-protected:
+  protected:
     void onFrameStart(float frameDeltaTime) override
     {
         (void)frameDeltaTime;
@@ -255,13 +240,9 @@ protected:
 
         if (m_actions.wasActionPressed(GameActions::TogglePhysicsDebug))
         {
-            const bool enabled =
-                !m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::PhysicsDebug);
+            const bool enabled = !m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::PhysicsDebug);
 
-            m_renderLayers.setLayerEnabled(
-                l2d::RenderLayer2D::PhysicsDebug,
-                enabled
-            );
+            m_renderLayers.setLayerEnabled(l2d::RenderLayer2D::PhysicsDebug, enabled);
 
             m_physicsDebugRenderer.setEnabled(enabled);
         }
@@ -290,26 +271,19 @@ protected:
         if (m_respawnCooldown > 0.f)
         {
             m_respawnCooldown -= fixedDeltaTime;
-            if (m_respawnCooldown < 0.f)
-                m_respawnCooldown = 0.f;
+            if (m_respawnCooldown < 0.f) m_respawnCooldown = 0.f;
         }
     }
 
     void onUpdate(float frameDeltaTime) override
     {
-        updateCamera(
-            frameDeltaTime,
-            l2d::Time::interpolationAlpha()
-        );
+        updateCamera(frameDeltaTime, l2d::Time::interpolationAlpha());
         updateMouseDebug(l2d::Time::interpolationAlpha());
         updateWindowEventDebug();
         updateDebug();
     }
 
-    void onRender(
-        sf::RenderWindow& window,
-        float interpolationAlpha
-    ) override
+    void onRender(sf::RenderWindow& window, float interpolationAlpha) override
     {
         if (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::World))
         {
@@ -324,11 +298,7 @@ protected:
 
             if (m_levelScene != nullptr)
             {
-                m_physicsDebugRenderer.render(
-                    *m_levelScene,
-                    window,
-                    interpolationAlpha
-                );
+                m_physicsDebugRenderer.render(*m_levelScene, window, interpolationAlpha);
             }
         }
 
@@ -340,35 +310,29 @@ protected:
         }
     }
 
-private:
+  private:
     void createPlayer()
     {
-        if (m_levelScene == nullptr)
-            return;
+        if (m_levelScene == nullptr) return;
 
         constexpr float playerRadius = 50.f;
         constexpr float playerDiameter = playerRadius * 2.f;
 
-        sf::Vector2f spawnCenter = { 200.f, 120.f };
+        sf::Vector2f spawnCenter = {200.f, 120.f};
 
-        const bool foundSpawn =
-            m_tileMap.findFirstTilePosition('P', spawnCenter, true);
+        const bool foundSpawn = m_tileMap.findFirstTilePosition('P', spawnCenter, true);
 
         if (!foundSpawn)
         {
-            spawnCenter = { 200.f, 120.f };
+            spawnCenter = {200.f, 120.f};
         }
 
-        const sf::Vector2f playerTopLeft =
-        {
-            spawnCenter.x - playerRadius,
-            spawnCenter.y - playerRadius
-        };
+        const sf::Vector2f playerTopLeft = {spawnCenter.x - playerRadius,
+                                            spawnCenter.y - playerRadius};
 
         m_playerSpawnPosition = playerTopLeft;
 
-        l2d::GameObject& player =
-            m_levelScene->createGameObject("Player");
+        l2d::GameObject& player = m_levelScene->createGameObject("Player");
 
         player.setTag(GameTags::Player);
         player.transform.setPosition(m_playerSpawnPosition);
@@ -377,8 +341,7 @@ private:
 
         player.addComponent<PlayerController>(m_actions);
 
-        l2d::RigidBody2D& rigidBody =
-            player.addComponent<l2d::RigidBody2D>();
+        l2d::RigidBody2D& rigidBody = player.addComponent<l2d::RigidBody2D>();
 
         rigidBody.setUseGravity(true);
         rigidBody.setGravityScale(1.f);
@@ -386,58 +349,45 @@ private:
         l2d::CircleCollider2D& playerCollider =
             player.addComponent<l2d::CircleCollider2D>(playerRadius);
 
-        playerCollider.setFilter({
-            PhysicsLayers::Player,
-            PhysicsLayers::World | PhysicsLayers::Pickup
-        });
+        playerCollider.setFilter(
+            {PhysicsLayers::Player, PhysicsLayers::World | PhysicsLayers::Pickup});
 
         player.addComponent<CollisionColorDebug>();
 
-        const l2d::TextureHandle playerTexture =
-            m_assets.getTexture("player");
+        const l2d::TextureHandle playerTexture = m_assets.getTexture("player");
 
         if (playerTexture)
         {
             l2d::SpriteRenderer& spriteRenderer =
                 player.addComponent<l2d::SpriteRenderer>(playerTexture);
 
-            spriteRenderer.setSize({ playerDiameter, playerDiameter });
+            spriteRenderer.setSize({playerDiameter, playerDiameter});
         }
         else
         {
-            player.addComponent<l2d::CircleRenderer>(
-                playerRadius,
-                sf::Color::Green
-            );
+            player.addComponent<l2d::CircleRenderer>(playerRadius, sf::Color::Green);
         }
     }
 
     void createCoins()
     {
-        if (m_levelScene == nullptr)
-            return;
+        if (m_levelScene == nullptr) return;
 
         constexpr float coinRadius = 12.f;
         constexpr float coinDiameter = coinRadius * 2.f;
 
-        const std::vector<sf::Vector2f> coinCenters =
-            m_tileMap.findTilePositions('C', true);
+        const std::vector<sf::Vector2f> coinCenters = m_tileMap.findTilePositions('C', true);
 
         int coinIndex = 0;
 
         for (const sf::Vector2f& coinCenter : coinCenters)
         {
-            l2d::GameObject& coin = m_levelScene->createGameObject(
-                "Coin_" + std::to_string(coinIndex)
-            );
+            l2d::GameObject& coin =
+                m_levelScene->createGameObject("Coin_" + std::to_string(coinIndex));
 
             coin.setTag(GameTags::Coin);
 
-            const sf::Vector2f coinTopLeft =
-            {
-                coinCenter.x - coinRadius,
-                coinCenter.y - coinRadius
-            };
+            const sf::Vector2f coinTopLeft = {coinCenter.x - coinRadius, coinCenter.y - coinRadius};
 
             coin.transform.setPosition(coinTopLeft);
 
@@ -445,40 +395,31 @@ private:
                 coin.addComponent<l2d::CircleCollider2D>(coinRadius);
 
             coinCollider.setSensor(true);
-            coinCollider.setFilter({
-                PhysicsLayers::Pickup,
-                PhysicsLayers::Player
-            });
+            coinCollider.setFilter({PhysicsLayers::Pickup, PhysicsLayers::Player});
 
-            const l2d::TextureHandle coinTexture =
-                m_assets.getTexture("coin");
+            const l2d::TextureHandle coinTexture = m_assets.getTexture("coin");
 
             if (coinTexture)
             {
                 l2d::SpriteRenderer& spriteRenderer =
                     coin.addComponent<l2d::SpriteRenderer>(coinTexture);
 
-                spriteRenderer.setSize({ coinDiameter, coinDiameter });
+                spriteRenderer.setSize({coinDiameter, coinDiameter});
             }
             else
             {
-                coin.addComponent<l2d::CircleRenderer>(
-                    coinRadius,
-                    sf::Color::Yellow
-                );
+                coin.addComponent<l2d::CircleRenderer>(coinRadius, sf::Color::Yellow);
             }
 
             coinIndex++;
         }
 
-        m_totalCoins =
-            static_cast<int>(m_levelScene->countGameObjectsByTag(GameTags::Coin));
+        m_totalCoins = static_cast<int>(m_levelScene->countGameObjectsByTag(GameTags::Coin));
     }
 
     void createEnemies()
     {
-        if (m_levelScene == nullptr)
-            return;
+        if (m_levelScene == nullptr) return;
 
         constexpr float enemyRadius = 50.f;
         constexpr float enemyDiameter = enemyRadius * 2.f;
@@ -490,17 +431,14 @@ private:
 
         for (const sf::Vector2f& enemyTilePosition : enemyTilePositions)
         {
-            l2d::GameObject& enemy = m_levelScene->createGameObject(
-                "Enemy_" + std::to_string(enemyIndex)
-            );
+            l2d::GameObject& enemy =
+                m_levelScene->createGameObject("Enemy_" + std::to_string(enemyIndex));
 
             enemy.setTag(GameTags::Enemy);
 
-            const sf::Vector2f enemyTopLeft =
-            {
+            const sf::Vector2f enemyTopLeft = {
                 enemyTilePosition.x + (m_tileMap.tileSize().x * 0.5f) - enemyRadius,
-                enemyTilePosition.y + m_tileMap.tileSize().y - enemyDiameter
-            };
+                enemyTilePosition.y + m_tileMap.tileSize().y - enemyDiameter};
 
             enemy.transform.setPosition(enemyTopLeft);
 
@@ -513,15 +451,9 @@ private:
             l2d::CircleCollider2D& enemyCollider =
                 enemy.addComponent<l2d::CircleCollider2D>(enemyRadius);
 
-            enemyCollider.setFilter({
-                PhysicsLayers::Enemy,
-                PhysicsLayers::World
-            });
+            enemyCollider.setFilter({PhysicsLayers::Enemy, PhysicsLayers::World});
 
-            enemy.addComponent<l2d::CircleRenderer>(
-                enemyRadius,
-                sf::Color::Magenta
-            );
+            enemy.addComponent<l2d::CircleRenderer>(enemyRadius, sf::Color::Magenta);
 
             enemyIndex++;
         }
@@ -529,36 +461,28 @@ private:
 
     void checkEnemyCollisions()
     {
-        if (m_levelScene == nullptr)
-            return;
+        if (m_levelScene == nullptr) return;
 
-        if (m_respawnCooldown > 0.f)
-            return;
+        if (m_respawnCooldown > 0.f) return;
 
         l2d::GameObject* player = m_playerHandle.get();
 
-        if (player == nullptr)
-            return;
+        if (player == nullptr) return;
 
-        l2d::CircleCollider2D* playerCollider =
-            player->getComponent<l2d::CircleCollider2D>();
+        l2d::CircleCollider2D* playerCollider = player->getComponent<l2d::CircleCollider2D>();
 
-        if (playerCollider == nullptr)
-            return;
+        if (playerCollider == nullptr) return;
 
         const std::vector<l2d::GameObject*> activeEnemies =
             m_levelScene->findActiveGameObjectsByTag(GameTags::Enemy);
 
         for (l2d::GameObject* enemy : activeEnemies)
         {
-            if (enemy == nullptr)
-                continue;
+            if (enemy == nullptr) continue;
 
-            l2d::CircleCollider2D* enemyCollider =
-                enemy->getComponent<l2d::CircleCollider2D>();
+            l2d::CircleCollider2D* enemyCollider = enemy->getComponent<l2d::CircleCollider2D>();
 
-            if (enemyCollider == nullptr)
-                continue;
+            if (enemyCollider == nullptr) continue;
 
             if (playerCollider->overlaps(*enemyCollider))
             {
@@ -574,36 +498,29 @@ private:
     {
         l2d::GameObject* player = m_playerHandle.get();
 
-        if (player == nullptr)
-            return;
+        if (player == nullptr) return;
 
         player->transform.setPosition(m_playerSpawnPosition);
         player->transform.resetInterpolation();
 
-        l2d::RigidBody2D* rigidBody =
-            player->getComponent<l2d::RigidBody2D>();
+        l2d::RigidBody2D* rigidBody = player->getComponent<l2d::RigidBody2D>();
 
-        if (rigidBody != nullptr)
-            rigidBody->setVelocity({ 0.f, 0.f });
+        if (rigidBody != nullptr) rigidBody->setVelocity({0.f, 0.f});
 
         snapCameraToPlayer();
     }
 
     void collectCoins()
     {
-        if (m_levelScene == nullptr)
-            return;
+        if (m_levelScene == nullptr) return;
 
         l2d::GameObject* player = m_playerHandle.get();
 
-        if (player == nullptr)
-            return;
+        if (player == nullptr) return;
 
-        for (const l2d::PhysicsContactEvent2D& event :
-            m_physicsWorld.contactEvents())
+        for (const l2d::PhysicsContactEvent2D& event : m_physicsWorld.contactEvents())
         {
-            if (event.phase != l2d::PhysicsContactPhase2D::Begin)
-                continue;
+            if (event.phase != l2d::PhysicsContactPhase2D::Begin) continue;
 
             const l2d::PhysicsContact2D& contact = event.contact;
             l2d::GameObjectId otherObjectId = l2d::InvalidGameObjectId;
@@ -613,11 +530,9 @@ private:
             else if (contact.secondObjectId == player->id())
                 otherObjectId = contact.firstObjectId;
 
-            l2d::GameObject* coin =
-                m_levelScene->findGameObjectById(otherObjectId);
+            l2d::GameObject* coin = m_levelScene->findGameObjectById(otherObjectId);
 
-            if (coin == nullptr || !coin->hasTag(GameTags::Coin))
-                continue;
+            if (coin == nullptr || !coin->hasTag(GameTags::Coin)) continue;
 
             m_lastDestroyedCoinHandle = m_levelScene->createHandle(*coin);
             m_lastDestroyedCoinId = coin->id();
@@ -629,20 +544,16 @@ private:
 
     void createLevel()
     {
-        if (m_levelScene == nullptr)
-            return;
+        if (m_levelScene == nullptr) return;
 
-        m_tileMap.setTileSize({ 40.f, 40.f });
-        m_tileMap.setRenderChunkSize({ 16u, 16u });
+        m_tileMap.setTileSize({40.f, 40.f});
+        m_tileMap.setRenderChunkSize({16u, 16u});
         m_tileMap.setSolidTileColor(sf::Color::White);
 
         const std::filesystem::path levelPath =
             std::filesystem::path(L2D_ASSET_ROOT) / "levels" / "level1.txt";
 
-        m_levelLoadedFromFile = m_tileMap.loadFromFile(
-            *m_levelScene,
-            levelPath.string()
-        );
+        m_levelLoadedFromFile = m_tileMap.loadFromFile(*m_levelScene, levelPath.string());
 
         if (m_levelLoadedFromFile)
         {
@@ -652,8 +563,7 @@ private:
 
         m_levelSource = "FALLBACK: " + levelPath.string() + " not found";
 
-        const l2d::TileMap::Layout fallbackLayout =
-        {
+        const l2d::TileMap::Layout fallbackLayout = {
             "............................................................",
             "............................................................",
             "............................................................",
@@ -674,8 +584,7 @@ private:
             ".......######...............................................",
             "............................................................",
             "############################################################",
-            "############################################################"
-        };
+            "############################################################"};
 
         m_tileMap.loadFromLayout(*m_levelScene, fallbackLayout);
     }
@@ -699,45 +608,29 @@ private:
     {
         const std::filesystem::path assetRoot = L2D_ASSET_ROOT;
 
-        std::vector<std::filesystem::path> fontCandidates =
-        {
-            assetRoot / "fonts" / "DejaVuSans.ttf"
-        };
+        std::vector<std::filesystem::path> fontCandidates = {assetRoot / "fonts" /
+                                                             "DejaVuSans.ttf"};
 
 #if defined(_WIN32)
         fontCandidates.emplace_back("C:/Windows/Fonts/arial.ttf");
         fontCandidates.emplace_back("C:/Windows/Fonts/segoeui.ttf");
 #elif defined(__APPLE__)
-        fontCandidates.emplace_back(
-            "/System/Library/Fonts/Supplemental/Arial.ttf"
-        );
+        fontCandidates.emplace_back("/System/Library/Fonts/Supplemental/Arial.ttf");
 #else
+        fontCandidates.emplace_back("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
         fontCandidates.emplace_back(
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-        );
-        fontCandidates.emplace_back(
-            "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"
-        );
+            "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf");
 #endif
 
         for (const std::filesystem::path& fontPath : fontCandidates)
         {
-            if (m_assets.loadFont("debug", fontPath.string()))
-                break;
+            if (m_assets.loadFont("debug", fontPath.string())) break;
         }
 
-        m_assets.loadTexture(
-            "player",
-            (assetRoot / "textures" / "player.png").string(),
-            true
-        );
+        m_assets.loadTexture("player", (assetRoot / "textures" / "player.png").string(), true);
 
         // Optional. Shape renderers are used when these files are unavailable.
-        m_assets.loadTexture(
-            "coin",
-            (assetRoot / "textures" / "coin.png").string(),
-            true
-        );
+        m_assets.loadTexture("coin", (assetRoot / "textures" / "coin.png").string(), true);
     }
 
     void setupDebugOverlay()
@@ -749,23 +642,20 @@ private:
             m_debugOverlay.setFont(font);
         }
 
-        m_debugOverlay.setPosition({ 10.f, 10.f });
+        m_debugOverlay.setPosition({10.f, 10.f});
         m_debugOverlay.setCharacterSize(18);
         m_debugOverlay.setFillColor(sf::Color::White);
     }
 
     void queuePlayerJump()
     {
-        if (!m_actions.wasActionPressed(GameActions::Jump))
-            return;
+        if (!m_actions.wasActionPressed(GameActions::Jump)) return;
 
         l2d::GameObject* player = m_playerHandle.get();
 
-        if (player == nullptr)
-            return;
+        if (player == nullptr) return;
 
-        if (PlayerController* controller =
-            player->getComponent<PlayerController>())
+        if (PlayerController* controller = player->getComponent<PlayerController>())
         {
             controller->requestJump();
         }
@@ -775,26 +665,21 @@ private:
     {
         l2d::GameObject* player = m_playerHandle.get();
 
-        if (player == nullptr)
-            return { 0.f, 0.f };
+        if (player == nullptr) return {0.f, 0.f};
 
-        l2d::CircleCollider2D* playerCollider =
-            player->getComponent<l2d::CircleCollider2D>();
+        l2d::CircleCollider2D* playerCollider = player->getComponent<l2d::CircleCollider2D>();
 
         const l2d::TransformState transformState =
             player->transform.interpolated(interpolationAlpha);
 
-        if (playerCollider != nullptr)
-            return transformState.position + playerCollider->offset();
+        if (playerCollider != nullptr) return transformState.position + playerCollider->offset();
 
         return transformState.position;
     }
 
-    bool isPointInsideCircleCollider(
-        const sf::Vector2f& point,
-        const l2d::CircleCollider2D& collider,
-        const sf::Vector2f& ownerPosition
-    ) const
+    bool isPointInsideCircleCollider(const sf::Vector2f& point,
+                                     const l2d::CircleCollider2D& collider,
+                                     const sf::Vector2f& ownerPosition) const
     {
         const sf::Vector2f center = ownerPosition + collider.offset();
 
@@ -807,46 +692,31 @@ private:
         return distanceSquared <= radius * radius;
     }
 
-    bool isPointInsideBoxCollider(
-        const sf::Vector2f& point,
-        const l2d::BoxCollider2D& collider,
-        const sf::Vector2f& ownerPosition
-    ) const
+    bool isPointInsideBoxCollider(const sf::Vector2f& point, const l2d::BoxCollider2D& collider,
+                                  const sf::Vector2f& ownerPosition) const
     {
         const sf::Vector2f minimum = ownerPosition + collider.offset();
         const sf::Vector2f maximum = minimum + collider.size();
 
-        return point.x >= minimum.x
-            && point.x <= maximum.x
-            && point.y >= minimum.y
-            && point.y <= maximum.y;
+        return point.x >= minimum.x && point.x <= maximum.x && point.y >= minimum.y &&
+               point.y <= maximum.y;
     }
 
-    bool isPointInsideGameObject(
-        const sf::Vector2f& point,
-        l2d::GameObject& gameObject,
-        float interpolationAlpha
-    ) const
+    bool isPointInsideGameObject(const sf::Vector2f& point, l2d::GameObject& gameObject,
+                                 float interpolationAlpha) const
     {
         const sf::Vector2f ownerPosition =
             gameObject.transform.interpolated(interpolationAlpha).position;
 
-        l2d::Collider2D* collider =
-            gameObject.getComponent<l2d::Collider2D>();
+        l2d::Collider2D* collider = gameObject.getComponent<l2d::Collider2D>();
 
-        if (collider == nullptr || !collider->isActive())
-            return false;
+        if (collider == nullptr || !collider->isActive()) return false;
 
         if (collider->type() == l2d::ColliderType::Circle)
         {
-            if (auto* circle =
-                dynamic_cast<l2d::CircleCollider2D*>(collider))
+            if (auto* circle = dynamic_cast<l2d::CircleCollider2D*>(collider))
             {
-                return isPointInsideCircleCollider(
-                    point,
-                    *circle,
-                    ownerPosition
-                );
+                return isPointInsideCircleCollider(point, *circle, ownerPosition);
             }
 
             return false;
@@ -854,20 +724,13 @@ private:
 
         if (auto* box = dynamic_cast<l2d::BoxCollider2D*>(collider))
         {
-            return isPointInsideBoxCollider(
-                point,
-                *box,
-                ownerPosition
-            );
+            return isPointInsideBoxCollider(point, *box, ownerPosition);
         }
 
         return false;
     }
 
-    void pickObjectAtWorldPosition(
-        const sf::Vector2f& worldPosition,
-        float interpolationAlpha
-    )
+    void pickObjectAtWorldPosition(const sf::Vector2f& worldPosition, float interpolationAlpha)
     {
         if (m_levelScene == nullptr)
         {
@@ -880,26 +743,17 @@ private:
 
         for (std::size_t index = gameObjects.size(); index > 0; index--)
         {
-            l2d::GameObject* gameObject =
-                gameObjects[index - 1].get();
+            l2d::GameObject* gameObject = gameObjects[index - 1].get();
 
-            if (gameObject == nullptr)
-                continue;
+            if (gameObject == nullptr) continue;
 
-            if (!gameObject->isActive())
-                continue;
+            if (!gameObject->isActive()) continue;
 
-            if (gameObject->isDestroyQueued())
-                continue;
+            if (gameObject->isDestroyQueued()) continue;
 
-            if (isPointInsideGameObject(
-                worldPosition,
-                *gameObject,
-                interpolationAlpha
-            ))
+            if (isPointInsideGameObject(worldPosition, *gameObject, interpolationAlpha))
             {
-                m_selectedObjectHandle =
-                    m_levelScene->createHandle(*gameObject);
+                m_selectedObjectHandle = m_levelScene->createHandle(*gameObject);
 
                 return;
             }
@@ -910,8 +764,7 @@ private:
 
     void snapCameraToPlayer()
     {
-        if (!m_playerHandle.isValid())
-            return;
+        if (!m_playerHandle.isValid()) return;
 
         m_camera.setCenter(playerCenter());
     }
@@ -920,9 +773,7 @@ private:
     {
         if (m_playerHandle.isValid())
         {
-            m_cameraController.setFollowTarget(
-                playerCenter(interpolationAlpha)
-            );
+            m_cameraController.setFollowTarget(playerCenter(interpolationAlpha));
         }
         else
         {
@@ -934,19 +785,14 @@ private:
 
     void updateMouseDebug(float interpolationAlpha)
     {
-        m_mouseScreenPosition =
-            l2d::Mouse::screenPosition();
+        m_mouseScreenPosition = l2d::Mouse::screenPosition();
 
-        m_mouseWorldPosition =
-            l2d::Mouse::worldPosition(getWindow(), m_camera.view());
+        m_mouseWorldPosition = l2d::Mouse::worldPosition(getWindow(), m_camera.view());
 
         if (l2d::Mouse::wasButtonPressed(l2d::MouseButton::Left))
         {
             m_leftMouseClicks++;
-            pickObjectAtWorldPosition(
-                m_mouseWorldPosition,
-                interpolationAlpha
-            );
+            pickObjectAtWorldPosition(m_mouseWorldPosition, interpolationAlpha);
         }
     }
 
@@ -969,36 +815,27 @@ private:
     {
         std::ostringstream text;
 
-        const l2d::Scene* activeScene =
-            m_sceneManager.activeScene();
+        const l2d::Scene* activeScene = m_sceneManager.activeScene();
 
-        l2d::GameObject* player =
-            m_playerHandle.get();
+        l2d::GameObject* player = m_playerHandle.get();
 
-        const bool playerHandleValid =
-            player != nullptr;
+        const bool playerHandleValid = player != nullptr;
 
-        const bool lastDestroyedCoinHandleValid =
-            m_lastDestroyedCoinHandle.isValid();
+        const bool lastDestroyedCoinHandleValid = m_lastDestroyedCoinHandle.isValid();
 
-        l2d::GameObject* selectedObject =
-            m_selectedObjectHandle.get();
+        l2d::GameObject* selectedObject = m_selectedObjectHandle.get();
 
-        const bool selectedObjectHandleValid =
-            selectedObject != nullptr;
+        const bool selectedObjectHandleValid = selectedObject != nullptr;
 
-        const l2d::GameObjectId playerId =
-            m_playerHandle.id();
+        const l2d::GameObjectId playerId = m_playerHandle.id();
 
         bool playerFoundById = false;
 
         if (activeScene != nullptr && playerId != l2d::InvalidGameObjectId)
         {
-            const l2d::GameObject* foundPlayer =
-                activeScene->findGameObjectById(playerId);
+            const l2d::GameObject* foundPlayer = activeScene->findGameObjectById(playerId);
 
-            playerFoundById =
-                foundPlayer != nullptr && foundPlayer == player;
+            playerFoundById = foundPlayer != nullptr && foundPlayer == player;
         }
 
         text << "Lorenzo2D Debug\n";
@@ -1007,15 +844,10 @@ private:
         if (activeScene != nullptr)
         {
             text << "Scene: " << activeScene->name() << "\n";
-            text << "Objects: "
-                << activeScene->activeGameObjectCount()
-                << " / "
-                << activeScene->gameObjectCount()
-                << "\n";
+            text << "Objects: " << activeScene->activeGameObjectCount() << " / "
+                 << activeScene->gameObjectCount() << "\n";
 
-            text << "Destroy queued: "
-                << activeScene->destroyQueuedGameObjectCount()
-                << "\n";
+            text << "Destroy queued: " << activeScene->destroyQueuedGameObjectCount() << "\n";
         }
         else
         {
@@ -1036,253 +868,146 @@ private:
         text << "Physics contacts: " << m_physicsWorld.contacts().size() << "\n";
         text << "Contact events: " << m_physicsWorld.contactEvents().size() << "\n";
 
-        const l2d::TileMapBuildStats& tileMapStats =
-            m_tileMap.buildStats();
+        const l2d::TileMapBuildStats& tileMapStats = m_tileMap.buildStats();
 
-        text << "Tilemap: "
-            << tileMapStats.solidTileCount
-            << " solids, "
-            << tileMapStats.renderChunkCount
-            << " chunks, "
-            << tileMapStats.collisionRectangleCount
-            << " colliders\n";
+        text << "Tilemap: " << tileMapStats.solidTileCount << " solids, "
+             << tileMapStats.renderChunkCount << " chunks, " << tileMapStats.collisionRectangleCount
+             << " colliders\n";
 
-        const l2d::TileMapRenderStats tileMapRenderStats =
-            m_tileMap.lastRenderStats();
+        const l2d::TileMapRenderStats tileMapRenderStats = m_tileMap.lastRenderStats();
 
-        text << "Tilemap visible: "
-            << tileMapRenderStats.visibleChunkCount
-            << " / "
-            << tileMapRenderStats.chunkCount
-            << ", draws: "
-            << tileMapRenderStats.drawCallCount
-            << "\n";
+        text << "Tilemap visible: " << tileMapRenderStats.visibleChunkCount << " / "
+             << tileMapRenderStats.chunkCount << ", draws: " << tileMapRenderStats.drawCallCount
+             << "\n";
 
         if (player != nullptr)
         {
-            const sf::Vector2f playerPosition =
-                player->transform.position();
+            const sf::Vector2f playerPosition = player->transform.position();
 
-            text << "Player position: "
-                << playerPosition.x
-                << ", "
-                << playerPosition.y
-                << "\n";
+            text << "Player position: " << playerPosition.x << ", " << playerPosition.y << "\n";
 
-            text << "Player ID: "
-                << playerId
-                << "\n";
+            text << "Player ID: " << playerId << "\n";
 
-            text << "Player found by ID: "
-                << (playerFoundById ? "YES" : "NO")
-                << "\n";
+            text << "Player found by ID: " << (playerFoundById ? "YES" : "NO") << "\n";
 
-            text << "Player handle valid: "
-                << (playerHandleValid ? "YES" : "NO")
-                << "\n";
+            text << "Player handle valid: " << (playerHandleValid ? "YES" : "NO") << "\n";
         }
         else
         {
             text << "Player: NULL\n";
 
-            text << "Player ID: "
-                << playerId
-                << "\n";
+            text << "Player ID: " << playerId << "\n";
 
-            text << "Player found by ID: "
-                << (playerFoundById ? "YES" : "NO")
-                << "\n";
+            text << "Player found by ID: " << (playerFoundById ? "YES" : "NO") << "\n";
 
-            text << "Player handle valid: "
-                << (playerHandleValid ? "YES" : "NO")
-                << "\n";
+            text << "Player handle valid: " << (playerHandleValid ? "YES" : "NO") << "\n";
         }
 
-        text << "Last destroyed coin ID: "
-            << m_lastDestroyedCoinId
-            << "\n";
+        text << "Last destroyed coin ID: " << m_lastDestroyedCoinId << "\n";
 
         text << "Last destroyed coin handle valid: "
-            << (lastDestroyedCoinHandleValid ? "YES" : "NO")
-            << "\n";
+             << (lastDestroyedCoinHandleValid ? "YES" : "NO") << "\n";
 
         if (selectedObject != nullptr)
         {
-            text << "Selected object: "
-                << selectedObject->name()
-                << "\n";
+            text << "Selected object: " << selectedObject->name() << "\n";
 
-            text << "Selected ID: "
-                << selectedObject->id()
-                << "\n";
+            text << "Selected ID: " << selectedObject->id() << "\n";
 
-            text << "Selected tag: "
-                << selectedObject->tag()
-                << "\n";
+            text << "Selected tag: " << selectedObject->tag() << "\n";
 
-            text << "Selected handle valid: "
-                << (selectedObjectHandleValid ? "YES" : "NO")
-                << "\n";
+            text << "Selected handle valid: " << (selectedObjectHandleValid ? "YES" : "NO") << "\n";
         }
         else
         {
             text << "Selected object: NONE\n";
 
-            text << "Selected ID: "
-                << m_selectedObjectHandle.id()
-                << "\n";
+            text << "Selected ID: " << m_selectedObjectHandle.id() << "\n";
 
             text << "Selected tag: NONE\n";
 
-            text << "Selected handle valid: "
-                << (selectedObjectHandleValid ? "YES" : "NO")
-                << "\n";
+            text << "Selected handle valid: " << (selectedObjectHandleValid ? "YES" : "NO") << "\n";
         }
 
-        text << "Camera center: "
-            << m_camera.center().x
-            << ", "
-            << m_camera.center().y
-            << "\n";
+        text << "Camera center: " << m_camera.center().x << ", " << m_camera.center().y << "\n";
 
-        text << "Camera size: "
-            << m_camera.size().x
-            << ", "
-            << m_camera.size().y
-            << "\n";
+        text << "Camera size: " << m_camera.size().x << ", " << m_camera.size().y << "\n";
 
-        text << "Camera zoom: "
-            << m_camera.zoom()
-            << "\n";
+        text << "Camera zoom: " << m_camera.zoom() << "\n";
 
         text << "Camera Controller: "
-            << (m_cameraController.hasFollowTarget() ? "FOLLOWING" : "NO TARGET")
-            << "\n";
+             << (m_cameraController.hasFollowTarget() ? "FOLLOWING" : "NO TARGET") << "\n";
 
-        text << "Mouse screen: "
-            << m_mouseScreenPosition.x
-            << ", "
-            << m_mouseScreenPosition.y
-            << "\n";
+        text << "Mouse screen: " << m_mouseScreenPosition.x << ", " << m_mouseScreenPosition.y
+             << "\n";
 
-        text << "Mouse world: "
-            << m_mouseWorldPosition.x
-            << ", "
-            << m_mouseWorldPosition.y
-            << "\n";
+        text << "Mouse world: " << m_mouseWorldPosition.x << ", " << m_mouseWorldPosition.y << "\n";
 
-        text << "Left clicks: "
-            << m_leftMouseClicks
-            << "\n";
+        text << "Left clicks: " << m_leftMouseClicks << "\n";
 
-        text << "Resize events: "
-            << m_resizeEvents
-            << "\n";
+        text << "Resize events: " << m_resizeEvents << "\n";
 
-        text << "Last window size: "
-            << m_lastWindowSize.x
-            << ", "
-            << m_lastWindowSize.y
-            << "\n";
+        text << "Last window size: " << m_lastWindowSize.x << ", " << m_lastWindowSize.y << "\n";
 
-        text << "Mouse wheel events: "
-            << m_mouseWheelEvents
-            << "\n";
+        text << "Mouse wheel events: " << m_mouseWheelEvents << "\n";
 
-        text << "Last wheel delta: "
-            << m_lastMouseWheelDelta
-            << "\n";
+        text << "Last wheel delta: " << m_lastMouseWheelDelta << "\n";
 
-        text << "Smooth: "
-            << m_camera.followSmoothness()
-            << "\n";
+        text << "Smooth: " << m_camera.followSmoothness() << "\n";
 
-        text << "Bounds: "
-            << (m_camera.hasBounds() ? "ON" : "OFF")
-            << "\n";
+        text << "Bounds: " << (m_camera.hasBounds() ? "ON" : "OFF") << "\n";
 
-        text << "Coins: "
-            << m_collectedCoins
-            << " / "
-            << m_totalCoins
-            << "\n";
+        text << "Coins: " << m_collectedCoins << " / " << m_totalCoins << "\n";
 
-        text << "Deaths: "
-            << m_deaths
-            << "\n";
+        text << "Deaths: " << m_deaths << "\n";
 
-        text << "Respawn cooldown: "
-            << m_respawnCooldown
-            << "\n";
+        text << "Respawn cooldown: " << m_respawnCooldown << "\n";
 
         text << "Render World: "
-            << (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::World) ? "ON" : "OFF")
-            << "\n";
+             << (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::World) ? "ON" : "OFF") << "\n";
 
         text << "Render PhysicsDebug: "
-            << (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::PhysicsDebug) ? "ON" : "OFF")
-            << "\n";
+             << (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::PhysicsDebug) ? "ON" : "OFF")
+             << "\n";
 
         text << "Render UI: "
-            << (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::UI) ? "ON" : "OFF")
-            << "\n";
+             << (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::UI) ? "ON" : "OFF") << "\n";
 
         if (activeScene != nullptr)
         {
-            const std::size_t taggedPlayers =
-                activeScene->countGameObjectsByTag(GameTags::Player);
+            const std::size_t taggedPlayers = activeScene->countGameObjectsByTag(GameTags::Player);
 
             const std::size_t activePlayers =
                 activeScene->countActiveGameObjectsByTag(GameTags::Player);
 
-            const std::size_t taggedCoins =
-                activeScene->countGameObjectsByTag(GameTags::Coin);
+            const std::size_t taggedCoins = activeScene->countGameObjectsByTag(GameTags::Coin);
 
             const std::size_t activeCoins =
                 activeScene->countActiveGameObjectsByTag(GameTags::Coin);
 
-            const std::size_t taggedEnemies =
-                activeScene->countGameObjectsByTag(GameTags::Enemy);
+            const std::size_t taggedEnemies = activeScene->countGameObjectsByTag(GameTags::Enemy);
 
             const std::size_t activeEnemies =
                 activeScene->countActiveGameObjectsByTag(GameTags::Enemy);
 
-            text << "Tagged Players: "
-                << taggedPlayers
-                << "\n";
+            text << "Tagged Players: " << taggedPlayers << "\n";
 
-            text << "Active Players: "
-                << activePlayers
-                << "\n";
+            text << "Active Players: " << activePlayers << "\n";
 
-            text << "Tagged Coins: "
-                << taggedCoins
-                << "\n";
+            text << "Tagged Coins: " << taggedCoins << "\n";
 
-            text << "Active Coins: "
-                << activeCoins
-                << "\n";
+            text << "Active Coins: " << activeCoins << "\n";
 
-            text << "Tagged Enemies: "
-                << taggedEnemies
-                << "\n";
+            text << "Tagged Enemies: " << taggedEnemies << "\n";
 
-            text << "Active Enemies: "
-                << activeEnemies
-                << "\n";
+            text << "Active Enemies: " << activeEnemies << "\n";
         }
 
-        text << "Level: "
-            << (m_levelLoadedFromFile ? "FILE" : "FALLBACK")
-            << "\n";
+        text << "Level: " << (m_levelLoadedFromFile ? "FILE" : "FALLBACK") << "\n";
 
-        text << "Source: "
-            << m_levelSource
-            << "\n";
+        text << "Source: " << m_levelSource << "\n";
 
-        text << "Working dir: "
-            << m_workingDirectory
-            << "\n";
+        text << "Working dir: " << m_workingDirectory << "\n";
 
         return text.str();
     }
@@ -1307,7 +1032,7 @@ private:
         getWindow().setTitle(title);
     }
 
-private:
+  private:
     l2d::AssetManager m_assets;
     l2d::ActionMap m_actions;
 
@@ -1322,7 +1047,7 @@ private:
     int m_totalCoins = 0;
     int m_collectedCoins = 0;
 
-    sf::Vector2f m_playerSpawnPosition = { 150.f, 100.f };
+    sf::Vector2f m_playerSpawnPosition = {150.f, 100.f};
 
     int m_deaths = 0;
     float m_respawnCooldown = 0.f;
@@ -1331,12 +1056,12 @@ private:
     std::string m_levelSource = "none";
     std::string m_workingDirectory = "unknown";
 
-    sf::Vector2i m_mouseScreenPosition = { 0, 0 };
-    sf::Vector2f m_mouseWorldPosition = { 0.f, 0.f };
+    sf::Vector2i m_mouseScreenPosition = {0, 0};
+    sf::Vector2f m_mouseWorldPosition = {0.f, 0.f};
 
     int m_leftMouseClicks = 0;
 
-    sf::Vector2u m_lastWindowSize = { 0, 0 };
+    sf::Vector2u m_lastWindowSize = {0, 0};
 
     int m_resizeEvents = 0;
     int m_mouseWheelEvents = 0;

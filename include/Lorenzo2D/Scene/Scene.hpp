@@ -19,7 +19,7 @@ namespace l2d
 
     class Scene
     {
-    public:
+      public:
         explicit Scene(std::string name = "Scene");
         ~Scene();
 
@@ -67,7 +67,7 @@ namespace l2d
 
         void clear();
 
-    private:
+      private:
         GameObject* findOwnedGameObjectById(GameObjectId id);
         const GameObject* findOwnedGameObjectById(GameObjectId id) const;
 
@@ -77,7 +77,7 @@ namespace l2d
         void advanceFixedUpdateGeneration();
         bool isFixedStepParticipant(const GameObject& gameObject) const;
 
-    private:
+      private:
         std::string m_name;
         std::vector<std::unique_ptr<GameObject>> m_gameObjects;
         std::unordered_map<GameObjectId, GameObject*> m_gameObjectsById;

@@ -11,7 +11,7 @@ namespace l2d
 
     class Component
     {
-    public:
+      public:
         Component();
         virtual ~Component() = default;
 
@@ -28,15 +28,12 @@ namespace l2d
 
         virtual void onUpdate(float deltaTime);
         virtual void onRender(sf::RenderWindow& window);
-        virtual void onRender(
-            sf::RenderWindow& window,
-            float interpolationAlpha
-        );
+        virtual void onRender(sf::RenderWindow& window, float interpolationAlpha);
 
-    private:
+      private:
         void setOwner(GameObject* owner);
 
-    private:
+      private:
         GameObject* m_owner;
         bool m_active;
 

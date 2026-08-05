@@ -9,7 +9,7 @@ namespace l2d
 {
     class CircleCollider2D : public Collider2D
     {
-    public:
+      public:
         explicit CircleCollider2D(float radius = 50.f);
 
         float radius() const;
@@ -22,7 +22,7 @@ namespace l2d
 
         sf::Vector2f collisionResolutionVector(const BoxCollider2D& box) const;
 
-    private:
+      private:
         float m_radius;
     };
 }

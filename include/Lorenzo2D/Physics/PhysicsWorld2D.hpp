@@ -22,7 +22,7 @@ namespace l2d
 
     struct PhysicsWorld2DConfig
     {
-        sf::Vector2f gravity = { 0.f, 980.f };
+        sf::Vector2f gravity = {0.f, 980.f};
 
         // Zero selects the default. Larger values are clamped to 64 so
         // untrusted configuration cannot stall a simulation step.
@@ -34,8 +34,7 @@ namespace l2d
         float restitutionVelocityThreshold = 1.f;
         float groundedNormalThreshold = 0.7f;
 
-        PhysicsBroadPhaseMode2D broadPhaseMode =
-            PhysicsBroadPhaseMode2D::UniformGrid;
+        PhysicsBroadPhaseMode2D broadPhaseMode = PhysicsBroadPhaseMode2D::UniformGrid;
         float broadPhaseCellSize = 128.f;
         std::uint32_t broadPhaseMaxCellsPerProxy = 256;
     };
@@ -52,7 +51,7 @@ namespace l2d
 
     class PhysicsWorld2D
     {
-    public:
+      public:
         PhysicsWorld2D();
         explicit PhysicsWorld2D(const PhysicsWorld2DConfig& config);
 
@@ -69,29 +68,23 @@ namespace l2d
         const std::vector<PhysicsContact2D>& contacts() const;
         const std::vector<PhysicsContactEvent2D>& contactEvents() const;
 
-        bool isTouching(
-            GameObjectId firstObjectId,
-            GameObjectId secondObjectId
-        ) const;
+        bool isTouching(GameObjectId firstObjectId, GameObjectId secondObjectId) const;
 
         void reset();
         void reset(Scene& scene);
         void step(Scene& scene, float deltaTime);
 
-    private:
+      private:
         struct BroadPhaseStepData2D;
 
         BroadPhaseStepData2D buildBroadPhaseStepData(Scene& scene) const;
 
-        bool isPhysicsParticipant(
-            const Scene& scene,
-            const GameObject* gameObject
-        ) const;
+        bool isPhysicsParticipant(const Scene& scene, const GameObject* gameObject) const;
 
         void resetPhysicsStates(Scene& scene);
         void integrateRigidBodies(Scene& scene, float deltaTime);
 
-    private:
+      private:
         PhysicsWorld2DConfig m_config;
         PhysicsBroadPhaseStats2D m_broadPhaseStats;
 

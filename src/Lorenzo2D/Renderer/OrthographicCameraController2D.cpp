@@ -18,8 +18,7 @@ namespace l2d
 
         float sanitizeZoomLimit(float zoom)
         {
-            if (!std::isfinite(zoom) || zoom < MINIMUM_ZOOM)
-                return MINIMUM_ZOOM;
+            if (!std::isfinite(zoom) || zoom < MINIMUM_ZOOM) return MINIMUM_ZOOM;
 
             return zoom;
         }
@@ -27,32 +26,19 @@ namespace l2d
         float maximumSupportedZoom(const Camera2D& camera)
         {
             const sf::Vector2f size = camera.size();
-            const double maximumExtent = static_cast<double>(
-                renderer_detail::maximumSafeViewExtent()
-            );
-            const double maximumZoom = std::min(
-                maximumExtent / static_cast<double>(size.x),
-                maximumExtent / static_cast<double>(size.y)
-            );
+            const double maximumExtent =
+                static_cast<double>(renderer_detail::maximumSafeViewExtent());
+            const double maximumZoom = std::min(maximumExtent / static_cast<double>(size.x),
+                                                maximumExtent / static_cast<double>(size.y));
 
-            return std::max(
-                MINIMUM_ZOOM,
-                static_cast<float>(maximumZoom)
-            );
+            return std::max(MINIMUM_ZOOM, static_cast<float>(maximumZoom));
         }
     }
 
     OrthographicCameraController2D::OrthographicCameraController2D(Camera2D& camera)
-        : m_camera(&camera),
-        m_followEnabled(true),
-        m_hasFollowTarget(false),
-        m_followTarget(0.f, 0.f),
-        m_zoomEnabled(true),
-        m_minZoom(0.5f),
-        m_maxZoom(2.f),
-        m_zoomInFactor(0.90f),
-        m_zoomOutFactor(1.10f),
-        m_resizeEnabled(true)
+        : m_camera(&camera), m_followEnabled(true), m_hasFollowTarget(false),
+          m_followTarget(0.f, 0.f), m_zoomEnabled(true), m_minZoom(0.5f), m_maxZoom(2.f),
+          m_zoomInFactor(0.90f), m_zoomOutFactor(1.10f), m_resizeEnabled(true)
     {
     }
 
@@ -68,8 +54,7 @@ namespace l2d
 
     void OrthographicCameraController2D::setFollowTarget(sf::Vector2f target)
     {
-        if (!renderer_detail::isSafeCameraPosition(target))
-            return;
+        if (!renderer_detail::isSafeCameraPosition(target)) return;
 
         m_followTarget = target;
         m_hasFollowTarget = true;
@@ -103,11 +88,7 @@ namespace l2d
         m_minZoom = std::min(minZoom, maxZoom);
         m_maxZoom = std::max(minZoom, maxZoom);
 
-        m_camera->setZoom(std::clamp(
-            m_camera->zoom(),
-            this->minZoom(),
-            this->maxZoom()
-        ));
+        m_camera->setZoom(std::clamp(m_camera->zoom(), this->minZoom(), this->maxZoom()));
     }
 
     float OrthographicCameraController2D::minZoom() const
@@ -117,16 +98,10 @@ namespace l2d
 
     float OrthographicCameraController2D::maxZoom() const
     {
-        return std::max(
-            minZoom(),
-            std::min(m_maxZoom, maximumSupportedZoom(*m_camera))
-        );
+        return std::max(minZoom(), std::min(m_maxZoom, maximumSupportedZoom(*m_camera)));
     }
 
-    void OrthographicCameraController2D::setZoomStepFactors(
-        float zoomInFactor,
-        float zoomOutFactor
-    )
+    void OrthographicCameraController2D::setZoomStepFactors(float zoomInFactor, float zoomOutFactor)
     {
         if (!std::isfinite(zoomInFactor) || zoomInFactor <= 0.f)
             zoomInFactor = DEFAULT_ZOOM_IN_FACTOR;
@@ -167,61 +142,43 @@ namespace l2d
 
     void OrthographicCameraController2D::updateResize()
     {
-        if (m_camera == nullptr)
-            return;
+        if (m_camera == nullptr) return;
 
-        if (!m_resizeEnabled)
-            return;
+        if (!m_resizeEnabled) return;
 
-        if (!WindowEvents::wasResized())
-            return;
+        if (!WindowEvents::wasResized()) return;
 
         const sf::Vector2u newSize = WindowEvents::resizedSize();
 
-        if (newSize.x == 0 || newSize.y == 0)
-            return;
+        if (newSize.x == 0 || newSize.y == 0) return;
 
-        m_camera->setSize(
-            {
-                static_cast<float>(newSize.x),
-                static_cast<float>(newSize.y)
-            }
-        );
-
+        m_camera->setSize({static_cast<float>(newSize.x), static_cast<float>(newSize.y)});
     }
 
     void OrthographicCameraController2D::updateFollow(float deltaTime)
     {
-        if (m_camera == nullptr)
-            return;
+        if (m_camera == nullptr) return;
 
-        if (!m_followEnabled)
-            return;
+        if (!m_followEnabled) return;
 
-        if (!m_hasFollowTarget)
-            return;
+        if (!m_hasFollowTarget) return;
 
         m_camera->follow(m_followTarget, deltaTime);
     }
 
     void OrthographicCameraController2D::updateZoom()
     {
-        if (m_camera == nullptr)
-            return;
+        if (m_camera == nullptr) return;
 
-        if (!m_zoomEnabled)
-            return;
+        if (!m_zoomEnabled) return;
 
-        if (!WindowEvents::mouseWheelScrolled())
-            return;
+        if (!WindowEvents::mouseWheelScrolled()) return;
 
-        if (WindowEvents::mouseWheel() != MouseWheel::Vertical)
-            return;
+        if (WindowEvents::mouseWheel() != MouseWheel::Vertical) return;
 
         const float wheelDelta = WindowEvents::mouseWheelDelta();
 
-        if (!std::isfinite(wheelDelta))
-            return;
+        if (!std::isfinite(wheelDelta)) return;
 
         double zoom = static_cast<double>(m_camera->zoom());
 
@@ -234,11 +191,7 @@ namespace l2d
             zoom *= static_cast<double>(m_zoomOutFactor);
         }
 
-        zoom = std::clamp(
-            zoom,
-            static_cast<double>(minZoom()),
-            static_cast<double>(maxZoom())
-        );
+        zoom = std::clamp(zoom, static_cast<double>(minZoom()), static_cast<double>(maxZoom()));
 
         m_camera->setZoom(static_cast<float>(zoom));
     }

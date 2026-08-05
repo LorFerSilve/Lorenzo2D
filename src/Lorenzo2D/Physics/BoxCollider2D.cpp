@@ -11,24 +11,19 @@ namespace l2d
 
         float sanitizeDimension(float dimension)
         {
-            if (!std::isfinite(dimension) || dimension < MIN_DIMENSION)
-                return MIN_DIMENSION;
+            if (!std::isfinite(dimension) || dimension < MIN_DIMENSION) return MIN_DIMENSION;
 
             return dimension;
         }
 
         sf::Vector2f sanitizeSize(sf::Vector2f size)
         {
-            return {
-                sanitizeDimension(size.x),
-                sanitizeDimension(size.y)
-            };
+            return {sanitizeDimension(size.x), sanitizeDimension(size.y)};
         }
     }
 
     BoxCollider2D::BoxCollider2D(sf::Vector2f size)
-        : Collider2D(ColliderType::Box),
-        m_size(sanitizeSize(size))
+        : Collider2D(ColliderType::Box), m_size(sanitizeSize(size))
     {
     }
 
@@ -51,10 +46,7 @@ namespace l2d
     {
         const sf::Vector2f position = worldPosition();
 
-        return {
-            position.x + m_size.x,
-            position.y + m_size.y
-        };
+        return {position.x + m_size.x, position.y + m_size.y};
     }
 
     bool BoxCollider2D::overlaps(const BoxCollider2D& other) const

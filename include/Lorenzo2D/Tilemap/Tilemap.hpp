@@ -41,10 +41,10 @@ namespace l2d
 
     class TileMap
     {
-    public:
+      public:
         using Layout = std::vector<std::string>;
 
-    public:
+      public:
         TileMap();
         ~TileMap();
 
@@ -76,35 +76,21 @@ namespace l2d
         // Returns the configuration for the next load.
         sf::Color solidTileColor() const;
 
-        void loadFromLayout(
-            Scene& scene,
-            const Layout& layout,
-            char solidChar = '#',
-            const std::string& objectPrefix = "Tile"
-        );
+        void loadFromLayout(Scene& scene, const Layout& layout, char solidChar = '#',
+                            const std::string& objectPrefix = "Tile");
 
         // Queues generated render and collision objects for destruction in
         // their owning scenes. Expired handles are ignored, so this is safe
         // and idempotent.
         void unload();
 
-        bool loadFromFile(
-            Scene& scene,
-            const std::string& filepath,
-            char solidChar = '#',
-            const std::string& objectPrefix = "Tile"
-        );
+        bool loadFromFile(Scene& scene, const std::string& filepath, char solidChar = '#',
+                          const std::string& objectPrefix = "Tile");
 
-        bool findFirstTilePosition(
-            char tileChar,
-            sf::Vector2f& outPosition,
-            bool centered = true
-        ) const;
+        bool findFirstTilePosition(char tileChar, sf::Vector2f& outPosition,
+                                   bool centered = true) const;
 
-        std::vector<sf::Vector2f> findTilePositions(
-            char tileChar,
-            bool centered = true
-        ) const;
+        std::vector<sf::Vector2f> findTilePositions(char tileChar, bool centered = true) const;
 
         const Layout& layout() const;
         const sf::Vector2f& worldSize() const;
@@ -112,21 +98,18 @@ namespace l2d
         const TileMapBuildStats& buildStats() const;
 
         // Computes culling telemetry without drawing or creating a window.
-        TileMapRenderStats renderStatsForView(
-            const sf::View& view
-        ) const;
+        TileMapRenderStats renderStatsForView(const sf::View& view) const;
 
         // Returns telemetry from the most recent actual render. It is empty
         // until the current map has been rendered at least once.
         TileMapRenderStats lastRenderStats() const;
 
-    private:
+      private:
         Layout readLayoutFromFile(const std::string& filepath) const;
         void queueGeneratedObjectsForDestruction(
-            const std::vector<GameObjectHandle>& generatedObjects
-        ) const;
+            const std::vector<GameObjectHandle>& generatedObjects) const;
 
-    private:
+      private:
         sf::Vector2f m_tileSize;
         sf::Vector2f m_loadedTileSize;
         sf::Vector2u m_renderChunkSize;

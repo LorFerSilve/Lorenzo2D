@@ -2,11 +2,7 @@
 
 namespace l2d
 {
-    Component::Component()
-        : m_owner(nullptr),
-        m_active(true)
-    {
-    }
+    Component::Component() : m_owner(nullptr), m_active(true) {}
 
     bool Component::isActive() const
     {
@@ -38,10 +34,7 @@ namespace l2d
         (void)window;
     }
 
-    void Component::onRender(
-        sf::RenderWindow& window,
-        float interpolationAlpha
-    )
+    void Component::onRender(sf::RenderWindow& window, float interpolationAlpha)
     {
         (void)interpolationAlpha;
         onRender(window);

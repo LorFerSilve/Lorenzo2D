@@ -4,6 +4,7 @@ project(Lorenzo2DEngine VERSION 0.1.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+include(cmake/Lorenzo2DDeveloperTools.cmake)
 
 option(
     L2D_BUILD_SANDBOX
@@ -19,11 +20,24 @@ option(L2D_USE_SYSTEM_SFML "Use an installed SFML 3 package instead of FetchCont
 option(L2D_WARNINGS_AS_ERRORS "Treat Lorenzo2D compiler warnings as errors" OFF)
 option(L2D_ENABLE_ASAN "Instrument first-party targets with AddressSanitizer" OFF)
 option(L2D_ENABLE_UBSAN "Instrument first-party targets with UndefinedBehaviorSanitizer" OFF)
+option(L2D_ENABLE_COVERAGE "Instrument first-party targets for coverage reporting" OFF)
+option(L2D_ENABLE_CLANG_TIDY "Run clang-tidy while compiling first-party targets" OFF)
+option(L2D_BUILD_BENCHMARKS "Build the Lorenzo2D benchmark executable" OFF)
 option(
     L2D_INSTALL
     "Generate Lorenzo2D installation and CMake package export rules"
     ${PROJECT_IS_TOP_LEVEL}
 )
+
+if(L2D_ENABLE_COVERAGE AND NOT L2D_BUILD_TESTS)
+    message(FATAL_ERROR "L2D_ENABLE_COVERAGE requires L2D_BUILD_TESTS=ON")
+endif()
+
+if(L2D_ENABLE_COVERAGE AND (L2D_ENABLE_ASAN OR L2D_ENABLE_UBSAN))
+    message(FATAL_ERROR "Coverage and sanitizer instrumentation use separate build presets")
+endif()
+
+l2d_add_format_targets()
 
 if(PROJECT_IS_TOP_LEVEL)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -172,6 +186,8 @@ target_compile_features(Lorenzo2D PUBLIC cxx_std_17)
 target_link_libraries(Lorenzo2D PUBLIC SFML::Graphics)
 l2d_enable_warnings(Lorenzo2D)
 l2d_enable_sanitizers(Lorenzo2D)
+l2d_enable_coverage(Lorenzo2D)
+l2d_enable_clang_tidy(Lorenzo2D)
 
 if(L2D_BUILD_SANDBOX)
     add_executable(Sandbox sandbox/main.cpp)
@@ -184,6 +200,8 @@ if(L2D_BUILD_SANDBOX)
     target_link_libraries(Sandbox PRIVATE Lorenzo2D::Lorenzo2D)
     l2d_enable_warnings(Sandbox)
     l2d_enable_sanitizers(Sandbox)
+    l2d_enable_coverage(Sandbox)
+    l2d_enable_clang_tidy(Sandbox)
 
     set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT Sandbox)
     set_target_properties(Sandbox PROPERTIES
@@ -194,6 +212,11 @@ endif()
 if(L2D_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+    l2d_add_coverage_target()
+endif()
+
+if(L2D_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
 endif()
 
 if(L2D_INSTALL)

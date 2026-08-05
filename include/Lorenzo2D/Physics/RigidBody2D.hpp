@@ -17,7 +17,7 @@ namespace l2d
 
     class RigidBody2D : public Component
     {
-    public:
+      public:
         RigidBody2D();
 
         BodyType2D bodyType() const;
@@ -46,11 +46,11 @@ namespace l2d
 
         bool isGrounded() const;
 
-    private:
+      private:
         void integrate(float deltaTime, sf::Vector2f worldGravity);
         void setGrounded(bool grounded);
 
-    private:
+      private:
         BodyType2D m_bodyType;
 
         sf::Vector2f m_velocity;

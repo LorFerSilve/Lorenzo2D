@@ -26,10 +26,8 @@ namespace l2d
 
     class FixedStepScheduler
     {
-    public:
-        explicit FixedStepScheduler(
-            const FixedStepConfig& config = FixedStepConfig{}
-        );
+      public:
+        explicit FixedStepScheduler(const FixedStepConfig& config = FixedStepConfig{});
 
         FixedStepFrame advance(double rawDeltaTime);
         void reset();
@@ -55,7 +53,7 @@ namespace l2d
         // Advances by the ticks scheduled through FixedStepFrame::ticksToRun.
         double simulationTime() const;
 
-    private:
+      private:
         FixedStepConfig m_config;
 
         double m_accumulator = 0.0;

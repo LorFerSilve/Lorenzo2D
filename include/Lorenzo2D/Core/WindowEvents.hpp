@@ -17,7 +17,7 @@ namespace l2d
 
     class WindowEvents
     {
-    public:
+      public:
         static bool closeRequested();
 
         static bool wasResized();
@@ -28,13 +28,13 @@ namespace l2d
         static const sf::Vector2i& mouseWheelPosition();
         static MouseWheel mouseWheel();
 
-    private:
+      private:
         static void beginFrame();
         static void processEvent(const sf::Event& event);
 
         static MouseWheel fromSfmlMouseWheel(sf::Mouse::Wheel wheel);
 
-    private:
+      private:
         static bool s_closeRequested;
 
         static bool s_wasResized;

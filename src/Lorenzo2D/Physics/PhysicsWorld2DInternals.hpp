@@ -22,16 +22,11 @@ namespace l2d
             RigidBody2D* body = nullptr;
         };
 
-        bool physicsContactLess(
-            const PhysicsContact2D& left,
-            const PhysicsContact2D& right
-        );
+        bool physicsContactLess(const PhysicsContact2D& left, const PhysicsContact2D& right);
 
-        void buildPhysicsContactEvents(
-            const std::vector<PhysicsContact2D>& previousContacts,
-            const std::vector<PhysicsContact2D>& currentContacts,
-            std::vector<PhysicsContactEvent2D>& events
-        );
+        void buildPhysicsContactEvents(const std::vector<PhysicsContact2D>& previousContacts,
+                                       const std::vector<PhysicsContact2D>& currentContacts,
+                                       std::vector<PhysicsContactEvent2D>& events);
     }
 
     struct PhysicsWorld2D::BroadPhaseStepData2D

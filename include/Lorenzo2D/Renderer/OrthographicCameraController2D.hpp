@@ -8,20 +8,12 @@ namespace l2d
 
     class OrthographicCameraController2D
     {
-    public:
+      public:
         explicit OrthographicCameraController2D(Camera2D& camera);
-        OrthographicCameraController2D(
-            const OrthographicCameraController2D&
-        ) = delete;
-        OrthographicCameraController2D& operator=(
-            const OrthographicCameraController2D&
-        ) = delete;
-        OrthographicCameraController2D(
-            OrthographicCameraController2D&&
-        ) = delete;
-        OrthographicCameraController2D& operator=(
-            OrthographicCameraController2D&&
-        ) = delete;
+        OrthographicCameraController2D(const OrthographicCameraController2D&) = delete;
+        OrthographicCameraController2D& operator=(const OrthographicCameraController2D&) = delete;
+        OrthographicCameraController2D(OrthographicCameraController2D&&) = delete;
+        OrthographicCameraController2D& operator=(OrthographicCameraController2D&&) = delete;
 
         void setFollowEnabled(bool enabled);
         bool isFollowEnabled() const;
@@ -51,12 +43,12 @@ namespace l2d
 
         void update(float deltaTime);
 
-    private:
+      private:
         void updateResize();
         void updateFollow(float deltaTime);
         void updateZoom();
 
-    private:
+      private:
         Camera2D* m_camera;
 
         bool m_followEnabled;

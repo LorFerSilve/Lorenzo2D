@@ -22,52 +22,40 @@ namespace
 
     class CounterComponent final : public l2d::Component
     {
-    public:
-        explicit CounterComponent(int& counter)
-            : m_counter(&counter)
-        {
-        }
+      public:
+        explicit CounterComponent(int& counter) : m_counter(&counter) {}
 
         void onUpdate(float) override
         {
             ++(*m_counter);
         }
 
-    private:
+      private:
         int* m_counter;
     };
 
     class SpawnRigidBodyOnce final : public l2d::Component
     {
-    public:
-        SpawnRigidBodyOnce(
-            l2d::Scene& scene,
-            l2d::GameObject*& spawnedObject,
-            int& spawnedUpdates
-        )
-            : m_scene(&scene),
-            m_spawnedObject(&spawnedObject),
-            m_spawnedUpdates(&spawnedUpdates)
+      public:
+        SpawnRigidBodyOnce(l2d::Scene& scene, l2d::GameObject*& spawnedObject, int& spawnedUpdates)
+            : m_scene(&scene), m_spawnedObject(&spawnedObject), m_spawnedUpdates(&spawnedUpdates)
         {
         }
 
         void onUpdate(float) override
         {
-            if (*m_spawnedObject != nullptr)
-                return;
+            if (*m_spawnedObject != nullptr) return;
 
-            l2d::GameObject& spawned =
-                m_scene->createGameObject("SpawnedBody");
+            l2d::GameObject& spawned = m_scene->createGameObject("SpawnedBody");
 
             spawned.addComponent<CounterComponent>(*m_spawnedUpdates);
-            l2d::RigidBody2D& body =
-                spawned.addComponent<l2d::RigidBody2D>();
-            body.setVelocity({ 10.f, 0.f });
+            l2d::RigidBody2D& body = spawned.addComponent<l2d::RigidBody2D>();
+            body.setVelocity({10.f, 0.f});
 
             *m_spawnedObject = &spawned;
         }
 
-    private:
+      private:
         l2d::Scene* m_scene;
         l2d::GameObject** m_spawnedObject;
         int* m_spawnedUpdates;
@@ -75,28 +63,22 @@ namespace
 
     class ApplyForceOnceComponent final : public l2d::Component
     {
-    public:
-        explicit ApplyForceOnceComponent(sf::Vector2f force)
-            : m_force(force)
-        {
-        }
+      public:
+        explicit ApplyForceOnceComponent(sf::Vector2f force) : m_force(force) {}
 
         void onUpdate(float) override
         {
-            if (m_applied || owner() == nullptr)
-                return;
+            if (m_applied || owner() == nullptr) return;
 
-            l2d::RigidBody2D* rigidBody =
-                owner()->getComponent<l2d::RigidBody2D>();
+            l2d::RigidBody2D* rigidBody = owner()->getComponent<l2d::RigidBody2D>();
 
-            if (rigidBody == nullptr)
-                return;
+            if (rigidBody == nullptr) return;
 
             rigidBody->addForce(m_force);
             m_applied = true;
         }
 
-    private:
+      private:
         sf::Vector2f m_force;
         bool m_applied = false;
     };
@@ -106,13 +88,13 @@ namespace
         const float nan = std::numeric_limits<float>::quiet_NaN();
         const float infinity = std::numeric_limits<float>::infinity();
 
-        l2d::BoxCollider2D box({ -10.f, nan });
+        l2d::BoxCollider2D box({-10.f, nan});
         L2D_REQUIRE(std::isfinite(box.size().x));
         L2D_REQUIRE(std::isfinite(box.size().y));
         L2D_REQUIRE(box.size().x > 0.f);
         L2D_REQUIRE(box.size().y > 0.f);
 
-        box.setSize({ infinity, 0.f });
+        box.setSize({infinity, 0.f});
         L2D_REQUIRE(std::isfinite(box.size().x));
         L2D_REQUIRE(std::isfinite(box.size().y));
         L2D_REQUIRE(box.size().x > 0.f);
@@ -142,14 +124,13 @@ namespace
         l2d::BoxCollider2D& box;
 
         FloorContactFixture()
-            : mover(scene.createGameObject("Mover")),
-            body(mover.addComponent<l2d::RigidBody2D>()),
-            circle(mover.addComponent<l2d::CircleCollider2D>(10.f)),
-            floor(scene.createGameObject("Floor")),
-            box(floor.addComponent<l2d::BoxCollider2D>(sf::Vector2f{ 20.f, 20.f }))
+            : mover(scene.createGameObject("Mover")), body(mover.addComponent<l2d::RigidBody2D>()),
+              circle(mover.addComponent<l2d::CircleCollider2D>(10.f)),
+              floor(scene.createGameObject("Floor")),
+              box(floor.addComponent<l2d::BoxCollider2D>(sf::Vector2f{20.f, 20.f}))
         {
-            mover.transform.setPosition({ 0.f, 0.f });
-            floor.transform.setPosition({ 0.f, 19.f });
+            mover.transform.setPosition({0.f, 0.f});
+            floor.transform.setPosition({0.f, 19.f});
         }
     };
 
@@ -160,9 +141,7 @@ namespace
         std::uint64_t tickCount = 0;
     };
 
-    PhysicsSimulationResult simulatePhysicsFrames(
-        const std::vector<double>& frameDeltas
-    )
+    PhysicsSimulationResult simulatePhysicsFrames(const std::vector<double>& frameDeltas)
     {
         l2d::FixedStepConfig config;
         config.fixedDeltaTime = 0.125;
@@ -175,8 +154,8 @@ namespace
 
         l2d::GameObject& object = scene.createGameObject("Simulated");
         l2d::RigidBody2D& body = object.addComponent<l2d::RigidBody2D>();
-        body.setVelocity({ 1.f, -2.f });
-        body.setAcceleration({ 4.f, 8.f });
+        body.setVelocity({1.f, -2.f});
+        body.setAcceleration({4.f, 8.f});
 
         for (double frameDelta : frameDeltas)
         {
@@ -189,11 +168,7 @@ namespace
             }
         }
 
-        return {
-            object.transform.position(),
-            body.velocity(),
-            scheduler.tickCount()
-        };
+        return {object.transform.position(), body.velocity(), scheduler.tickCount()};
     }
 
     void testPhysicsWorldIntegratesOncePerFixedTick()
@@ -202,19 +177,13 @@ namespace
         l2d::PhysicsWorld2D world;
 
         l2d::GameObject& bodyFirst = scene.createGameObject("BodyFirst");
-        l2d::RigidBody2D& firstBody =
-            bodyFirst.addComponent<l2d::RigidBody2D>();
+        l2d::RigidBody2D& firstBody = bodyFirst.addComponent<l2d::RigidBody2D>();
         firstBody.setMass(2.f);
-        bodyFirst.addComponent<ApplyForceOnceComponent>(
-            sf::Vector2f{ 4.f, 8.f }
-        );
+        bodyFirst.addComponent<ApplyForceOnceComponent>(sf::Vector2f{4.f, 8.f});
 
         l2d::GameObject& forceFirst = scene.createGameObject("ForceFirst");
-        forceFirst.addComponent<ApplyForceOnceComponent>(
-            sf::Vector2f{ 4.f, 8.f }
-        );
-        l2d::RigidBody2D& secondBody =
-            forceFirst.addComponent<l2d::RigidBody2D>();
+        forceFirst.addComponent<ApplyForceOnceComponent>(sf::Vector2f{4.f, 8.f});
+        l2d::RigidBody2D& secondBody = forceFirst.addComponent<l2d::RigidBody2D>();
         secondBody.setMass(2.f);
 
         scene.fixedUpdate(0.5f);
@@ -226,31 +195,15 @@ namespace
 
         L2D_REQUIRE(approximatelyEqual(firstBody.velocity().x, 1.f));
         L2D_REQUIRE(approximatelyEqual(firstBody.velocity().y, 2.f));
-        L2D_REQUIRE(approximatelyEqual(
-            bodyFirst.transform.position().x,
-            0.5f
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            bodyFirst.transform.position().y,
-            1.f
-        ));
+        L2D_REQUIRE(approximatelyEqual(bodyFirst.transform.position().x, 0.5f));
+        L2D_REQUIRE(approximatelyEqual(bodyFirst.transform.position().y, 1.f));
 
-        L2D_REQUIRE(approximatelyEqual(
-            secondBody.velocity().x,
-            firstBody.velocity().x
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            secondBody.velocity().y,
-            firstBody.velocity().y
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            forceFirst.transform.position().x,
-            bodyFirst.transform.position().x
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            forceFirst.transform.position().y,
-            bodyFirst.transform.position().y
-        ));
+        L2D_REQUIRE(approximatelyEqual(secondBody.velocity().x, firstBody.velocity().x));
+        L2D_REQUIRE(approximatelyEqual(secondBody.velocity().y, firstBody.velocity().y));
+        L2D_REQUIRE(approximatelyEqual(forceFirst.transform.position().x,
+                                       bodyFirst.transform.position().x));
+        L2D_REQUIRE(approximatelyEqual(forceFirst.transform.position().y,
+                                       bodyFirst.transform.position().y));
 
         scene.fixedUpdate(0.5f);
         world.step(scene, 0.5f);
@@ -259,14 +212,8 @@ namespace
         L2D_REQUIRE(approximatelyEqual(firstBody.velocity().y, 2.f));
         L2D_REQUIRE(approximatelyEqual(bodyFirst.transform.position().x, 1.f));
         L2D_REQUIRE(approximatelyEqual(bodyFirst.transform.position().y, 2.f));
-        L2D_REQUIRE(approximatelyEqual(
-            secondBody.velocity().x,
-            firstBody.velocity().x
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            secondBody.velocity().y,
-            firstBody.velocity().y
-        ));
+        L2D_REQUIRE(approximatelyEqual(secondBody.velocity().x, firstBody.velocity().x));
+        L2D_REQUIRE(approximatelyEqual(secondBody.velocity().y, firstBody.velocity().y));
     }
 
     void testSpawnedBodiesJoinPhysicsOnTheNextFixedTick()
@@ -277,11 +224,7 @@ namespace
         int spawnedUpdates = 0;
 
         l2d::GameObject& spawner = scene.createGameObject("Spawner");
-        spawner.addComponent<SpawnRigidBodyOnce>(
-            scene,
-            spawned,
-            spawnedUpdates
-        );
+        spawner.addComponent<SpawnRigidBodyOnce>(scene, spawned, spawnedUpdates);
 
         scene.fixedUpdate(0.5f);
 
@@ -298,23 +241,15 @@ namespace
 
         L2D_REQUIRE(spawnedUpdates == 1);
         L2D_REQUIRE(approximatelyEqual(spawned->transform.position().x, 5.f));
-        L2D_REQUIRE(approximatelyEqual(
-            spawned->transform.interpolated(0.f).position.x,
-            0.f
-        ));
+        L2D_REQUIRE(approximatelyEqual(spawned->transform.interpolated(0.f).position.x, 0.f));
     }
 
     void testFixedPhysicsIsIndependentOfRenderCadence()
     {
-        const PhysicsSimulationResult steady = simulatePhysicsFrames(
-            std::vector<double>(8, 0.125)
-        );
-        const PhysicsSimulationResult chunky = simulatePhysicsFrames(
-            { 0.25, 0.5, 0.25 }
-        );
-        const PhysicsSimulationResult irregular = simulatePhysicsFrames(
-            { 0.0625, 0.1875, 0.375, 0.375 }
-        );
+        const PhysicsSimulationResult steady = simulatePhysicsFrames(std::vector<double>(8, 0.125));
+        const PhysicsSimulationResult chunky = simulatePhysicsFrames({0.25, 0.5, 0.25});
+        const PhysicsSimulationResult irregular =
+            simulatePhysicsFrames({0.0625, 0.1875, 0.375, 0.375});
 
         L2D_REQUIRE(steady.tickCount == 8);
         L2D_REQUIRE(chunky.tickCount == steady.tickCount);
@@ -336,7 +271,7 @@ namespace
         l2d::PhysicsWorld2D world;
 
         FloorContactFixture inward;
-        inward.body.setVelocity({ 25.f, 10.f });
+        inward.body.setVelocity({25.f, 10.f});
         inward.scene.fixedUpdate(1.f / 60.f);
         world.step(inward.scene, 1.f / 60.f);
 
@@ -348,7 +283,7 @@ namespace
         L2D_REQUIRE(inward.mover.transform.position().y < 0.f);
 
         FloorContactFixture outward;
-        outward.body.setVelocity({ 25.f, -10.f });
+        outward.body.setVelocity({25.f, -10.f});
         outward.scene.fixedUpdate(1.f / 60.f);
         world.step(outward.scene, 1.f / 60.f);
 
@@ -364,48 +299,36 @@ namespace
         l2d::Scene scene;
         l2d::GameObject& mover = scene.createGameObject("Mover");
         l2d::RigidBody2D& body = mover.addComponent<l2d::RigidBody2D>();
-        l2d::CircleCollider2D& circle =
-            mover.addComponent<l2d::CircleCollider2D>(10.f);
+        l2d::CircleCollider2D& circle = mover.addComponent<l2d::CircleCollider2D>(10.f);
 
         l2d::GameObject& obstacle = scene.createGameObject("Obstacle");
-        obstacle.transform.setPosition({ 0.f, 5.f });
+        obstacle.transform.setPosition({0.f, 5.f});
         l2d::BoxCollider2D& box =
-            obstacle.addComponent<l2d::BoxCollider2D>(sf::Vector2f{ 20.f, 20.f });
+            obstacle.addComponent<l2d::BoxCollider2D>(sf::Vector2f{20.f, 20.f});
         box.setActive(false);
 
-        body.setVelocity({ 3.f, 4.f });
+        body.setVelocity({3.f, 4.f});
         const sf::Vector2f originalPosition = mover.transform.position();
 
         l2d::PhysicsWorld2D world;
         world.step(scene, 1.f / 60.f);
 
-        L2D_REQUIRE(approximatelyEqual(
-            mover.transform.position().x,
-            originalPosition.x + 3.f / 60.f
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            mover.transform.position().y,
-            originalPosition.y + 4.f / 60.f
-        ));
+        L2D_REQUIRE(
+            approximatelyEqual(mover.transform.position().x, originalPosition.x + 3.f / 60.f));
+        L2D_REQUIRE(
+            approximatelyEqual(mover.transform.position().y, originalPosition.y + 4.f / 60.f));
         L2D_REQUIRE(approximatelyEqual(body.velocity().x, 3.f));
         L2D_REQUIRE(approximatelyEqual(body.velocity().y, 4.f));
         L2D_REQUIRE(!circle.isColliding());
         L2D_REQUIRE(!box.isColliding());
 
         body.setActive(false);
-        const sf::Vector2f positionBeforeInactiveStep =
-            mover.transform.position();
+        const sf::Vector2f positionBeforeInactiveStep = mover.transform.position();
 
         world.step(scene, 1.f / 60.f);
 
-        L2D_REQUIRE(approximatelyEqual(
-            mover.transform.position().x,
-            positionBeforeInactiveStep.x
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            mover.transform.position().y,
-            positionBeforeInactiveStep.y
-        ));
+        L2D_REQUIRE(approximatelyEqual(mover.transform.position().x, positionBeforeInactiveStep.x));
+        L2D_REQUIRE(approximatelyEqual(mover.transform.position().y, positionBeforeInactiveStep.y));
     }
 }
 
@@ -414,16 +337,16 @@ int main()
     int failures = 0;
 
     runTest("physics inputs are finite and valid", testPhysicsInputsAreFiniteAndValid, failures);
-    runTest("physics integrates once per fixed tick",
-        testPhysicsWorldIntegratesOncePerFixedTick, failures);
-    runTest("spawned bodies join physics next tick",
-        testSpawnedBodiesJoinPhysicsOnTheNextFixedTick, failures);
-    runTest("fixed physics ignores render cadence",
-        testFixedPhysicsIsIndependentOfRenderCadence, failures);
+    runTest("physics integrates once per fixed tick", testPhysicsWorldIntegratesOncePerFixedTick,
+            failures);
+    runTest("spawned bodies join physics next tick", testSpawnedBodiesJoinPhysicsOnTheNextFixedTick,
+            failures);
+    runTest("fixed physics ignores render cadence", testFixedPhysicsIsIndependentOfRenderCadence,
+            failures);
     runTest("physics preserves tangent and outward velocity",
-        testPhysicsPreservesTangentAndOutwardVelocity, failures);
+            testPhysicsPreservesTangentAndOutwardVelocity, failures);
     runTest("inactive physics components do not participate",
-        testInactivePhysicsComponentsDoNotParticipate, failures);
+            testInactivePhysicsComponentsDoNotParticipate, failures);
 
     if (failures != 0)
     {

@@ -21,73 +21,60 @@ namespace
 
     class CounterComponent final : public l2d::Component
     {
-    public:
-        explicit CounterComponent(int& counter)
-            : m_counter(&counter)
-        {
-        }
+      public:
+        explicit CounterComponent(int& counter) : m_counter(&counter) {}
 
         void onUpdate(float) override
         {
             ++(*m_counter);
         }
 
-    private:
+      private:
         int* m_counter;
     };
 
     class AppendComponentOnce final : public l2d::Component
     {
-    public:
-        explicit AppendComponentOnce(int& counter)
-            : m_counter(&counter)
-        {
-        }
+      public:
+        explicit AppendComponentOnce(int& counter) : m_counter(&counter) {}
 
         void onUpdate(float) override
         {
-            if (m_appended || owner() == nullptr)
-                return;
+            if (m_appended || owner() == nullptr) return;
 
             owner()->addComponent<CounterComponent>(*m_counter);
             m_appended = true;
         }
 
-    private:
+      private:
         int* m_counter;
         bool m_appended = false;
     };
 
     class DeactivateOwner final : public l2d::Component
     {
-    public:
+      public:
         void onUpdate(float) override
         {
-            if (owner() != nullptr)
-                owner()->setActive(false);
+            if (owner() != nullptr) owner()->setActive(false);
         }
     };
 
     class SpawnObjectOnce final : public l2d::Component
     {
-    public:
-        SpawnObjectOnce(l2d::Scene& scene, int& counter)
-            : m_scene(&scene),
-            m_counter(&counter)
-        {
-        }
+      public:
+        SpawnObjectOnce(l2d::Scene& scene, int& counter) : m_scene(&scene), m_counter(&counter) {}
 
         void onUpdate(float) override
         {
-            if (m_spawned)
-                return;
+            if (m_spawned) return;
 
             l2d::GameObject& spawned = m_scene->createGameObject("Spawned");
             spawned.addComponent<CounterComponent>(*m_counter);
             m_spawned = true;
         }
 
-    private:
+      private:
         l2d::Scene* m_scene;
         int* m_counter;
         bool m_spawned = false;
@@ -95,24 +82,21 @@ namespace
 
     class ClearSceneOnUpdate final : public l2d::Component
     {
-    public:
-        explicit ClearSceneOnUpdate(l2d::Scene& scene)
-            : m_scene(&scene)
-        {
-        }
+      public:
+        explicit ClearSceneOnUpdate(l2d::Scene& scene) : m_scene(&scene) {}
 
         void onUpdate(float) override
         {
             m_scene->clear();
         }
 
-    private:
+      private:
         l2d::Scene* m_scene;
     };
 
     class ClearSceneManagerOnUpdate final : public l2d::Component
     {
-    public:
+      public:
         explicit ClearSceneManagerOnUpdate(l2d::SceneManager& sceneManager)
             : m_sceneManager(&sceneManager)
         {
@@ -123,16 +107,14 @@ namespace
             m_sceneManager->clear();
         }
 
-    private:
+      private:
         l2d::SceneManager* m_sceneManager;
     };
 
     class ClearAndCreateSceneOnUpdate final : public l2d::Component
     {
-    public:
-        explicit ClearAndCreateSceneOnUpdate(
-            l2d::SceneManager& sceneManager
-        )
+      public:
+        explicit ClearAndCreateSceneOnUpdate(l2d::SceneManager& sceneManager)
             : m_sceneManager(&sceneManager)
         {
         }
@@ -143,77 +125,64 @@ namespace
             m_sceneManager->createScene("Replacement");
         }
 
-    private:
+      private:
         l2d::SceneManager* m_sceneManager;
     };
 
     class ActivateObjectOnce final : public l2d::Component
     {
-    public:
-        explicit ActivateObjectOnce(l2d::GameObject& target)
-            : m_target(&target)
-        {
-        }
+      public:
+        explicit ActivateObjectOnce(l2d::GameObject& target) : m_target(&target) {}
 
         void onUpdate(float) override
         {
-            if (m_activated)
-                return;
+            if (m_activated) return;
 
             m_target->setActive(true);
             m_activated = true;
         }
 
-    private:
+      private:
         l2d::GameObject* m_target;
         bool m_activated = false;
     };
 
     class ReenterFixedUpdateOnce final : public l2d::Component
     {
-    public:
-        explicit ReenterFixedUpdateOnce(l2d::Scene& scene)
-            : m_scene(&scene)
-        {
-        }
+      public:
+        explicit ReenterFixedUpdateOnce(l2d::Scene& scene) : m_scene(&scene) {}
 
         void onUpdate(float deltaTime) override
         {
-            if (m_reentered)
-                return;
+            if (m_reentered) return;
 
             m_reentered = true;
             m_scene->fixedUpdate(deltaTime);
         }
 
-    private:
+      private:
         l2d::Scene* m_scene;
         bool m_reentered = false;
     };
 
     class SwitchSceneAndReenterManagerOnce final : public l2d::Component
     {
-    public:
-        SwitchSceneAndReenterManagerOnce(
-            l2d::SceneManager& sceneManager,
-            std::string targetScene
-        )
-            : m_sceneManager(&sceneManager),
-            m_targetScene(std::move(targetScene))
+      public:
+        SwitchSceneAndReenterManagerOnce(l2d::SceneManager& sceneManager, std::string targetScene)
+            : m_sceneManager(&sceneManager), m_targetScene(std::move(targetScene))
         {
         }
 
         void onUpdate(float deltaTime) override
         {
-            if (m_reentered)
-                return;
+            if (m_reentered) return;
 
             m_reentered = true;
             L2D_REQUIRE(m_sceneManager->setActiveScene(m_targetScene));
             m_sceneManager->fixedUpdate(deltaTime);
         }
 
-    private:
+      private:
         l2d::SceneManager* m_sceneManager;
         std::string m_targetScene;
         bool m_reentered = false;
@@ -221,60 +190,48 @@ namespace
 
     class DestroyAndSweepOnUpdate final : public l2d::Component
     {
-    public:
-        explicit DestroyAndSweepOnUpdate(l2d::Scene& scene)
-            : m_scene(&scene)
-        {
-        }
+      public:
+        explicit DestroyAndSweepOnUpdate(l2d::Scene& scene) : m_scene(&scene) {}
 
         void onUpdate(float) override
         {
-            if (owner() != nullptr)
-                owner()->destroy();
+            if (owner() != nullptr) owner()->destroy();
 
             m_scene->destroyQueuedGameObjects();
         }
 
-    private:
+      private:
         l2d::Scene* m_scene;
     };
 
     class DestroyTargetOnDestruction final : public l2d::Component
     {
-    public:
-        explicit DestroyTargetOnDestruction(l2d::GameObject& target)
-            : m_target(&target)
-        {
-        }
+      public:
+        explicit DestroyTargetOnDestruction(l2d::GameObject& target) : m_target(&target) {}
 
         ~DestroyTargetOnDestruction() override
         {
-            if (m_target != nullptr)
-                m_target->destroy();
+            if (m_target != nullptr) m_target->destroy();
         }
 
-    private:
+      private:
         l2d::GameObject* m_target;
     };
 
     class MoveOtherTransformOnce final : public l2d::Component
     {
-    public:
-        explicit MoveOtherTransformOnce(l2d::GameObject& target)
-            : m_target(&target)
-        {
-        }
+      public:
+        explicit MoveOtherTransformOnce(l2d::GameObject& target) : m_target(&target) {}
 
         void onUpdate(float) override
         {
-            if (m_moved)
-                return;
+            if (m_moved) return;
 
-            m_target->transform.move({ 10.f, 0.f });
+            m_target->transform.move({10.f, 0.f});
             m_moved = true;
         }
 
-    private:
+      private:
         l2d::GameObject* m_target;
         bool m_moved = false;
     };
@@ -285,19 +242,13 @@ namespace
         l2d::GameObject& mutator = scene.createGameObject("Mutator");
         l2d::GameObject& target = scene.createGameObject("Target");
 
-        target.transform.setPosition({ 5.f, 0.f });
+        target.transform.setPosition({5.f, 0.f});
         mutator.addComponent<MoveOtherTransformOnce>(target);
 
         scene.fixedUpdate(0.125f);
 
-        L2D_REQUIRE(approximatelyEqual(
-            target.transform.interpolated(0.f).position.x,
-            5.f
-        ));
-        L2D_REQUIRE(approximatelyEqual(
-            target.transform.interpolated(1.f).position.x,
-            15.f
-        ));
+        L2D_REQUIRE(approximatelyEqual(target.transform.interpolated(0.f).position.x, 5.f));
+        L2D_REQUIRE(approximatelyEqual(target.transform.interpolated(1.f).position.x, 15.f));
     }
 
     void testComponentMutationIsDeferredUntilNextUpdate()
@@ -344,16 +295,13 @@ namespace
         l2d::Scene clearingScene;
         l2d::GameObject& clearer = clearingScene.createGameObject("Clearer");
         const l2d::GameObjectId clearerId = clearer.id();
-        const l2d::GameObjectHandle clearerHandle =
-            clearingScene.createHandle(clearer);
+        const l2d::GameObjectHandle clearerHandle = clearingScene.createHandle(clearer);
         clearer.addComponent<ClearSceneOnUpdate>(clearingScene);
         clearer.addComponent<CounterComponent>(shouldNotRun);
 
-        l2d::GameObject& later =
-            clearingScene.createGameObject("Later");
+        l2d::GameObject& later = clearingScene.createGameObject("Later");
         const l2d::GameObjectId laterId = later.id();
-        const l2d::GameObjectHandle laterHandle =
-            clearingScene.createHandle(later);
+        const l2d::GameObjectHandle laterHandle = clearingScene.createHandle(later);
         later.addComponent<CounterComponent>(shouldNotRun);
 
         clearingScene.update(1.f / 60.f);
@@ -364,26 +312,18 @@ namespace
         L2D_REQUIRE(!clearerHandle.isValid());
         L2D_REQUIRE(!laterHandle.isValid());
 
-        l2d::GameObject& replacement =
-            clearingScene.createGameObject("Replacement");
-        L2D_REQUIRE(
-            clearingScene.findGameObjectById(replacement.id()) ==
-            &replacement
-        );
+        l2d::GameObject& replacement = clearingScene.createGameObject("Replacement");
+        L2D_REQUIRE(clearingScene.findGameObjectById(replacement.id()) == &replacement);
 
         l2d::Scene sweepingScene;
-        l2d::GameObject& selfDestroyer =
-            sweepingScene.createGameObject("SelfDestroyer");
+        l2d::GameObject& selfDestroyer = sweepingScene.createGameObject("SelfDestroyer");
         const l2d::GameObjectId selfDestroyerId = selfDestroyer.id();
-        const l2d::GameObjectHandle selfDestroyerHandle =
-            sweepingScene.createHandle(selfDestroyer);
+        const l2d::GameObjectHandle selfDestroyerHandle = sweepingScene.createHandle(selfDestroyer);
         selfDestroyer.addComponent<DestroyAndSweepOnUpdate>(sweepingScene);
 
         sweepingScene.update(1.f / 60.f);
         L2D_REQUIRE(sweepingScene.gameObjectCount() == 0);
-        L2D_REQUIRE(
-            sweepingScene.findGameObjectById(selfDestroyerId) == nullptr
-        );
+        L2D_REQUIRE(sweepingScene.findGameObjectById(selfDestroyerId) == nullptr);
         L2D_REQUIRE(!selfDestroyerHandle.isValid());
     }
 
@@ -394,15 +334,13 @@ namespace
 
         int shouldNotRun = 0;
 
-        l2d::GameObject& clearer =
-            scene.createGameObject("ManagerClearer");
+        l2d::GameObject& clearer = scene.createGameObject("ManagerClearer");
         const l2d::GameObjectHandle handle = scene.createHandle(clearer);
 
         clearer.addComponent<ClearSceneManagerOnUpdate>(sceneManager);
         clearer.addComponent<CounterComponent>(shouldNotRun);
 
-        scene.createGameObject("Later")
-            .addComponent<CounterComponent>(shouldNotRun);
+        scene.createGameObject("Later").addComponent<CounterComponent>(shouldNotRun);
 
         sceneManager.fixedUpdate(1.f / 60.f);
 
@@ -432,8 +370,7 @@ namespace
     {
         l2d::SceneManager sceneManager;
         l2d::Scene& scene = sceneManager.createScene("Active");
-        l2d::GameObject& clearer =
-            scene.createGameObject("ManagerClearer");
+        l2d::GameObject& clearer = scene.createGameObject("ManagerClearer");
         const l2d::GameObjectHandle handle = scene.createHandle(clearer);
 
         clearer.addComponent<ClearSceneManagerOnUpdate>(sceneManager);
@@ -447,7 +384,7 @@ namespace
 
     void testActivationJoinsFixedPhasesOnTheNextTick()
     {
-        for (bool activatorFirst : { false, true })
+        for (bool activatorFirst : {false, true})
         {
             l2d::Scene scene;
             l2d::PhysicsWorld2D world;
@@ -471,9 +408,8 @@ namespace
             target->setActive(false);
             target->addComponent<CounterComponent>(targetUpdates);
 
-            l2d::RigidBody2D& body =
-                target->addComponent<l2d::RigidBody2D>();
-            body.setVelocity({ 10.f, 0.f });
+            l2d::RigidBody2D& body = target->addComponent<l2d::RigidBody2D>();
+            body.setVelocity({10.f, 0.f});
 
             activator->addComponent<ActivateObjectOnce>(*target);
 
@@ -482,19 +418,13 @@ namespace
 
             L2D_REQUIRE(target->isActive());
             L2D_REQUIRE(targetUpdates == 0);
-            L2D_REQUIRE(approximatelyEqual(
-                target->transform.position().x,
-                0.f
-            ));
+            L2D_REQUIRE(approximatelyEqual(target->transform.position().x, 0.f));
 
             scene.fixedUpdate(0.5f);
             world.step(scene, 0.5f);
 
             L2D_REQUIRE(targetUpdates == 1);
-            L2D_REQUIRE(approximatelyEqual(
-                target->transform.position().x,
-                5.f
-            ));
+            L2D_REQUIRE(approximatelyEqual(target->transform.position().x, 5.f));
         }
     }
 
@@ -502,16 +432,14 @@ namespace
     {
         l2d::Scene scene;
         l2d::PhysicsWorld2D world;
-        l2d::GameObject& activator =
-            scene.createGameObject("Activator");
+        l2d::GameObject& activator = scene.createGameObject("Activator");
         l2d::GameObject& target = scene.createGameObject("Target");
         int targetUpdates = 0;
 
         target.setActive(false);
         target.addComponent<CounterComponent>(targetUpdates);
-        l2d::RigidBody2D& body =
-            target.addComponent<l2d::RigidBody2D>();
-        body.setVelocity({ 10.f, 0.f });
+        l2d::RigidBody2D& body = target.addComponent<l2d::RigidBody2D>();
+        body.setVelocity({10.f, 0.f});
 
         activator.addComponent<ActivateObjectOnce>(target);
         activator.addComponent<ReenterFixedUpdateOnce>(scene);
@@ -521,19 +449,13 @@ namespace
 
         L2D_REQUIRE(target.isActive());
         L2D_REQUIRE(targetUpdates == 0);
-        L2D_REQUIRE(approximatelyEqual(
-            target.transform.position().x,
-            0.f
-        ));
+        L2D_REQUIRE(approximatelyEqual(target.transform.position().x, 0.f));
 
         scene.fixedUpdate(0.5f);
         world.step(scene, 0.5f);
 
         L2D_REQUIRE(targetUpdates == 1);
-        L2D_REQUIRE(approximatelyEqual(
-            target.transform.position().x,
-            5.f
-        ));
+        L2D_REQUIRE(approximatelyEqual(target.transform.position().x, 5.f));
     }
 
     void testSceneManagerUsesUniqueNamesAndTopLevelTicks()
@@ -559,13 +481,9 @@ namespace
         L2D_REQUIRE(sceneManager.findSceneByName("First") == &first);
 
         l2d::Scene& second = sceneManager.createScene("Second");
-        second.createGameObject("Counter")
-            .addComponent<CounterComponent>(secondUpdates);
+        second.createGameObject("Counter").addComponent<CounterComponent>(secondUpdates);
         first.createGameObject("Switcher")
-            .addComponent<SwitchSceneAndReenterManagerOnce>(
-                sceneManager,
-                "Second"
-            );
+            .addComponent<SwitchSceneAndReenterManagerOnce>(sceneManager, "Second");
 
         sceneManager.fixedUpdate(1.f / 60.f);
 
@@ -610,9 +528,7 @@ namespace
 
         for (std::size_t index = 0; index < objectCount; ++index)
         {
-            l2d::GameObject& object = scene.createGameObject(
-                "Indexed_" + std::to_string(index)
-            );
+            l2d::GameObject& object = scene.createGameObject("Indexed_" + std::to_string(index));
 
             ids.push_back(object.id());
             objects.push_back(&object);
@@ -621,53 +537,37 @@ namespace
 
         L2D_REQUIRE(scene.gameObjectCount() == objectCount);
         L2D_REQUIRE(scene.gameObjects().size() == objectCount);
-        L2D_REQUIRE(
-            scene.findGameObjectById(l2d::InvalidGameObjectId) == nullptr
-        );
+        L2D_REQUIRE(scene.findGameObjectById(l2d::InvalidGameObjectId) == nullptr);
 
         const l2d::Scene& constScene = scene;
-        L2D_REQUIRE(
-            constScene.findGameObjectById(l2d::InvalidGameObjectId) ==
-            nullptr
-        );
+        L2D_REQUIRE(constScene.findGameObjectById(l2d::InvalidGameObjectId) == nullptr);
 
         for (std::size_t index = 0; index < objectCount; ++index)
         {
             L2D_REQUIRE(scene.gameObjects()[index].get() == objects[index]);
             L2D_REQUIRE(scene.findGameObjectById(ids[index]) == objects[index]);
-            L2D_REQUIRE(
-                constScene.findGameObjectById(ids[index]) == objects[index]
-            );
+            L2D_REQUIRE(constScene.findGameObjectById(ids[index]) == objects[index]);
             L2D_REQUIRE(handles[index].get() == objects[index]);
-            L2D_REQUIRE(
-                scene.createHandle(ids[index]).get() == objects[index]
-            );
+            L2D_REQUIRE(scene.createHandle(ids[index]).get() == objects[index]);
         }
 
         l2d::GameObject standaloneObject("Standalone");
-        const l2d::GameObjectHandle standaloneHandle =
-            scene.createHandle(standaloneObject);
+        const l2d::GameObjectHandle standaloneHandle = scene.createHandle(standaloneObject);
 
         L2D_REQUIRE(!standaloneHandle.isValid());
         L2D_REQUIRE(standaloneHandle.scene() == nullptr);
-        L2D_REQUIRE(
-            scene.findGameObjectById(standaloneObject.id()) == nullptr
-        );
+        L2D_REQUIRE(scene.findGameObjectById(standaloneObject.id()) == nullptr);
 
         scene.destroyGameObject(standaloneObject);
         L2D_REQUIRE(!standaloneObject.isDestroyQueued());
 
         l2d::Scene foreignScene;
-        l2d::GameObject& foreignObject =
-            foreignScene.createGameObject("Foreign");
+        l2d::GameObject& foreignObject = foreignScene.createGameObject("Foreign");
 
         L2D_REQUIRE(!scene.createHandle(foreignObject).isValid());
         scene.destroyGameObject(foreignObject);
         L2D_REQUIRE(!foreignObject.isDestroyQueued());
-        L2D_REQUIRE(
-            foreignScene.findGameObjectById(foreignObject.id()) ==
-            &foreignObject
-        );
+        L2D_REQUIRE(foreignScene.findGameObjectById(foreignObject.id()) == &foreignObject);
 
         std::vector<bool> queued(objectCount, false);
         std::size_t queuedCount = 0;
@@ -699,18 +599,14 @@ namespace
             if (queued[index])
             {
                 L2D_REQUIRE(scene.findGameObjectById(ids[index]) == nullptr);
-                L2D_REQUIRE(
-                    constScene.findGameObjectById(ids[index]) == nullptr
-                );
+                L2D_REQUIRE(constScene.findGameObjectById(ids[index]) == nullptr);
                 L2D_REQUIRE(!handles[index].isValid());
                 L2D_REQUIRE(!scene.createHandle(ids[index]).isValid());
                 L2D_REQUIRE(!scene.createHandle(*objects[index]).isValid());
             }
             else
             {
-                L2D_REQUIRE(
-                    scene.findGameObjectById(ids[index]) == objects[index]
-                );
+                L2D_REQUIRE(scene.findGameObjectById(ids[index]) == objects[index]);
                 L2D_REQUIRE(handles[index].get() == objects[index]);
             }
         }
@@ -731,12 +627,8 @@ namespace
                 continue;
             }
 
-            L2D_REQUIRE(
-                scene.gameObjects()[survivorIndex].get() == objects[index]
-            );
-            L2D_REQUIRE(
-                constScene.findGameObjectById(ids[index]) == objects[index]
-            );
+            L2D_REQUIRE(scene.gameObjects()[survivorIndex].get() == objects[index]);
+            L2D_REQUIRE(constScene.findGameObjectById(ids[index]) == objects[index]);
             L2D_REQUIRE(handles[index].get() == objects[index]);
             ++survivorIndex;
         }
@@ -753,16 +645,12 @@ namespace
             L2D_REQUIRE(!handles[index].isValid());
         }
 
-        l2d::GameObject& replacement =
-            scene.createGameObject("Replacement");
-        const l2d::GameObjectHandle replacementHandle =
-            scene.createHandle(replacement.id());
+        l2d::GameObject& replacement = scene.createGameObject("Replacement");
+        const l2d::GameObjectHandle replacementHandle = scene.createHandle(replacement.id());
 
         L2D_REQUIRE(scene.gameObjectCount() == 1);
         L2D_REQUIRE(scene.findGameObjectById(replacement.id()) == &replacement);
-        L2D_REQUIRE(
-            constScene.findGameObjectById(replacement.id()) == &replacement
-        );
+        L2D_REQUIRE(constScene.findGameObjectById(replacement.id()) == &replacement);
         L2D_REQUIRE(replacementHandle.get() == &replacement);
 
         for (const l2d::GameObjectHandle& handle : handles)
@@ -776,15 +664,13 @@ namespace
         l2d::Scene scene;
         l2d::GameObject& first = scene.createGameObject("FirstRemoved");
         l2d::GameObject& survivor = scene.createGameObject("Survivor");
-        l2d::GameObject& queuedByDestructor =
-            scene.createGameObject("QueuedByDestructor");
+        l2d::GameObject& queuedByDestructor = scene.createGameObject("QueuedByDestructor");
 
         const l2d::GameObjectId firstId = first.id();
         const l2d::GameObjectId survivorId = survivor.id();
         const l2d::GameObjectId queuedId = queuedByDestructor.id();
         const l2d::GameObjectHandle firstHandle = scene.createHandle(first);
-        const l2d::GameObjectHandle queuedHandle =
-            scene.createHandle(queuedByDestructor);
+        const l2d::GameObjectHandle queuedHandle = scene.createHandle(queuedByDestructor);
 
         first.addComponent<DestroyTargetOnDestruction>(queuedByDestructor);
         first.destroy();
@@ -802,16 +688,13 @@ namespace
 
         for (std::size_t index = 0; index < replacementCount; ++index)
         {
-            l2d::GameObject& replacement = scene.createGameObject(
-                "ReplacementAfterSweep_" + std::to_string(index)
-            );
+            l2d::GameObject& replacement =
+                scene.createGameObject("ReplacementAfterSweep_" + std::to_string(index));
 
             L2D_REQUIRE(replacement.id() != queuedId);
             L2D_REQUIRE(scene.findGameObjectById(queuedId) == nullptr);
             L2D_REQUIRE(!queuedHandle.isValid());
-            L2D_REQUIRE(
-                scene.findGameObjectById(replacement.id()) == &replacement
-            );
+            L2D_REQUIRE(scene.findGameObjectById(replacement.id()) == &replacement);
         }
 
         L2D_REQUIRE(scene.gameObjectCount() == replacementCount + 1);
@@ -840,27 +723,29 @@ int main()
     int failures = 0;
 
     runTest("scenes snapshot transforms before updates",
-        testSceneSnapshotsAllTransformsBeforeComponentUpdates, failures);
-    runTest("component mutation is deferred", testComponentMutationIsDeferredUntilNextUpdate, failures);
-    runTest("deactivation stops remaining components", testDeactivationStopsRemainingComponents, failures);
-    runTest("scene mutation and deferred clear are safe",
-        testSceneMutationAndDeferredClearAreSafe, failures);
-    runTest("scene manager clear is dispatch-safe",
-        testSceneManagerClearIsDeferredDuringDispatch, failures);
+            testSceneSnapshotsAllTransformsBeforeComponentUpdates, failures);
+    runTest("component mutation is deferred", testComponentMutationIsDeferredUntilNextUpdate,
+            failures);
+    runTest("deactivation stops remaining components", testDeactivationStopsRemainingComponents,
+            failures);
+    runTest("scene mutation and deferred clear are safe", testSceneMutationAndDeferredClearAreSafe,
+            failures);
+    runTest("scene manager clear is dispatch-safe", testSceneManagerClearIsDeferredDuringDispatch,
+            failures);
     runTest("deferred manager clear resets replacement active scene",
-        testDeferredManagerClearResetsReplacementActiveScene, failures);
+            testDeferredManagerClearResetsReplacementActiveScene, failures);
     runTest("manager clear is safe during direct scene dispatch",
-        testManagerClearIsSafeDuringDirectSceneDispatch, failures);
+            testManagerClearIsSafeDuringDirectSceneDispatch, failures);
     runTest("activation joins all fixed phases next tick",
-        testActivationJoinsFixedPhasesOnTheNextTick, failures);
+            testActivationJoinsFixedPhasesOnTheNextTick, failures);
     runTest("fixed updates are non-reentrant", testFixedUpdateIsNonReentrant, failures);
     runTest("scene manager uses unique names and top-level ticks",
-        testSceneManagerUsesUniqueNamesAndTopLevelTicks, failures);
+            testSceneManagerUsesUniqueNamesAndTopLevelTicks, failures);
     runTest("handles expire with their scene", testHandlesExpireWithTheirScene, failures);
     runTest("scene ID index tracks owned object lifetime",
-        testSceneIdIndexTracksOwnedObjectLifetime, failures);
+            testSceneIdIndexTracksOwnedObjectLifetime, failures);
     runTest("scene index tracks objects queued during sweep",
-        testSceneIndexTracksObjectsQueuedDuringSweep, failures);
+            testSceneIndexTracksObjectsQueuedDuringSweep, failures);
     runTest("queued objects are not active", testQueuedObjectsAreNotReportedAsActive, failures);
 
     if (failures != 0)
