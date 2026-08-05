@@ -1,14 +1,15 @@
 # Lorenzo2D level format
 
 `.l2dlevel` is a deterministic line-oriented representation of `LevelDocument`.
-Version 1 deliberately uses a fixed record order so malformed or incompatible
-data can be rejected before the destination document changes. See
+Version 2 uses a fixed record order so malformed or incompatible data can be
+rejected before the destination document changes. Version 1 remains readable
+and defaults missing z-order values to zero. See
 `assets/levels/phase2-showcase.l2dlevel` for a complete example.
 
 ## Header
 
 ```text
-LORENZO2D_LEVEL 1
+LORENZO2D_LEVEL 2
 level "Level name"
 objects 2
 ```
@@ -25,6 +26,7 @@ object
 name "Player"
 tag "player"
 active 1
+z_order 10
 transform 100 200 0 1 1
 rectangle 1 32 48 20 80 220 255
 circle 0
@@ -57,9 +59,12 @@ scale and rotation. A top-left-origin box renderer normally uses half its size
 as the box offset; a top-left-origin circle renderer normally uses
 `(radius, radius)`. Circle radius changes do not rewrite a stored offset.
 
+`z_order` is a signed 32-bit value; smaller values render first and ties retain
+scene insertion order.
+
 The runtime physics model supports arbitrary compound colliders, angular state,
-sleeping, and distance joints. Version 1 serialization can combine one box and
+sleeping, and distance joints. Version 2 serialization can combine one box and
 one circle collider, but cannot repeat a collider type or encode the added
 angular, sleeping, or joint fields. Shape renderers may be combined. Sprite
-asset references, animation state, custom component codecs, and schema
+asset references, animation state, custom component codecs, and further schema
 migrations are reserved for later versions.

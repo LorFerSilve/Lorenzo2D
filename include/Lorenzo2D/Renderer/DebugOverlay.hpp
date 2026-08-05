@@ -7,6 +7,7 @@
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Vector2.hpp>
 
+#include <cstdint>
 #include <string>
 
 namespace sf
@@ -29,6 +30,8 @@ namespace l2d
         bool loadFontFromFile(const std::string& filepath);
         // Invalid handles are rejected without changing the current binding.
         bool setFont(FontHandle font);
+        bool setLiveFont(LiveFontHandle font);
+        LiveFontHandle liveFontHandle() const;
         FontHandle fontHandle() const;
         void clearFont();
 
@@ -46,10 +49,14 @@ namespace l2d
         void render(sf::RenderWindow& window) const;
 
       private:
-        // The lease must outlive the SFML drawable that borrows from it.
-        FontHandle m_font;
-        sf::Text m_text;
+        void syncLiveFont() const;
 
-        bool m_hasFont;
+        // The lease must outlive the SFML drawable that borrows from it.
+        mutable FontHandle m_font;
+        LiveFontHandle m_liveFont;
+        mutable std::uint64_t m_liveGeneration = 0;
+        mutable sf::Text m_text;
+
+        mutable bool m_hasFont;
     };
 }

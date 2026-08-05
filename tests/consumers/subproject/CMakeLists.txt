@@ -29,6 +29,7 @@ foreach(unexpected_target
     Lorenzo2DMinimalExample
     Lorenzo2DAnimationExample
     Lorenzo2DPhysicsExample
+    Lorenzo2DPhase4Example
     Lorenzo2DTests
     Lorenzo2DTimingAccountingTests
     Lorenzo2DPhysicsTests

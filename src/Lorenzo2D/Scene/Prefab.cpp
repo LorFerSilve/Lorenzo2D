@@ -120,6 +120,7 @@ namespace l2d
         object.transform.setPosition(prefab.transform.position);
         object.transform.setRotation(prefab.transform.rotation);
         object.transform.setScale(prefab.transform.scale);
+        object.setZOrder(prefab.zOrder);
 
         if (prefab.rectangleRenderer)
         {

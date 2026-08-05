@@ -14,21 +14,21 @@ production-ready engine.
 - Previous/current transform interpolation for smooth presentation
 - Frame timing, keyboard, mouse, and window events
 - Action bindings with multiple keys per gameplay action
-- Game objects, transforms, polymorphic components, tags, and deferred deletion
+- Game objects, transforms, polymorphic components, tags, stable z-order, and deferred deletion
 - Scenes, scene switching, object queries, and lifetime-aware object handles
 - Circle and rectangle rendering plus texture-backed sprites and sprite-sheet animation
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
-- ASCII tilemap loading with textured atlas tiles, chunked view culling, and merged collision geometry
+- Editable ASCII tilemaps with streamed chunks, animated atlas tiles, view culling, and merged collision geometry
 - Static, kinematic, and dynamic rigid bodies with linear and angular dynamics
 - Compound circle/oriented-box colliders with scale-aware local transforms
 - CCD, sleeping, persistent warm-started contacts, and distance joints
 - Circle/box collision manifolds, impulse response, friction, and restitution
 - Collision layers, sensors, contact events, and physics debug drawing
-- Lifetime-safe read-only font and texture handles, transactional named storage,
-  and ordered runtime resource lookup
-- Data-only object prefabs and a deterministic, versioned level format
+- Snapshot and live font/texture handles, background loading, hot reload,
+  dependency tracking, and ordered runtime resource lookup
+- Deterministic particles, screen-space color passes, data-only prefabs, and a versioned level format
 - Debug overlay and independently switchable world, physics, and UI layers
-- Focused minimal, animation, and physics examples plus regression tests for timing,
+- Focused minimal, animation, physics, and phase-4 examples plus regression tests for timing,
   scenes, rendering, resources, serialization, animation, physics, and tilemaps
 
 ## Requirements
@@ -74,7 +74,8 @@ ctest --preset dev
 specialized build trees isolated under `build/<preset>`.
 
 The sandbox and the focused `Lorenzo2DMinimalExample`,
-`Lorenzo2DAnimationExample`, and `Lorenzo2DPhysicsExample` executables are
+`Lorenzo2DAnimationExample`, `Lorenzo2DPhysicsExample`, and
+`Lorenzo2DPhase4Example` executables are
 written to `build/bin`. Disable them independently with
 `-DL2D_BUILD_SANDBOX=OFF` and `-DL2D_BUILD_EXAMPLES=OFF`.
 
@@ -198,7 +199,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.3 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.4 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -293,7 +294,7 @@ desired; `SpriteRenderer::setSize()` scales against its active texture rect.
 ## Prefabs and serialized levels
 
 `Prefab` is a data-only object template for transform, tag, active state,
-shape renderers, rigid body, and one box or circle collider. `PrefabLibrary`
+shape renderers, rigid body, one box or circle collider, and z-order. `PrefabLibrary`
 stores validated named snapshots and instantiates them into any `Scene`.
 Custom gameplay components remain game-owned and can be attached immediately
 after instantiation.
@@ -301,7 +302,8 @@ after instantiation.
 `LevelDocument` contains an ordered list of those prefabs. `LevelSerializer`
 round-trips it through streams or `.l2dlevel` files and can instantiate the
 complete document while returning lifetime-aware object handles. The format
-starts with `LORENZO2D_LEVEL 1`; unsupported versions, non-finite values,
+is currently written as `LORENZO2D_LEVEL 2`; version 1 remains readable while
+unsupported versions, non-finite values,
 invalid component data, excessive object counts, malformed records, and
 trailing input are rejected without changing the destination document.
 The complete field reference and a checked-in example live in
@@ -355,6 +357,32 @@ IDs are implementation details. They may change after a reload or as batching
 and merging evolve; gameplay code should not use them as persistent tile
 identity.
 
+### Editing, streaming, and animated tiles
+
+`TileMap::setTile()` updates an existing cell by rebuilding only its render
+chunk. A solid/non-solid transition also republishes exact merged collision
+rectangles transactionally. `lastUpdateStats()` distinguishes the render and
+collision work. `setStreamRegion()` limits resident chunks in tile coordinates
+before view culling; render telemetry reports resident and non-resident counts.
+
+`TileSet::setAnimatedTile()` accepts atlas rectangles with positive frame
+durations. Animation updates only texture coordinates, leaving chunk positions
+and physics geometry stable. Configuration remains snapshot-based per load.
+
+## Render queue and effects
+
+Every game object has an explicit signed z-order. The per-pass `RenderQueue2D`
+sorts lower values first and preserves scene insertion order for ties. Prefabs
+and level-format version 2 persist z-order; version 1 files remain readable and
+default it to zero.
+
+`ParticleEmitter2D` provides seeded, bounded bursts and continuous emission
+with lifetime, velocity, gravity, color, and size evolution.
+`PostProcessStack2D` applies ordered alpha/add/multiply screen-space color
+passes after scene rendering. See
+[`docs/rendering-and-assets.md`](docs/rendering-and-assets.md) for the complete
+contracts and integration order.
+
 ## Asset lifetime
 
 `FontHandle` and `TextureHandle` are shared leases that provide read-only access
@@ -383,9 +411,13 @@ either renderer rejects an empty handle without disturbing its current asset.
 This prevents manager operations from leaving renderer-owned SFML drawables
 with dangling texture or font pointers.
 
-Automatic hot reload and file watching are deliberately deferred. Replacing a
-named asset does not silently update renderers that hold an older snapshot;
-acquire the new handle and explicitly rebind each renderer that should use it.
+`liveTexture()` and `liveFont()` provide opt-in named bindings without changing
+snapshot-handle behavior. `SpriteRenderer::setLiveTexture()` and
+`DebugOverlay::setLiveFont()` follow successful new generations while retaining
+their last valid resource if a slot is empty.
+`AssetPipeline` decodes requested textures in the background, publishes them
+from `poll()` on the graphics-context thread, watches timestamps, and reports
+transitive dependents through an acyclic dependency graph.
 
 ### Runtime resource lookup
 
@@ -414,7 +446,7 @@ time.
 include/Lorenzo2D/  Public engine headers
 src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
-examples/           Focused minimal, animation, and physics applications
+examples/           Focused minimal, animation, physics, and phase-4 applications
 assets/             Text levels and optional runtime assets
 tests/              Regression and consumer integration tests
 benchmarks/         Standalone physics and tile-map performance probes
@@ -653,12 +685,12 @@ static, and integration remains owned by the world's fixed simulation step.
   other joint types remain future work. CCD uses bounded adaptive substeps, so
   translations beyond the configured cap can still tunnel. Dense single-cell
   scenes and fallback proxies can still approach quadratic pair counts.
-- Tilemap chunks rebuild as a whole when a layout changes; incremental chunk
-  editing, streamed regions, and animated tiles remain future work.
-- Render ordering is a fixed layer mask rather than a general render queue.
-- Asset handles provide lifetime-safe, read-only access to published
-  generations, but automatic file watching, hot reload propagation, dependency
-  tracking, and background loading remain future work.
+- Tile editing is bounded to existing rows and columns. Collision geometry is
+  rebuilt globally only when cell solidity changes; render geometry remains a
+  one-chunk update. Streaming controls render-submission residency, not disk-backed
+  map paging or chunk storage.
+- Post-processing currently provides ordered screen-space color passes rather
+  than off-screen shader graphs.
 - Prefab serialization currently covers built-in shape renderers and physics
   components. Sprite asset references, animation state, custom component
   codecs, and schema migrations remain future work.

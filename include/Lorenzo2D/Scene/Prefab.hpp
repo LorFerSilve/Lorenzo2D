@@ -69,6 +69,7 @@ namespace l2d
         std::string tag;
         TransformState transform;
         bool active = true;
+        std::int32_t zOrder = 0;
 
         std::optional<RectangleRendererPrefab> rectangleRenderer;
         std::optional<CircleRendererPrefab> circleRenderer;

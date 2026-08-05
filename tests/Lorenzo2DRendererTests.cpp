@@ -6,8 +6,11 @@
 #include <Lorenzo2D/Renderer/CircleRenderer.hpp>
 #include <Lorenzo2D/Renderer/DebugOverlay.hpp>
 #include <Lorenzo2D/Renderer/OrthographicCameraController2D.hpp>
+#include <Lorenzo2D/Renderer/ParticleEmitter2D.hpp>
+#include <Lorenzo2D/Renderer/PostProcessStack2D.hpp>
 #include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
 #include <Lorenzo2D/Renderer/RenderLayerStack2D.hpp>
+#include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include "RendererNumeric.hpp"
@@ -542,6 +545,116 @@ namespace
         L2D_REQUIRE(layers.isLayerEnabled(l2d::RenderLayer2D::UI));
     }
 
+    void testRenderQueueSortsByZOrderStably()
+    {
+        l2d::Scene scene;
+        l2d::GameObject& background = scene.createGameObject("background");
+        l2d::GameObject& firstActor = scene.createGameObject("first");
+        l2d::GameObject& secondActor = scene.createGameObject("second");
+        l2d::GameObject& hidden = scene.createGameObject("hidden");
+        l2d::GameObject& destroyed = scene.createGameObject("destroyed");
+
+        background.setZOrder(20);
+        firstActor.setZOrder(-5);
+        secondActor.setZOrder(-5);
+        hidden.setActive(false);
+        destroyed.destroy();
+
+        l2d::RenderQueue2D queue;
+        queue.build(scene);
+
+        L2D_REQUIRE(queue.size() == 3u);
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == &firstActor);
+        L2D_REQUIRE(queue.entries()[1].gameObject.get() == &secondActor);
+        L2D_REQUIRE(queue.entries()[2].gameObject.get() == &background);
+        L2D_REQUIRE(queue.entries()[0].insertionOrder < queue.entries()[1].insertionOrder);
+
+        background.setZOrder(-10);
+        queue.build(scene);
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == &background);
+        background.destroy();
+        scene.destroyQueuedGameObjects();
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == nullptr);
+        queue.clear();
+        L2D_REQUIRE(queue.empty());
+    }
+
+    void testParticleEmitterIsDeterministicBoundedAndSanitized()
+    {
+        l2d::ParticleEmitterConfig2D config;
+        config.emissionRate = 4.f;
+        config.minimumLifetime = 2.f;
+        config.maximumLifetime = 2.f;
+        config.minimumSpeed = 10.f;
+        config.maximumSpeed = 10.f;
+        config.directionDegrees = 0.f;
+        config.spreadDegrees = 0.f;
+        config.gravity = {0.f, 2.f};
+        config.startSize = 8.f;
+        config.endSize = 4.f;
+        config.maxParticles = 3u;
+        config.seed = 42u;
+
+        l2d::Scene scene;
+        l2d::GameObject& object = scene.createGameObject("particles");
+        object.transform.setPosition({5.f, 6.f});
+        l2d::ParticleEmitter2D& emitter = object.addComponent<l2d::ParticleEmitter2D>(config);
+        emitter.stop();
+
+        L2D_REQUIRE(emitter.emit(10u) == 3u);
+        L2D_REQUIRE(emitter.aliveCount() == 3u);
+        L2D_REQUIRE_EQUAL(emitter.particles()[0].position, sf::Vector2f(5.f, 6.f));
+        L2D_REQUIRE_APPROX(emitter.particles()[0].velocity.x, 10.f, kRendererComparisonEpsilon);
+        L2D_REQUIRE_APPROX(emitter.particles()[0].velocity.y, 0.f, kRendererComparisonEpsilon);
+
+        scene.fixedUpdate(0.5f);
+        L2D_REQUIRE_APPROX(emitter.particles()[0].position.x, 10.f, kRendererComparisonEpsilon);
+        L2D_REQUIRE_APPROX(emitter.particles()[0].position.y, 6.5f, kRendererComparisonEpsilon);
+        L2D_REQUIRE_APPROX(emitter.particles()[0].size, 7.f, kRendererComparisonEpsilon);
+
+        emitter.clear();
+        emitter.play();
+        scene.fixedUpdate(0.5f);
+        L2D_REQUIRE(emitter.aliveCount() == 2u);
+
+        config.emissionRate = std::numeric_limits<float>::quiet_NaN();
+        config.minimumLifetime = -1.f;
+        config.maximumLifetime = -2.f;
+        config.spreadDegrees = 1000.f;
+        config.maxParticles = std::numeric_limits<std::size_t>::max();
+        emitter.setConfig(config);
+        L2D_REQUIRE_EQUAL(emitter.config().emissionRate, 0.f);
+        L2D_REQUIRE(emitter.config().minimumLifetime > 0.f);
+        L2D_REQUIRE(emitter.config().maximumLifetime >= emitter.config().minimumLifetime);
+        L2D_REQUIRE_EQUAL(emitter.config().spreadDegrees, 360.f);
+        L2D_REQUIRE(emitter.config().maxParticles == l2d::ParticleEmitter2D::MaximumParticleCount);
+    }
+
+    void testPostProcessStackOwnsOrderedEditablePasses()
+    {
+        l2d::PostProcessStack2D effects;
+        const std::size_t tint =
+            effects.addPass({sf::Color(20, 40, 80, 120), l2d::PostProcessBlend2D::Alpha, true});
+        const std::size_t glow =
+            effects.addPass({sf::Color(5, 4, 3, 2), l2d::PostProcessBlend2D::Add, false});
+
+        L2D_REQUIRE(tint == 0u);
+        L2D_REQUIRE(glow == 1u);
+        L2D_REQUIRE(effects.passCount() == 2u);
+        L2D_REQUIRE(effects.pass(tint) != nullptr);
+        L2D_REQUIRE(effects.pass(tint)->blend == l2d::PostProcessBlend2D::Alpha);
+        L2D_REQUIRE(
+            effects.setPass(glow, {sf::Color::White, l2d::PostProcessBlend2D::Multiply, true}));
+        L2D_REQUIRE(effects.pass(glow)->enabled);
+        L2D_REQUIRE(!effects.setPass(99u, {}));
+        L2D_REQUIRE(effects.removePass(tint));
+        L2D_REQUIRE(!effects.removePass(99u));
+        L2D_REQUIRE(effects.passCount() == 1u);
+        effects.clear();
+        L2D_REQUIRE(effects.passCount() == 0u);
+        L2D_REQUIRE(effects.pass(0u) == nullptr);
+    }
+
 }
 
 int main()
@@ -566,6 +679,11 @@ int main()
     runTest("physics debug renderer sanitizes configuration",
             testPhysicsDebugRendererSanitizesConfiguration, failures);
     runTest("render layer stack rejects invalid layers", testRenderLayerStackRejectsInvalidLayers,
+            failures);
+    runTest("render queue sorts by stable z-order", testRenderQueueSortsByZOrderStably, failures);
+    runTest("particle emitter is deterministic and bounded",
+            testParticleEmitterIsDeterministicBoundedAndSanitized, failures);
+    runTest("post-process stack owns ordered passes", testPostProcessStackOwnsOrderedEditablePasses,
             failures);
 
     if (failures != 0)

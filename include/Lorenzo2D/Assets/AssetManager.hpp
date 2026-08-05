@@ -32,6 +32,7 @@ namespace l2d
         bool storeFont(const std::string& name, FontHandle font);
 
         FontHandle getFont(const std::string& name) const;
+        LiveFontHandle liveFont(const std::string& name);
 
         bool hasFont(const std::string& name) const;
         bool unloadFont(const std::string& name);
@@ -43,6 +44,7 @@ namespace l2d
         bool storeTexture(const std::string& name, TextureHandle texture);
 
         TextureHandle getTexture(const std::string& name) const;
+        LiveTextureHandle liveTexture(const std::string& name);
 
         bool hasTexture(const std::string& name) const;
         bool unloadTexture(const std::string& name);
@@ -57,5 +59,9 @@ namespace l2d
       private:
         std::unordered_map<std::string, FontHandle> m_fonts;
         std::unordered_map<std::string, TextureHandle> m_textures;
+        std::unordered_map<std::string, std::shared_ptr<detail::LiveAssetState<sf::Font>>>
+            m_liveFonts;
+        std::unordered_map<std::string, std::shared_ptr<detail::LiveAssetState<sf::Texture>>>
+            m_liveTextures;
     };
 }

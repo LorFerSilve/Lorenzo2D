@@ -41,8 +41,30 @@ namespace l2d
         // Rebind the text before releasing the lease for its old font.
         m_text.setFont(*font);
         m_font = std::move(font);
+        m_liveFont.reset();
+        m_liveGeneration = 0;
         m_hasFont = true;
         return true;
+    }
+
+    bool DebugOverlay::setLiveFont(LiveFontHandle font)
+    {
+        const std::uint64_t generation = font.generation();
+        const FontHandle snapshot = font.snapshot();
+
+        if (!snapshot) return false;
+
+        m_text.setFont(*snapshot);
+        m_font = snapshot;
+        m_liveFont = std::move(font);
+        m_liveGeneration = generation;
+        m_hasFont = true;
+        return true;
+    }
+
+    LiveFontHandle DebugOverlay::liveFontHandle() const
+    {
+        return m_liveFont;
     }
 
     FontHandle DebugOverlay::fontHandle() const
@@ -57,6 +79,8 @@ namespace l2d
         FontHandle emptyFont = makeEmptyFontHandle();
         m_text.setFont(*emptyFont);
         m_font = std::move(emptyFont);
+        m_liveFont.reset();
+        m_liveGeneration = 0;
         m_hasFont = false;
     }
 
@@ -101,8 +125,28 @@ namespace l2d
 
     void DebugOverlay::render(sf::RenderWindow& window) const
     {
+        syncLiveFont();
+
         if (!m_hasFont) return;
 
         window.draw(m_text);
+    }
+
+    void DebugOverlay::syncLiveFont() const
+    {
+        if (!m_liveFont) return;
+
+        const std::uint64_t generation = m_liveFont.generation();
+
+        if (generation == m_liveGeneration) return;
+
+        const FontHandle snapshot = m_liveFont.snapshot();
+        m_liveGeneration = generation;
+
+        if (!snapshot) return;
+
+        m_text.setFont(*snapshot);
+        m_font = snapshot;
+        m_hasFont = true;
     }
 }

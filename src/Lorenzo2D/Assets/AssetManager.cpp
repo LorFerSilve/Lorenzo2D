@@ -26,7 +26,16 @@ namespace l2d
     {
         if (!font) return false;
 
-        m_fonts.insert_or_assign(name, std::move(font));
+        m_fonts.insert_or_assign(name, font);
+
+        const auto live = m_liveFonts.find(name);
+
+        if (live != m_liveFonts.end())
+        {
+            const std::lock_guard<std::mutex> lock(live->second->mutex);
+            live->second->current = std::move(font);
+            ++live->second->generation;
+        }
         return true;
     }
 
@@ -39,6 +48,20 @@ namespace l2d
         return iterator->second;
     }
 
+    LiveFontHandle AssetManager::liveFont(const std::string& name)
+    {
+        auto& state = m_liveFonts[name];
+
+        if (!state)
+        {
+            state = std::make_shared<detail::LiveAssetState<sf::Font>>();
+            state->current = getFont(name);
+            state->generation = state->current ? 1u : 0u;
+        }
+
+        return LiveFontHandle(state);
+    }
+
     bool AssetManager::hasFont(const std::string& name) const
     {
         return m_fonts.find(name) != m_fonts.end();
@@ -46,7 +69,18 @@ namespace l2d
 
     bool AssetManager::unloadFont(const std::string& name)
     {
-        return m_fonts.erase(name) > 0u;
+        if (m_fonts.erase(name) == 0u) return false;
+
+        const auto live = m_liveFonts.find(name);
+
+        if (live != m_liveFonts.end())
+        {
+            const std::lock_guard<std::mutex> lock(live->second->mutex);
+            live->second->current.reset();
+            ++live->second->generation;
+        }
+
+        return true;
     }
 
     std::size_t AssetManager::fontCount() const
@@ -76,7 +110,16 @@ namespace l2d
     {
         if (!texture) return false;
 
-        m_textures.insert_or_assign(name, std::move(texture));
+        m_textures.insert_or_assign(name, texture);
+
+        const auto live = m_liveTextures.find(name);
+
+        if (live != m_liveTextures.end())
+        {
+            const std::lock_guard<std::mutex> lock(live->second->mutex);
+            live->second->current = std::move(texture);
+            ++live->second->generation;
+        }
         return true;
     }
 
@@ -89,6 +132,20 @@ namespace l2d
         return iterator->second;
     }
 
+    LiveTextureHandle AssetManager::liveTexture(const std::string& name)
+    {
+        auto& state = m_liveTextures[name];
+
+        if (!state)
+        {
+            state = std::make_shared<detail::LiveAssetState<sf::Texture>>();
+            state->current = getTexture(name);
+            state->generation = state->current ? 1u : 0u;
+        }
+
+        return LiveTextureHandle(state);
+    }
+
     bool AssetManager::hasTexture(const std::string& name) const
     {
         return m_textures.find(name) != m_textures.end();
@@ -96,7 +153,18 @@ namespace l2d
 
     bool AssetManager::unloadTexture(const std::string& name)
     {
-        return m_textures.erase(name) > 0u;
+        if (m_textures.erase(name) == 0u) return false;
+
+        const auto live = m_liveTextures.find(name);
+
+        if (live != m_liveTextures.end())
+        {
+            const std::lock_guard<std::mutex> lock(live->second->mutex);
+            live->second->current.reset();
+            ++live->second->generation;
+        }
+
+        return true;
     }
 
     std::size_t AssetManager::textureCount() const
@@ -106,11 +174,33 @@ namespace l2d
 
     void AssetManager::clearFonts()
     {
+        for (const auto& entry : m_fonts)
+        {
+            const auto live = m_liveFonts.find(entry.first);
+
+            if (live == m_liveFonts.end()) continue;
+
+            const std::lock_guard<std::mutex> lock(live->second->mutex);
+            live->second->current.reset();
+            ++live->second->generation;
+        }
+
         m_fonts.clear();
     }
 
     void AssetManager::clearTextures()
     {
+        for (const auto& entry : m_textures)
+        {
+            const auto live = m_liveTextures.find(entry.first);
+
+            if (live == m_liveTextures.end()) continue;
+
+            const std::lock_guard<std::mutex> lock(live->second->mutex);
+            live->second->current.reset();
+            ++live->second->generation;
+        }
+
         m_textures.clear();
     }
 

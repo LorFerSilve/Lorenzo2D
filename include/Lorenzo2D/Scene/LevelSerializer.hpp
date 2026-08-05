@@ -24,7 +24,8 @@ namespace l2d
     class LevelSerializer
     {
       public:
-        static constexpr std::uint32_t CurrentVersion = 1u;
+        static constexpr std::uint32_t MinimumSupportedVersion = 1u;
+        static constexpr std::uint32_t CurrentVersion = 2u;
         static constexpr std::size_t MaximumObjectCount = 100000u;
 
         static bool save(std::ostream& output, const LevelDocument& level);
