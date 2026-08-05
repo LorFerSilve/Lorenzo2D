@@ -1,161 +1,145 @@
 # Lorenzo2D physics contract
 
-This document records the observable physics behavior on `master` before the planned internal refactors. It is a compatibility baseline, not a statement that every current behavior is the desired final design.
+This document describes the observable Lorenzo2D 0.3 physics behavior. It is
+the compatibility contract for the compound-collider and constraint solver.
 
 ## Units and coordinate system
 
-Lorenzo2D does not enforce physical units through types. The current integration formulas imply the following consistent interpretation:
-
-- transform positions, collider dimensions, offsets, radii, penetrations, and contact points use engine/SFML coordinate units;
-- velocity uses coordinate units per second;
-- acceleration and gravity use coordinate units per second squared;
-- mass is an arbitrary positive mass unit;
-- force uses mass-units times coordinate-units per second squared;
-- impulse uses mass-units times coordinate-units per second.
-
-The default gravity is `(0, 980)`. Positive X points right and positive Y points down, matching the normal screen-space convention used by the engine.
+Lorenzo2D uses screen-space coordinates: positive X points right, positive Y
+points down, and the default gravity is `(0, 980)`. Position, collider geometry,
+contact points, and distance-joint lengths use engine/SFML coordinate units.
+Linear velocity is units per second and angular velocity is radians per second;
+transform rotation remains degrees.
 
 ## Fixed-step contract
 
-Physics is stepped explicitly. Existing integration code calls `Scene::fixedUpdate(deltaTime)` before `PhysicsWorld2D::step(scene, deltaTime)`.
+Call `Scene::fixedUpdate(deltaTime)` before
+`PhysicsWorld2D::step(scene, deltaTime)`. A valid step:
 
-For a valid positive finite `deltaTime`, `PhysicsWorld2D::step` currently performs this sequence:
+1. resets transient collider and grounded flags;
+2. selects a bounded adaptive CCD substep count;
+3. integrates active rigid bodies for each substep;
+4. collects one proxy for every active collider;
+5. creates deterministic contact and distance-joint constraints;
+6. warm-starts persistent contacts and iterates velocity constraints;
+7. iterates contact and joint position constraints;
+8. clears forces once after the complete outer step;
+9. updates sleeping bodies and `Begin`, `Stay`, and `End` events.
 
-1. reset contact history when a different `Scene` instance is supplied;
-2. preserve the previous contact list for event generation;
-3. clear current contacts and events;
-4. clear collider `isColliding` and rigid-body `isGrounded` flags;
-5. integrate active rigid bodies;
-6. collect one physics proxy per participating `GameObject`;
-7. build broad-phase candidate pairs;
-8. run collision filtering and narrow-phase manifold generation;
-9. sort contacts and constraints deterministically;
-10. solve velocity constraints for the configured iteration count;
-11. solve positional correction for the configured iteration count;
-12. derive grounded flags from solid contact normals;
-13. generate `Begin`, `Stay`, and `End` events.
+A non-positive or non-finite delta time is a true no-op. It does not consume
+forces or replace contacts, events, or statistics.
 
-Invalid, zero, or negative delta times are a no-op and preserve the existing world state.
+## Rigid bodies and angular dynamics
 
-## Rigid-body integration
+Dynamic bodies integrate acceleration, accumulated force, optional gravity,
+velocity, accumulated torque, and angular velocity using semi-implicit Euler.
+Kinematic bodies move with prescribed linear and angular velocity but have zero
+solver inverse mass. Static bodies do not move. Collider-only objects are
+treated as static.
 
-### Dynamic
+`fixedRotation` defaults to `true` for compatibility. Set it to `false` before
+using angular velocity, torque, inertia, angular impulse, or an off-center
+linear impulse. Angular collision response uses the configured inertia. The
+engine does not yet derive compound mass or inertia from attached shapes.
 
-Dynamic bodies have finite positive mass and non-zero inverse mass. Per step, acceleration is computed as:
+Dynamic bodies may sleep after remaining under the configured linear and
+angular thresholds for `timeToSleep`. Velocity, force, impulse, body-mode, and
+constraint changes wake affected bodies. Sleeping can be disabled per body or
+per world.
 
-`explicit acceleration + accumulated force / mass + optional world gravity * gravity scale`
+## Collider geometry and local origins
 
-Velocity is updated first, then the owning `GameObject` position is advanced using the updated velocity. This is semi-implicit Euler integration. The force accumulator is cleared after every valid integration step. Impulses change velocity immediately by `impulse / mass`.
+Every collider offset is a local center point. It is scaled and rotated by the
+owner transform before being added to the owner position.
 
-### Kinematic
+- A box size is centered on that world position. It inherits absolute X/Y
+  transform scale and owner rotation, producing an oriented box.
+- A circle is centered on that world position and scales by the greater
+  absolute owner-scale axis so it remains circular.
+- Circle construction and `setRadius` do not modify the offset.
 
-Kinematic bodies have zero solver inverse mass. They ignore acceleration, forces, gravity, and impulses, but their configured velocity moves the owning `GameObject` each step. They can push dynamic bodies through their relative velocity, while collision impulses do not alter the kinematic velocity.
+For a renderer whose transform is the top-left of its local bounds, migrate by
+setting a box offset to `size * 0.5f` or a circle offset to
+`{radius, radius}`. Negative transform scale mirrors local offsets while shape
+dimensions remain positive.
 
-### Static
+All active colliders on a game object participate in physics as one compound
+body. Collider pairs on the same owner never self-collide. `GameObject` exposes
+`getComponents<T>()` for retrieving every matching concrete or base component.
 
-Static bodies have zero solver inverse mass, are not integrated, and always expose zero velocity. Assigning a velocity to a static body leaves it at zero. A collider without an active rigid body is also treated as non-moving for broad-phase and solver purposes.
+## Collision detection and response
 
-## Collider geometry and offsets
+The narrow phase supports circle-circle, circle-oriented-box, and
+oriented-box/oriented-box pairs. Exact tangency is a contact. Manifolds contain
+one representative point, one normal, and one penetration depth. Degenerate
+tie axes are deterministic.
 
-`Collider2D::worldPosition()` is `owner transform position + collider offset`.
+The default signed uniform-grid broad phase deduplicates multi-cell pairs and
+uses conservative fallback pairing for shapes that exceed the configured cell
+budget. `BruteForce` remains a reference mode. At least one object in a
+reported pair must contain an active, moving Dynamic or Kinematic body.
 
-- A box uses `worldPosition()` as its minimum corner. Its maximum corner is minimum plus size. Therefore, a box transform is currently a top-left/minimum-corner origin unless an offset is supplied.
-- A circle uses `worldPosition()` as its center. The circle constructor and `setRadius` set the offset to `(radius, radius)`, so the owning transform behaves like the top-left of the circle's bounding square by default.
-- Calling `CircleCollider2D::setOffset` overrides that center offset. Calling `setRadius` later resets the offset to `(radius, radius)`.
+Velocity solving applies accumulated normal, restitution, and friction
+impulses, including angular leverage. Cached normal and tangent impulses are
+reused on the next step when `warmStarting` is enabled. Position correction is
+iterative and separately configurable.
 
-This box/circle origin asymmetry is intentional baseline behavior for now and is scheduled for normalization in a later phase.
+Adaptive CCD divides the outer step according to the fastest active body and
+smallest active collider extent. `maximumCcdSubsteps` bounds the cost and
+`ccdMotionThreshold` tunes the permitted translation per substep. This prevents
+ordinary thin-wall tunnelling but is not an unbounded swept-shape guarantee.
 
-## Collision filtering and sensors
+## Materials, filters, and sensors
 
-Two colliders interact only when both bit tests pass:
+Restitution and friction are clamped to `[0, 1]`; dynamic friction cannot exceed
+static friction. A pair uses maximum restitution and the geometric mean of its
+friction coefficients. Restitution is applied only above the configured
+closing-speed threshold.
 
-- first mask intersects second category;
-- second mask intersects first category.
+Both category/mask bit tests must pass. Sensors still create manifolds,
+collider flags, queries, and events, but never apply impulses, correction, or
+grounded state.
 
-Sensors still create contacts, set collider `isColliding`, participate in `isTouching`, and emit contact events. They do not create solver constraints, produce collision response, or contribute to grounded state.
+## Stable contacts and events
 
-Pairs with no moving participant are suppressed by the broad phase. Consequently, two colliders without active dynamic or kinematic bodies do not produce contacts, including when an existing rigid body component is temporarily inactive.
+Every collider has a process-stable nonzero `ColliderId`. A contact contains
+both object IDs, both collider IDs, both collider types, its manifold, and its
+sensor flag. Contact identity is the ordered collider-ID pair, so multiple
+same-type shapes on one owner remain distinct.
 
-## Materials
+`contacts()` is deterministic. `isTouching` queries an object pair and
+`isColliderTouching` queries an exact collider pair. Events are:
 
-Material values are clamped to `[0, 1]`, and dynamic friction is capped at static friction.
+- `Begin` when a collider pair was absent from the previous valid outer step;
+- `Stay` when it persists;
+- `End` when it disappears.
 
-For a solid contact:
-
-- combined restitution is the maximum of both restitution values;
-- combined static friction is the geometric mean of both static-friction values;
-- combined dynamic friction is the geometric mean of both dynamic-friction values.
-
-Restitution is applied only when the initial closing speed exceeds `restitutionVelocityThreshold`.
-
-## Contacts, normals, and ordering
-
-Each current contact identifies two `GameObject` IDs and the two collider types. The lower object ID is always stored first. Contacts are sorted by:
-
-1. first object ID;
-2. second object ID;
-3. first collider type;
-4. second collider type.
-
-The manifold normal points from the first stored collider toward the second stored collider. Position correction moves the first dynamic body opposite the normal and the second dynamic body along the normal.
-
-Manifolds contain one representative contact point and one penetration depth. Box-box tie-breaking is deterministic in the order `+X`, `-X`, `+Y`, `-Y`.
-
-## Contact events
-
-Contact identity currently consists of object IDs plus collider types. Event behavior is:
-
-- `Begin`: a current contact key was absent in the previous valid step;
-- `Stay`: the same contact key exists in consecutive valid steps;
-- `End`: a previous contact key is absent in the current valid step.
-
-Disabling a collider, disabling a body when this leaves a static-static pair, changing filters, deactivating/destroying an object, or otherwise removing a pair can therefore emit `End`. Reintroducing the pair emits a new `Begin`.
-
-The current key is insufficient for multiple same-type colliders on one object. Collider IDs are deliberately deferred to a later phase.
+Consume contacts and events in `onFixedPostSimulation`. `reset()` clears world
+history; `reset(scene)` also clears every collider flag and grounded body flag
+in that scene.
 
 ## Grounded state
 
-Grounded state is reset every valid step and is assigned only to dynamic bodies from non-sensor solver constraints.
+Only dynamic bodies become grounded. The state is derived from non-sensor
+contact normals using `groundedNormalThreshold` and is reset before each valid
+step. It remains a normal-direction heuristic rather than a separate support
+graph.
 
-A dynamic first body is grounded when the contact normal Y component is at least `groundedNormalThreshold`. A dynamic second body is grounded when the normal Y component is at most the negative threshold. With positive Y downward, this represents support from below.
+## Distance joints
 
-Grounded is currently a normal-direction heuristic, not a persistent support-contact model.
+`DistanceJoint2D` connects two object IDs at transform-aware local anchors. Its
+rest length, normalized stiffness, nonnegative damping, and collision behavior
+are configurable. Connected objects do not collide by default; enable
+`collideConnected` to opt back in. Destroyed, inactive, self-referential, or
+missing connected objects make the joint inert for that step.
 
-## Multiple colliders per GameObject
+## Statistics and limits
 
-Although a `GameObject` can contain different concrete collider component types, physics currently retrieves only `getComponent<Collider2D>()`. Therefore, only the first collider returned through the base type participates in proxy creation, collision flags, contacts, and response. Additional colliders are ignored by `PhysicsWorld2D`.
+`broadPhaseStats()` reports proxy/grid/pair counters for the most recent valid
+step. `stepStats()` reports CCD substeps, active and sleeping bodies, maximum
+contact and joint constraints in a substep, and reused warm-start contacts.
 
-This limitation is explicitly protected by the existing `testOnlyFirstBaseColliderParticipates` regression test. Multi-collider support is not part of this phase.
-
-## Broad phase
-
-The default broad phase is a uniform grid with a cell size of `128` and a maximum of `256` cells per proxy. Proxies that cannot be represented safely in the configured grid fall back to conservative pairing. Candidate pairs are deduplicated before narrow phase.
-
-`BruteForce` remains an available reference mode. The regression suite checks contact and event equivalence between uniform-grid and brute-force execution, including a multi-tick deterministic scenario.
-
-## Known limitations preserved by this baseline
-
-- collision detection is discrete and occurs after full body integration, so sufficiently fast bodies can tunnel through thin geometry;
-- no continuous collision detection or swept tests;
-- no angular velocity, torque, inertia, or rotational collision response;
-- boxes are axis-aligned and rotated boxes are unsupported;
-- manifolds contain only one contact point;
-- solver impulses accumulate only within the current step; there are no persistent contacts or cross-step warm starting;
-- no damping, sleeping, or axis constraints;
-- grounded state is derived from the current frame's contact normal rather than persistent support contacts;
-- only the first base collider per object participates;
-- contact identity has no collider ID;
-- the physics world is stepped manually and is not yet owned or orchestrated by `Scene`.
-
-## Regression coverage map
-
-The pre-existing `Lorenzo2DPhysicsTests` suite already protects body modes and free integration, force lifetime, materials, filters, sensors, manifold orientation, deterministic contact ordering, `Begin`/`Stay`/`End`, grounded behavior, first-collider participation, collider deactivation, object destruction, short stack stability, invalid delta times, and single-step uniform-grid/brute-force equivalence.
-
-`Lorenzo2DPhysicsStabilityTests` adds the missing long-horizon baselines:
-
-- long-duration resting contact;
-- an eight-box dynamic stack with per-tick finite-value checks;
-- deterministic repeated simulations over 1,200 ticks;
-- multi-tick uniform-grid/brute-force equivalence;
-- explicit discrete tunnelling at high speed;
-- inactive rigid-body contact termination and reactivation.
+Current deliberate limits are circles and oriented boxes only, one contact
+point per manifold, distance joints only, no automatic compound mass-property
+calculation, bounded substep CCD, and explicit world stepping rather than scene
+ownership.

@@ -28,6 +28,7 @@ foreach(unexpected_target
     Sandbox
     Lorenzo2DMinimalExample
     Lorenzo2DAnimationExample
+    Lorenzo2DPhysicsExample
     Lorenzo2DTests
     Lorenzo2DTimingAccountingTests
     Lorenzo2DPhysicsTests

@@ -349,6 +349,8 @@ class SandboxApp : public l2d::Application
         l2d::CircleCollider2D& playerCollider =
             player.addComponent<l2d::CircleCollider2D>(playerRadius);
 
+        playerCollider.setOffset({playerRadius, playerRadius});
+
         playerCollider.setFilter(
             {PhysicsLayers::Player, PhysicsLayers::World | PhysicsLayers::Pickup});
 
@@ -394,6 +396,7 @@ class SandboxApp : public l2d::Application
             l2d::CircleCollider2D& coinCollider =
                 coin.addComponent<l2d::CircleCollider2D>(coinRadius);
 
+            coinCollider.setOffset({coinRadius, coinRadius});
             coinCollider.setSensor(true);
             coinCollider.setFilter({PhysicsLayers::Pickup, PhysicsLayers::Player});
 
@@ -451,6 +454,7 @@ class SandboxApp : public l2d::Application
             l2d::CircleCollider2D& enemyCollider =
                 enemy.addComponent<l2d::CircleCollider2D>(enemyRadius);
 
+            enemyCollider.setOffset({enemyRadius, enemyRadius});
             enemyCollider.setFilter({PhysicsLayers::Enemy, PhysicsLayers::World});
 
             enemy.addComponent<l2d::CircleRenderer>(enemyRadius, sf::Color::Magenta);

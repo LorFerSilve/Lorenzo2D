@@ -98,6 +98,42 @@ namespace l2d
             return getComponent<T>() != nullptr;
         }
 
+        template <typename T> std::vector<T*> getComponents()
+        {
+            static_assert(std::is_base_of<Component, T>::value,
+                          "T must derive from l2d::Component.");
+
+            std::vector<T*> matchingComponents;
+
+            for (const std::unique_ptr<Component>& component : m_components)
+            {
+                if (T* casted = dynamic_cast<T*>(component.get()))
+                {
+                    matchingComponents.push_back(casted);
+                }
+            }
+
+            return matchingComponents;
+        }
+
+        template <typename T> std::vector<const T*> getComponents() const
+        {
+            static_assert(std::is_base_of<Component, T>::value,
+                          "T must derive from l2d::Component.");
+
+            std::vector<const T*> matchingComponents;
+
+            for (const std::unique_ptr<Component>& component : m_components)
+            {
+                if (const T* casted = dynamic_cast<const T*>(component.get()))
+                {
+                    matchingComponents.push_back(casted);
+                }
+            }
+
+            return matchingComponents;
+        }
+
         void update(float deltaTime);
         void render(sf::RenderWindow& window);
         void render(sf::RenderWindow& window, float interpolationAlpha);

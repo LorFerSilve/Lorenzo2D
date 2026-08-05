@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.2.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.3.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -157,6 +157,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Physics/CircleCollider2D.cpp
     src/Lorenzo2D/Physics/Collider2D.cpp
     src/Lorenzo2D/Physics/CollisionManifold2D.cpp
+    src/Lorenzo2D/Physics/DistanceJoint2D.cpp
     src/Lorenzo2D/Physics/PhysicsDebugRenderer2D.cpp
     src/Lorenzo2D/Physics/PhysicsWorld2D.cpp
     src/Lorenzo2D/Physics/PhysicsWorld2DContacts.cpp

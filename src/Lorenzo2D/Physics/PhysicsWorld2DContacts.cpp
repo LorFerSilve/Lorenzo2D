@@ -7,13 +7,12 @@ namespace l2d::detail
 {
     namespace
     {
-        using PhysicsContactKey2D = std::tuple<GameObjectId, GameObjectId, int, int>;
+        using PhysicsContactKey2D = std::tuple<GameObjectId, ColliderId, GameObjectId, ColliderId>;
 
         PhysicsContactKey2D physicsContactKey(const PhysicsContact2D& contact)
         {
-            return {contact.firstObjectId, contact.secondObjectId,
-                    static_cast<int>(contact.firstColliderType),
-                    static_cast<int>(contact.secondColliderType)};
+            return {contact.firstObjectId, contact.firstColliderId, contact.secondObjectId,
+                    contact.secondColliderId};
         }
 
         bool samePhysicsContactKey(const PhysicsContact2D& left, const PhysicsContact2D& right)

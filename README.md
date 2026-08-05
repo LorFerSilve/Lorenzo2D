@@ -19,14 +19,16 @@ production-ready engine.
 - Circle and rectangle rendering plus texture-backed sprites and sprite-sheet animation
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
 - ASCII tilemap loading with textured atlas tiles, chunked view culling, and merged collision geometry
-- Static, kinematic, and dynamic rigid bodies with configurable gravity
+- Static, kinematic, and dynamic rigid bodies with linear and angular dynamics
+- Compound circle/oriented-box colliders with scale-aware local transforms
+- CCD, sleeping, persistent warm-started contacts, and distance joints
 - Circle/box collision manifolds, impulse response, friction, and restitution
 - Collision layers, sensors, contact events, and physics debug drawing
 - Lifetime-safe read-only font and texture handles, transactional named storage,
   and ordered runtime resource lookup
 - Data-only object prefabs and a deterministic, versioned level format
 - Debug overlay and independently switchable world, physics, and UI layers
-- Focused minimal and animation examples plus regression tests for timing,
+- Focused minimal, animation, and physics examples plus regression tests for timing,
   scenes, rendering, resources, serialization, animation, physics, and tilemaps
 
 ## Requirements
@@ -71,10 +73,10 @@ ctest --preset dev
 `release`, `sanitize`, `lint`, `coverage`, and `benchmarks` presets keep
 specialized build trees isolated under `build/<preset>`.
 
-The sandbox and the focused `Lorenzo2DMinimalExample` and
-`Lorenzo2DAnimationExample` executables are written to `build/bin`. Disable
-them independently with `-DL2D_BUILD_SANDBOX=OFF` and
-`-DL2D_BUILD_EXAMPLES=OFF`.
+The sandbox and the focused `Lorenzo2DMinimalExample`,
+`Lorenzo2DAnimationExample`, and `Lorenzo2DPhysicsExample` executables are
+written to `build/bin`. Disable them independently with
+`-DL2D_BUILD_SANDBOX=OFF` and `-DL2D_BUILD_EXAMPLES=OFF`.
 
 `Lorenzo2DRendererTests` and `Lorenzo2DTimingAccountingTests` are explicitly
 labeled `headless` and can run on Linux with `DISPLAY` and `WAYLAND_DISPLAY`
@@ -91,7 +93,7 @@ Useful configuration options:
 | Option | Top-level default | Dependency-mode default | Purpose |
 | --- | --- | --- | --- |
 | `L2D_BUILD_SANDBOX` | `ON` | `OFF` | Build the interactive sandbox |
-| `L2D_BUILD_EXAMPLES` | `ON` | `OFF` | Build the focused minimal and animation examples |
+| `L2D_BUILD_EXAMPLES` | `ON` | `OFF` | Build the focused minimal, animation, and physics examples |
 | `L2D_BUILD_TESTS` | `ON` | `OFF` | Build and register regression tests |
 | `L2D_BUILD_BENCHMARKS` | `OFF` | `OFF` | Build the standalone performance benchmarks |
 | `L2D_USE_SYSTEM_SFML` | `OFF` | `OFF` | Use an installed SFML package |
@@ -196,7 +198,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.2 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.3 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -412,7 +414,7 @@ time.
 include/Lorenzo2D/  Public engine headers
 src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
-examples/           Focused minimal and animation applications
+examples/           Focused minimal, animation, and physics applications
 assets/             Text levels and optional runtime assets
 tests/              Regression and consumer integration tests
 benchmarks/         Standalone physics and tile-map performance probes
@@ -569,13 +571,30 @@ rigid body is also treated as static, preserving the convenient level-geometry
 workflow used by the tilemap. `isGrounded()` is defined only for Dynamic bodies;
 Static and Kinematic bodies report false.
 
-The narrow phase supports circle-circle, circle-box, and axis-aligned box-box
-pairs. Exact tangency counts as contact. Collision response uses iterative
-normal and friction impulses plus positional correction; rotation, angular
-velocity, and transform scale do not participate. Solver behavior can be tuned
-through `PhysicsWorld2DConfig`, including iteration counts, penetration slop,
-correction strength, restitution threshold, grounded-normal threshold, and the
-broad-phase settings.
+The narrow phase supports circle-circle, circle-box, and oriented box-box
+pairs. Exact tangency counts as contact. Collider offsets are local center
+points and inherit owner translation, rotation, and scale. Boxes use absolute
+per-axis scale; circles use the greater absolute scale axis so they remain
+circular under non-uniform scaling. Collision response uses iterative linear
+and angular normal/friction impulses plus positional correction. Rigid bodies
+keep rotation fixed by default for source compatibility; call
+`setFixedRotation(false)` to enable angular velocity, torque, inertia, and
+off-center impulses.
+
+Every collider receives a stable `ColliderId`, and all active colliders on a
+game object participate as one compound body. Self-collision between colliders
+on that body is skipped. Contacts expose both collider IDs, and
+`isColliderTouching` queries a specific shape pair. Exact, symmetric degenerate
+raw manifold queries use deterministic tie axes; swapping otherwise
+directionless arguments therefore need not reverse the normal.
+
+Solver behavior can be tuned through `PhysicsWorld2DConfig`. Adaptive bounded
+CCD substeps fast bodies before narrow-phase solving, persistent contact
+impulses warm-start the following step, and sufficiently still dynamic bodies
+sleep until a mutation or moving constraint wakes them. `DistanceJoint2D`
+constrains two local anchors and, by default, suppresses collision between the
+connected objects. `stepStats()` reports CCD substeps, active/sleeping bodies,
+contact and joint constraints, and warm-start reuse.
 
 The default broad phase places conservative collider bounds in a signed
 uniform grid with a cell size of `128`. It supports negative world coordinates,
@@ -593,13 +612,6 @@ broad-phase candidates, and narrow-phase tests remaining after collision
 filtering. These counters make spatial tuning measurable without
 timing-dependent tests. An invalid-delta no-op preserves the previous counters;
 `reset()` and `reset(Scene&)` clear them.
-
-The current model supports one collider per game object; when several are
-attached, only the first `Collider2D` component participates in world
-simulation. Exact, symmetric degenerate raw manifold queries, such as coincident
-shapes, use fixed tie axes for deterministic output; swapping the query
-arguments therefore need not reverse the normal in those otherwise
-directionless cases.
 
 Each collider has a `PhysicsMaterial2D`. Restitution and friction coefficients
 are sanitized to the range `[0, 1]`, with dynamic friction kept at or below
@@ -619,25 +631,28 @@ raw geometry queries and deliberately ignore activity, filters, and sensors.
 
 After each valid step, `contacts()` exposes the current deterministic contact
 list and `contactEvents()` reports `Begin`, `Stay`, and `End` transitions.
-Contacts contain stable object IDs, collider types, the manifold, and a sensor
-flag; `isTouching` provides a convenient ID-pair query. Consume these results in
-`onFixedPostSimulation`, before the following physics step replaces them. The
-world resets its contact history when switching to a different scene.
+Contacts contain stable object and collider IDs, collider types, the manifold,
+and a sensor flag; `isTouching` and `isColliderTouching` provide object- and
+shape-pair queries. Consume these results in `onFixedPostSimulation`, before
+the following physics step replaces them. The world resets its contact history
+when switching to a different scene.
 `reset()` explicitly clears that history, contact events, and the associated
 scene, but cannot alter component flags because it has no scene to traverse.
-`reset(Scene&)` additionally clears `isColliding` on each object's first
-participating collider and clears rigid-body grounded flags in that scene.
+`reset(Scene&)` additionally clears `isColliding` on every collider and clears
+rigid-body grounded flags in that scene.
 
-For existing code, the main migration points are that a newly added rigid body
-is dynamic by default, collider-only objects remain static, and integration is
-owned by the world's fixed simulation step rather than component update.
+For existing top-left-origin objects, explicitly set a collider center offset:
+`size * 0.5f` for boxes and `{radius, radius}` for circles. Circle constructors
+and `setRadius` no longer change the offset. Collider-only objects remain
+static, and integration remains owned by the world's fixed simulation step.
 
 ## Current limitations and next milestones
 
-- Physics shapes are axis-aligned and ignore transform rotation and scale.
-  Dense single-cell scenes and fallback proxies can still approach quadratic
-  pair counts; continuous collision detection, sleeping, joints, and angular
-  dynamics are future work.
+- Physics currently supports circles, oriented boxes, and distance joints;
+  polygons, compound mass-property calculation, multi-point manifolds, and
+  other joint types remain future work. CCD uses bounded adaptive substeps, so
+  translations beyond the configured cap can still tunnel. Dense single-cell
+  scenes and fallback proxies can still approach quadratic pair counts.
 - Tilemap chunks rebuild as a whole when a layout changes; incremental chunk
   editing, streamed regions, and animated tiles remain future work.
 - Render ordering is a fixed layer mask rather than a general render queue.

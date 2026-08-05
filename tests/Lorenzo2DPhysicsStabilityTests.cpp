@@ -54,6 +54,7 @@ namespace
         }
 
         l2d::BoxCollider2D& collider = object.addComponent<l2d::BoxCollider2D>(size);
+        collider.setOffset(size * 0.5f);
 
         return {&object, &collider, body};
     }
@@ -81,6 +82,7 @@ namespace
         }
 
         l2d::CircleCollider2D& collider = object.addComponent<l2d::CircleCollider2D>(radius);
+        collider.setOffset({radius, radius});
 
         return {&object, &collider, body};
     }
@@ -305,7 +307,7 @@ namespace
         requireEquivalentScenarioResults(uniformGrid, bruteForce);
     }
 
-    void testHighSpeedMotionDocumentsDiscreteTunnelling()
+    void testContinuousCollisionStopsHighSpeedMotion()
     {
         l2d::PhysicsWorld2DConfig config;
         config.gravity = {0.f, 0.f};
@@ -321,13 +323,14 @@ namespace
 
         L2D_REQUIRE(isFinite(mover.object->transform.position()));
         L2D_REQUIRE(isFinite(mover.body->velocity()));
-        L2D_REQUIRE_APPROX(mover.object->transform.position(), (sf::Vector2f{10.f, 0.f}),
-                           kPhysicsComparisonEpsilon);
-        L2D_REQUIRE_APPROX(mover.body->velocity(), (sf::Vector2f{1000.f, 0.f}),
-                           kPhysicsComparisonEpsilon);
-        L2D_REQUIRE(world.contacts().empty());
-        L2D_REQUIRE(world.contactEvents().empty());
-        L2D_REQUIRE(!mover.collider->isColliding());
+        L2D_REQUIRE(mover.object->transform.position().x > 3.9f);
+        L2D_REQUIRE(mover.object->transform.position().x < 5.f);
+        L2D_REQUIRE_APPROX(mover.body->velocity().x, 0.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents().size(), 1);
+        L2D_REQUIRE_EQUAL(world.contactEvents()[0].phase, l2d::PhysicsContactPhase2D::Begin);
+        L2D_REQUIRE(mover.collider->isColliding());
+        L2D_REQUIRE(world.stepStats().ccdSubstepCount > 1);
     }
 
     void testDeactivatedRigidBodyEndsAndReactivationBeginsContact()
@@ -382,8 +385,8 @@ int main()
             testRepeatedSimulationsRemainDeterministicOverManyTicks, failures);
     runTest("uniform grid matches brute force over many ticks",
             testUniformGridMatchesBruteForceOverManyTicks, failures);
-    runTest("high-speed motion documents discrete tunnelling",
-            testHighSpeedMotionDocumentsDiscreteTunnelling, failures);
+    runTest("continuous collision stops high-speed motion",
+            testContinuousCollisionStopsHighSpeedMotion, failures);
     runTest("deactivated rigid body ends and reactivation begins contact",
             testDeactivatedRigidBodyEndsAndReactivationBeginsContact, failures);
 

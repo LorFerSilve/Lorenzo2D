@@ -6,7 +6,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace l2d
@@ -37,6 +39,27 @@ namespace l2d
         PhysicsBroadPhaseMode2D broadPhaseMode = PhysicsBroadPhaseMode2D::UniformGrid;
         float broadPhaseCellSize = 128.f;
         std::uint32_t broadPhaseMaxCellsPerProxy = 256;
+
+        bool continuousCollisionDetection = true;
+        std::uint32_t maximumCcdSubsteps = 32;
+        float ccdMotionThreshold = 0.5f;
+
+        bool warmStarting = true;
+
+        bool sleeping = true;
+        float sleepLinearVelocityThreshold = 1.f;
+        float sleepAngularVelocityThreshold = 0.05f;
+        float timeToSleep = 0.5f;
+    };
+
+    struct PhysicsStepStats2D
+    {
+        std::uint32_t ccdSubstepCount = 0;
+        std::size_t activeBodyCount = 0;
+        std::size_t sleepingBodyCount = 0;
+        std::size_t contactConstraintCount = 0;
+        std::size_t jointConstraintCount = 0;
+        std::size_t warmStartedContactCount = 0;
     };
 
     struct PhysicsBroadPhaseStats2D
@@ -64,11 +87,13 @@ namespace l2d
         void setConfig(const PhysicsWorld2DConfig& config);
 
         const PhysicsBroadPhaseStats2D& broadPhaseStats() const;
+        const PhysicsStepStats2D& stepStats() const;
 
         const std::vector<PhysicsContact2D>& contacts() const;
         const std::vector<PhysicsContactEvent2D>& contactEvents() const;
 
         bool isTouching(GameObjectId firstObjectId, GameObjectId secondObjectId) const;
+        bool isColliderTouching(ColliderId firstColliderId, ColliderId secondColliderId) const;
 
         void reset();
         void reset(Scene& scene);
@@ -83,13 +108,28 @@ namespace l2d
 
         void resetPhysicsStates(Scene& scene);
         void integrateRigidBodies(Scene& scene, float deltaTime);
+        std::uint32_t calculateCcdSubsteps(Scene& scene, float deltaTime) const;
+        void solveSubstep(Scene& scene, float deltaTime,
+                          std::vector<PhysicsContact2D>& frameContacts);
+        void updateSleeping(Scene& scene, float deltaTime);
+
+        struct CachedContactImpulse2D
+        {
+            double normal = 0.0;
+            double tangent = 0.0;
+        };
+
+        using ContactImpulseKey2D = std::pair<ColliderId, ColliderId>;
 
       private:
         PhysicsWorld2DConfig m_config;
         PhysicsBroadPhaseStats2D m_broadPhaseStats;
+        PhysicsStepStats2D m_stepStats;
 
         std::vector<PhysicsContact2D> m_contacts;
         std::vector<PhysicsContactEvent2D> m_contactEvents;
+
+        std::map<ContactImpulseKey2D, CachedContactImpulse2D> m_contactImpulseCache;
 
         std::weak_ptr<void> m_contactSceneToken;
     };

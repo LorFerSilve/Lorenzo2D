@@ -4,6 +4,8 @@
 
 #include <SFML/System/Vector2.hpp>
 
+#include <array>
+
 namespace l2d
 {
     class BoxCollider2D : public Collider2D
@@ -13,6 +15,10 @@ namespace l2d
 
         const sf::Vector2f& size() const;
         void setSize(sf::Vector2f size);
+
+        sf::Vector2f center() const;
+        sf::Vector2f worldHalfExtents() const;
+        std::array<sf::Vector2f, 4> corners() const;
 
         sf::Vector2f min() const;
         sf::Vector2f max() const;

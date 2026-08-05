@@ -12,6 +12,10 @@ namespace l2d
 {
     class PhysicsWorld2D;
 
+    using ColliderId = std::uint64_t;
+
+    constexpr ColliderId InvalidColliderId = 0;
+
     enum class ColliderType
     {
         Box,
@@ -30,12 +34,17 @@ namespace l2d
         explicit Collider2D(ColliderType type);
         virtual ~Collider2D() = default;
 
+        ColliderId id() const;
+
         ColliderType type() const;
 
         const sf::Vector2f& offset() const;
         void setOffset(sf::Vector2f offset);
 
         sf::Vector2f worldPosition() const;
+        sf::Vector2f worldScale() const;
+        float worldRotation() const;
+        sf::Vector2f localToWorldPoint(sf::Vector2f localPoint) const;
 
         const PhysicsMaterial2D& material() const;
         void setMaterial(PhysicsMaterial2D material);
@@ -53,6 +62,7 @@ namespace l2d
         void setColliding(bool colliding);
 
       private:
+        ColliderId m_id;
         ColliderType m_type;
         sf::Vector2f m_offset;
         PhysicsMaterial2D m_material;

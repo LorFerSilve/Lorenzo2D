@@ -105,8 +105,7 @@ namespace l2d
             return false;
         }
 
-        // The current physics world intentionally supports one collider per object.
-        return !(prefab.boxCollider && prefab.circleCollider);
+        return true;
     }
 
     GameObject& instantiatePrefab(Scene& scene, const Prefab& prefab)

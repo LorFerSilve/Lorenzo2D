@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Lorenzo2D/ECS/Transform.hpp>
+
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System/Vector2.hpp>
 
@@ -41,9 +43,10 @@ namespace l2d
       private:
         void renderGameObject(GameObject& gameObject, sf::RenderWindow& window,
                               float interpolationAlpha) const;
-        void renderBoxCollider(const BoxCollider2D& collider, sf::Vector2f ownerPosition,
+        void renderBoxCollider(const BoxCollider2D& collider, const TransformState& ownerTransform,
                                sf::RenderWindow& window) const;
-        void renderCircleCollider(const CircleCollider2D& collider, sf::Vector2f ownerPosition,
+        void renderCircleCollider(const CircleCollider2D& collider,
+                                  const TransformState& ownerTransform,
                                   sf::RenderWindow& window) const;
 
       private:

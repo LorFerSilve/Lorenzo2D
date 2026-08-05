@@ -52,7 +52,14 @@ category bits, mask bits, and the sensor flag. Boolean fields must be `0` or
 be finite, sizes and radii cannot be negative, mass must be positive, and the
 material must already satisfy the engine's normalized `[0, 1]` contract.
 
-Version 1 supports at most one collider per prefab because the physics world
-uses the first collider on an object. Shape renderers may be combined. Sprite
-asset references, animation state, custom component codecs, and migrations are
-reserved for later versions.
+Collider offsets are local center points. They inherit the serialized transform
+scale and rotation. A top-left-origin box renderer normally uses half its size
+as the box offset; a top-left-origin circle renderer normally uses
+`(radius, radius)`. Circle radius changes do not rewrite a stored offset.
+
+The runtime physics model supports arbitrary compound colliders, angular state,
+sleeping, and distance joints. Version 1 serialization can combine one box and
+one circle collider, but cannot repeat a collider type or encode the added
+angular, sleeping, or joint fields. Shape renderers may be combined. Sprite
+asset references, animation state, custom component codecs, and schema
+migrations are reserved for later versions.
