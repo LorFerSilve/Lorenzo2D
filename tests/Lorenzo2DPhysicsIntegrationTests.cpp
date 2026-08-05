@@ -130,7 +130,9 @@ namespace
               box(floor.addComponent<l2d::BoxCollider2D>(sf::Vector2f{20.f, 20.f}))
         {
             mover.transform.setPosition({0.f, 0.f});
+            circle.setOffset({10.f, 10.f});
             floor.transform.setPosition({0.f, 19.f});
+            box.setOffset({10.f, 10.f});
         }
     };
 

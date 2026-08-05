@@ -11,36 +11,21 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/System/Angle.hpp>
 
 #include <cmath>
-#include <limits>
 
 namespace l2d
 {
     namespace
     {
-        bool isFinite(sf::Vector2f value)
+        sf::Color colliderColor(const Collider2D& collider, sf::Color defaultColor,
+                                sf::Color collidingColor, sf::Color sensorColor)
         {
-            return std::isfinite(value.x) && std::isfinite(value.y);
-        }
+            if (collider.isSensor()) return sensorColor;
+            if (collider.isColliding()) return collidingColor;
 
-        bool checkedFloat(double value, float& result)
-        {
-            const double maximum = static_cast<double>(std::numeric_limits<float>::max());
-
-            if (!std::isfinite(value) || value < -maximum || value > maximum) return false;
-
-            result = static_cast<float>(value);
-            return true;
-        }
-
-        bool checkedAdd(sf::Vector2f left, sf::Vector2f right, sf::Vector2f& result)
-        {
-            return isFinite(left) && isFinite(right) &&
-                   checkedFloat(static_cast<double>(left.x) + static_cast<double>(right.x),
-                                result.x) &&
-                   checkedFloat(static_cast<double>(left.y) + static_cast<double>(right.y),
-                                result.y);
+            return defaultColor;
         }
     }
 
@@ -62,9 +47,7 @@ namespace l2d
 
     void PhysicsDebugRenderer2D::setOutlineThickness(float thickness)
     {
-        if (!std::isfinite(thickness) || thickness < 0.f) thickness = 0.f;
-
-        m_outlineThickness = thickness;
+        m_outlineThickness = std::isfinite(thickness) && thickness >= 0.f ? thickness : 0.f;
     }
 
     float PhysicsDebugRenderer2D::outlineThickness() const
@@ -114,105 +97,78 @@ namespace l2d
 
         for (const auto& gameObject : scene.gameObjects())
         {
-            if (gameObject == nullptr) continue;
-
-            if (!gameObject->isActive()) continue;
-
-            renderGameObject(*gameObject, window, interpolationAlpha);
+            if (gameObject != nullptr && gameObject->isActive())
+            {
+                renderGameObject(*gameObject, window, interpolationAlpha);
+            }
         }
     }
 
     void PhysicsDebugRenderer2D::renderGameObject(GameObject& gameObject, sf::RenderWindow& window,
                                                   float interpolationAlpha) const
     {
-        const sf::Vector2f ownerPosition =
-            gameObject.transform.interpolated(interpolationAlpha).position;
-        const Collider2D* collider = gameObject.getComponent<Collider2D>();
+        const TransformState transform = gameObject.transform.interpolated(interpolationAlpha);
 
-        if (collider == nullptr || !collider->isActive()) return;
-
-        if (collider->type() == ColliderType::Box)
+        for (const Collider2D* collider : gameObject.getComponents<Collider2D>())
         {
+            if (collider == nullptr || !collider->isActive()) continue;
+
             if (const auto* box = dynamic_cast<const BoxCollider2D*>(collider))
             {
-                renderBoxCollider(*box, ownerPosition, window);
+                renderBoxCollider(*box, transform, window);
             }
-
-            return;
-        }
-
-        if (const auto* circle = dynamic_cast<const CircleCollider2D*>(collider))
-        {
-            renderCircleCollider(*circle, ownerPosition, window);
+            else if (const auto* circle = dynamic_cast<const CircleCollider2D*>(collider))
+            {
+                renderCircleCollider(*circle, transform, window);
+            }
         }
     }
 
     void PhysicsDebugRenderer2D::renderBoxCollider(const BoxCollider2D& collider,
-                                                   sf::Vector2f ownerPosition,
+                                                   const TransformState& ownerTransform,
                                                    sf::RenderWindow& window) const
     {
-        sf::Vector2f position;
         const sf::Vector2f size = collider.size();
+        const sf::Vector2f halfSize = size * 0.5f;
+        const sf::FloatRect localBounds(collider.offset() - halfSize, size);
 
-        if (!checkedAdd(ownerPosition, collider.offset(), position) ||
-            !renderer_detail::hasSafeAxisAlignedBounds(position, size, m_outlineThickness))
-        {
-            return;
-        }
+        if (!renderer_detail::hasSafeTransformedBounds(localBounds, ownerTransform)) return;
 
-        sf::RectangleShape shape;
-
-        shape.setPosition(position);
-        shape.setSize(size);
-
+        sf::RectangleShape shape(size);
+        shape.setOrigin(halfSize - collider.offset());
+        shape.setPosition(ownerTransform.position);
+        shape.setRotation(
+            sf::degrees(renderer_detail::normalizedRotationDegrees(ownerTransform.rotation)));
+        shape.setScale(ownerTransform.scale);
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(m_outlineThickness);
-
-        if (collider.isSensor())
-            shape.setOutlineColor(m_sensorColor);
-        else if (collider.isColliding())
-            shape.setOutlineColor(m_collidingColor);
-        else
-            shape.setOutlineColor(m_defaultColor);
-
+        shape.setOutlineColor(
+            colliderColor(collider, m_defaultColor, m_collidingColor, m_sensorColor));
         window.draw(shape);
     }
 
     void PhysicsDebugRenderer2D::renderCircleCollider(const CircleCollider2D& collider,
-                                                      sf::Vector2f ownerPosition,
+                                                      const TransformState& ownerTransform,
                                                       sf::RenderWindow& window) const
     {
         const float radius = collider.radius();
-        sf::Vector2f center;
-        sf::Vector2f position;
-        sf::Vector2f size;
+        const sf::Vector2f diameter{radius * 2.f, radius * 2.f};
+        const sf::FloatRect localBounds(collider.offset() - sf::Vector2f{radius, radius}, diameter);
 
-        if (!std::isfinite(radius) || radius < 0.f ||
-            !checkedAdd(ownerPosition, collider.offset(), center) ||
-            !checkedFloat(static_cast<double>(center.x) - static_cast<double>(radius),
-                          position.x) ||
-            !checkedFloat(static_cast<double>(center.y) - static_cast<double>(radius),
-                          position.y) ||
-            !checkedFloat(static_cast<double>(radius) * 2.0, size.x) ||
-            !checkedFloat(static_cast<double>(radius) * 2.0, size.y) ||
-            !renderer_detail::hasSafeAxisAlignedBounds(position, size, m_outlineThickness))
-        {
-            return;
-        }
+        if (!renderer_detail::hasSafeTransformedBounds(localBounds, ownerTransform)) return;
 
+        const float uniformScale =
+            std::max(std::fabs(ownerTransform.scale.x), std::fabs(ownerTransform.scale.y));
         sf::CircleShape shape(radius);
-        shape.setPosition(position);
-
+        shape.setOrigin(sf::Vector2f{radius, radius} - collider.offset());
+        shape.setPosition(ownerTransform.position);
+        shape.setRotation(
+            sf::degrees(renderer_detail::normalizedRotationDegrees(ownerTransform.rotation)));
+        shape.setScale({uniformScale, uniformScale});
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(m_outlineThickness);
-
-        if (collider.isSensor())
-            shape.setOutlineColor(m_sensorColor);
-        else if (collider.isColliding())
-            shape.setOutlineColor(m_collidingColor);
-        else
-            shape.setOutlineColor(m_defaultColor);
-
+        shape.setOutlineColor(
+            colliderColor(collider, m_defaultColor, m_collidingColor, m_sensorColor));
         window.draw(shape);
     }
 }

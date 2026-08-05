@@ -1,6 +1,8 @@
 #include <Lorenzo2D/Animation/AnimationClip.hpp>
 #include <Lorenzo2D/Assets/ResourceLocator.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
+#include <Lorenzo2D/Physics/CircleCollider2D.hpp>
+#include <Lorenzo2D/Physics/DistanceJoint2D.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
 #include <Lorenzo2D/Tilemap/TileSet.hpp>
 
@@ -27,8 +29,12 @@ int main()
     l2d::ResourceLocator resources;
     const bool resourceRootAdded = resources.addRoot("assets");
 
+    l2d::CircleCollider2D collider(2.f);
+    l2d::DistanceJoint2D joint(42u, 3.f);
+
     return position == sf::Vector2f{6.f, 8.f} && frameAdded && tileAdded && levelSaved &&
-                   resourceRootAdded
+                   resourceRootAdded && collider.id() != l2d::InvalidColliderId &&
+                   joint.id() != l2d::InvalidJointId
                ? 0
                : 1;
 }

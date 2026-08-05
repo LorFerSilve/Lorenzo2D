@@ -59,7 +59,7 @@ namespace l2d
                 if (circle == nullptr) return false;
 
                 const sf::Vector2f center = circle->center();
-                const double radius = circle->radius();
+                const double radius = circle->worldRadius();
                 const double minimumX = static_cast<double>(center.x) - radius;
                 const double minimumY = static_cast<double>(center.y) - radius;
                 const double maximumX = static_cast<double>(center.x) + radius;
@@ -100,7 +100,15 @@ namespace l2d
 
             if (right.object == nullptr) return false;
 
-            return left.object->id() < right.object->id();
+            if (left.object->id() != right.object->id())
+            {
+                return left.object->id() < right.object->id();
+            }
+
+            if (left.collider == nullptr) return right.collider != nullptr;
+            if (right.collider == nullptr) return false;
+
+            return left.collider->id() < right.collider->id();
         }
     }
 
@@ -115,15 +123,16 @@ namespace l2d
 
             if (!isPhysicsParticipant(scene, gameObject)) continue;
 
-            Collider2D* collider = gameObject->getComponent<Collider2D>();
-
-            if (collider == nullptr || !collider->isActive()) continue;
-
             RigidBody2D* body = gameObject->getComponent<RigidBody2D>();
 
             if (body != nullptr && !body->isActive()) body = nullptr;
 
-            stepData.proxies.push_back({gameObject, collider, body});
+            for (Collider2D* collider : gameObject->getComponents<Collider2D>())
+            {
+                if (collider == nullptr || !collider->isActive()) continue;
+
+                stepData.proxies.push_back({gameObject, collider, body});
+            }
         }
 
         std::sort(stepData.proxies.begin(), stepData.proxies.end(), physicsProxyLess);

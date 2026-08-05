@@ -1,5 +1,6 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
+#include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
@@ -39,6 +40,12 @@ namespace
         collider.properties.filter = {4u, 9u};
         collider.properties.sensor = true;
         prefab.boxCollider = collider;
+
+        l2d::CircleColliderPrefab circleCollider;
+        circleCollider.radius = 8.f;
+        circleCollider.properties.offset = {16.f, 24.f};
+        circleCollider.properties.filter = {4u, 9u};
+        prefab.circleCollider = circleCollider;
         return prefab;
     }
 
@@ -68,6 +75,7 @@ namespace
         L2D_REQUIRE(playerPrefab.rectangleRenderer.has_value());
         L2D_REQUIRE(playerPrefab.rigidBody.has_value());
         L2D_REQUIRE(playerPrefab.boxCollider.has_value());
+        L2D_REQUIRE(playerPrefab.circleCollider.has_value());
         L2D_REQUIRE(playerPrefab.rectangleRenderer->color == sf::Color(20, 80, 220, 200));
         L2D_REQUIRE_APPROX_2D(playerPrefab.transform.position, sf::Vector2f(12.5f, -8.f), 0.0001f);
 
@@ -84,8 +92,12 @@ namespace
 
         const l2d::RigidBody2D* body = player->getComponent<l2d::RigidBody2D>();
         const l2d::BoxCollider2D* collider = player->getComponent<l2d::BoxCollider2D>();
+        const l2d::CircleCollider2D* circleCollider = player->getComponent<l2d::CircleCollider2D>();
         L2D_REQUIRE(body != nullptr);
         L2D_REQUIRE(collider != nullptr);
+        L2D_REQUIRE(circleCollider != nullptr);
+        L2D_REQUIRE_EQUAL(player->getComponents<l2d::Collider2D>().size(), 2);
+        L2D_REQUIRE(collider->id() != circleCollider->id());
         L2D_REQUIRE(body->bodyType() == l2d::BodyType2D::Kinematic);
         L2D_REQUIRE_APPROX(body->mass(), 3.f, 0.0001f);
         L2D_REQUIRE(body->useGravity());

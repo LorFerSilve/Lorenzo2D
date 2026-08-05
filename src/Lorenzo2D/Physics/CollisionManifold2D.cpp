@@ -5,6 +5,7 @@
 #include <Lorenzo2D/Physics/Collider2D.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 
@@ -12,39 +13,87 @@ namespace l2d
 {
     namespace
     {
+        constexpr double PI = 3.14159265358979323846;
+
         bool isFinite(sf::Vector2f value)
         {
             return std::isfinite(value.x) && std::isfinite(value.y);
         }
 
-        float finiteFloat(double value)
+        double dot(sf::Vector2f left, sf::Vector2f right)
         {
-            if (std::isnan(value)) return 0.f;
-
-            const double maximum = static_cast<double>(std::numeric_limits<float>::max());
-
-            value = std::clamp(value, -maximum, maximum);
-            return static_cast<float>(value);
+            return static_cast<double>(left.x) * right.x + static_cast<double>(left.y) * right.y;
         }
 
         sf::Vector2f finiteVector(double x, double y)
         {
-            return {finiteFloat(x), finiteFloat(y)};
+            const double maximum = static_cast<double>(std::numeric_limits<float>::max());
+
+            if (!std::isfinite(x) || !std::isfinite(y) || std::fabs(x) > maximum ||
+                std::fabs(y) > maximum)
+            {
+                const float invalid = std::numeric_limits<float>::quiet_NaN();
+                return {invalid, invalid};
+            }
+
+            return {static_cast<float>(x), static_cast<float>(y)};
+        }
+
+        sf::Vector2f scaled(sf::Vector2f value, double scale)
+        {
+            return finiteVector(static_cast<double>(value.x) * scale,
+                                static_cast<double>(value.y) * scale);
+        }
+
+        sf::Vector2f add(sf::Vector2f left, sf::Vector2f right)
+        {
+            return finiteVector(static_cast<double>(left.x) + right.x,
+                                static_cast<double>(left.y) + right.y);
         }
 
         bool setManifold(sf::Vector2f normal, sf::Vector2f point, double penetration,
                          CollisionManifold2D& manifold)
         {
             if (!isFinite(normal) || !isFinite(point) || !std::isfinite(penetration) ||
-                penetration < 0.0)
+                penetration < 0.0 || penetration > std::numeric_limits<float>::max())
             {
                 return false;
             }
 
             manifold.normal = normal;
             manifold.point = point;
-            manifold.penetration = finiteFloat(penetration);
+            manifold.penetration = static_cast<float>(penetration);
             return true;
+        }
+
+        std::array<sf::Vector2f, 2> boxAxes(const BoxCollider2D& box)
+        {
+            const double radians = static_cast<double>(box.worldRotation()) * PI / 180.0;
+            const float cosine = static_cast<float>(std::cos(radians));
+            const float sine = static_cast<float>(std::sin(radians));
+            return {sf::Vector2f{cosine, sine}, sf::Vector2f{-sine, cosine}};
+        }
+
+        double projectedRadius(const BoxCollider2D& box, const std::array<sf::Vector2f, 2>& axes,
+                               sf::Vector2f direction)
+        {
+            const sf::Vector2f half = box.worldHalfExtents();
+            return std::fabs(dot(axes[0], direction)) * half.x +
+                   std::fabs(dot(axes[1], direction)) * half.y;
+        }
+
+        sf::Vector2f supportPoint(const BoxCollider2D& box, const std::array<sf::Vector2f, 2>& axes,
+                                  sf::Vector2f direction)
+        {
+            const sf::Vector2f half = box.worldHalfExtents();
+            const double firstProjection = dot(axes[0], direction);
+            const double secondProjection = dot(axes[1], direction);
+            const double firstExtent =
+                firstProjection > 1e-9 ? half.x : (firstProjection < -1e-9 ? -half.x : 0.f);
+            const double secondExtent =
+                secondProjection > 1e-9 ? half.y : (secondProjection < -1e-9 ? -half.y : 0.f);
+            return add(add(box.center(), scaled(axes[0], firstExtent)),
+                       scaled(axes[1], secondExtent));
         }
 
         bool circleCircleManifold(const CircleCollider2D& circleA, const CircleCollider2D& circleB,
@@ -52,172 +101,134 @@ namespace l2d
         {
             const sf::Vector2f centerA = circleA.center();
             const sf::Vector2f centerB = circleB.center();
+            const double radiusA = circleA.worldRadius();
+            const double radiusB = circleB.worldRadius();
 
-            if (!isFinite(centerA) || !isFinite(centerB)) return false;
-
-            const double deltaX = static_cast<double>(centerB.x) - centerA.x;
-            const double deltaY = static_cast<double>(centerB.y) - centerA.y;
-            const double distance = std::hypot(deltaX, deltaY);
-            const double radiusA = static_cast<double>(circleA.radius());
-            const double radiusB = static_cast<double>(circleB.radius());
-            const double radiusSum = radiusA + radiusB;
-
-            if (!std::isfinite(distance) || !std::isfinite(radiusSum) || distance > radiusSum)
+            if (!isFinite(centerA) || !isFinite(centerB) || !std::isfinite(radiusA) ||
+                !std::isfinite(radiusB))
             {
                 return false;
             }
 
-            sf::Vector2f normal = {1.f, 0.f};
+            const double deltaX = static_cast<double>(centerB.x) - centerA.x;
+            const double deltaY = static_cast<double>(centerB.y) - centerA.y;
+            const double distance = std::hypot(deltaX, deltaY);
+            const double radiusSum = radiusA + radiusB;
 
-            if (distance > 0.0)
-            {
-                normal = finiteVector(deltaX / distance, deltaY / distance);
-            }
+            if (!std::isfinite(distance) || distance > radiusSum) return false;
 
-            const double pointOnA_X = static_cast<double>(centerA.x) + normal.x * radiusA;
-            const double pointOnA_Y = static_cast<double>(centerA.y) + normal.y * radiusA;
-            const double pointOnB_X = static_cast<double>(centerB.x) - normal.x * radiusB;
-            const double pointOnB_Y = static_cast<double>(centerB.y) - normal.y * radiusB;
-
-            return setManifold(normal,
-                               finiteVector(pointOnA_X + (pointOnB_X - pointOnA_X) * 0.5,
-                                            pointOnA_Y + (pointOnB_Y - pointOnA_Y) * 0.5),
-                               radiusSum - distance, manifold);
+            const sf::Vector2f normal = distance > 0.0
+                                            ? finiteVector(deltaX / distance, deltaY / distance)
+                                            : sf::Vector2f{1.f, 0.f};
+            const sf::Vector2f point = add(centerA, scaled(normal, radiusA));
+            return setManifold(normal, point, radiusSum - distance, manifold);
         }
 
         bool boxBoxManifold(const BoxCollider2D& boxA, const BoxCollider2D& boxB,
                             CollisionManifold2D& manifold)
         {
-            const sf::Vector2f minimumA = boxA.min();
-            const sf::Vector2f maximumA = boxA.max();
-            const sf::Vector2f minimumB = boxB.min();
-            const sf::Vector2f maximumB = boxB.max();
+            const sf::Vector2f centerA = boxA.center();
+            const sf::Vector2f centerB = boxB.center();
+            const sf::Vector2f halfA = boxA.worldHalfExtents();
+            const sf::Vector2f halfB = boxB.worldHalfExtents();
+            const auto axesA = boxAxes(boxA);
+            const auto axesB = boxAxes(boxB);
 
-            if (!isFinite(minimumA) || !isFinite(maximumA) || !isFinite(minimumB) ||
-                !isFinite(maximumB))
+            if (!isFinite(centerA) || !isFinite(centerB) || !isFinite(halfA) || !isFinite(halfB))
             {
                 return false;
             }
 
-            const double overlapX =
-                std::min(static_cast<double>(maximumA.x), static_cast<double>(maximumB.x)) -
-                std::max(static_cast<double>(minimumA.x), static_cast<double>(minimumB.x));
-            const double overlapY =
-                std::min(static_cast<double>(maximumA.y), static_cast<double>(maximumB.y)) -
-                std::max(static_cast<double>(minimumA.y), static_cast<double>(minimumB.y));
+            const sf::Vector2f delta = centerB - centerA;
+            const std::array<sf::Vector2f, 4> candidateAxes = {axesA[0], axesA[1], axesB[0],
+                                                               axesB[1]};
+            double minimumOverlap = std::numeric_limits<double>::infinity();
+            sf::Vector2f bestNormal = {1.f, 0.f};
 
-            if (overlapX < 0.0 || overlapY < 0.0) return false;
-
-            // Directional face distances produce the actual minimum
-            // translation even when either box fully contains the other.
-            // Strict comparisons retain +X, -X, +Y, -Y as the tie order.
-            double penetration = static_cast<double>(maximumA.x) - minimumB.x;
-            sf::Vector2f normal = {1.f, 0.f};
-
-            const double moveFirstRight = static_cast<double>(maximumB.x) - minimumA.x;
-
-            if (moveFirstRight < penetration)
+            for (const sf::Vector2f axis : candidateAxes)
             {
-                penetration = moveFirstRight;
-                normal = {-1.f, 0.f};
+                const double centerDistance = dot(delta, axis);
+                const double overlap = projectedRadius(boxA, axesA, axis) +
+                                       projectedRadius(boxB, axesB, axis) -
+                                       std::fabs(centerDistance);
+
+                if (!std::isfinite(overlap) || overlap < 0.0) return false;
+
+                if (overlap < minimumOverlap)
+                {
+                    minimumOverlap = overlap;
+                    bestNormal = centerDistance < 0.0 ? sf::Vector2f{-axis.x, -axis.y} : axis;
+                }
             }
 
-            const double moveFirstUp = static_cast<double>(maximumA.y) - minimumB.y;
-
-            if (moveFirstUp < penetration)
-            {
-                penetration = moveFirstUp;
-                normal = {0.f, 1.f};
-            }
-
-            const double moveFirstDown = static_cast<double>(maximumB.y) - minimumA.y;
-
-            if (moveFirstDown < penetration)
-            {
-                penetration = moveFirstDown;
-                normal = {0.f, -1.f};
-            }
-
-            const double overlapMinimumX =
-                std::max(static_cast<double>(minimumA.x), static_cast<double>(minimumB.x));
-            const double overlapMaximumX =
-                std::min(static_cast<double>(maximumA.x), static_cast<double>(maximumB.x));
-            const double overlapMinimumY =
-                std::max(static_cast<double>(minimumA.y), static_cast<double>(minimumB.y));
-            const double overlapMaximumY =
-                std::min(static_cast<double>(maximumA.y), static_cast<double>(maximumB.y));
-
-            return setManifold(
-                normal,
-                finiteVector(overlapMinimumX + (overlapMaximumX - overlapMinimumX) * 0.5,
-                             overlapMinimumY + (overlapMaximumY - overlapMinimumY) * 0.5),
-                penetration, manifold);
+            const sf::Vector2f pointA = supportPoint(boxA, axesA, bestNormal);
+            const sf::Vector2f pointB = supportPoint(boxB, axesB, {-bestNormal.x, -bestNormal.y});
+            const sf::Vector2f point =
+                finiteVector((static_cast<double>(pointA.x) + pointB.x) * 0.5,
+                             (static_cast<double>(pointA.y) + pointB.y) * 0.5);
+            return setManifold(bestNormal, point, minimumOverlap, manifold);
         }
 
         bool circleBoxManifold(const CircleCollider2D& circle, const BoxCollider2D& box,
                                CollisionManifold2D& manifold)
         {
-            const sf::Vector2f center = circle.center();
-            const sf::Vector2f minimum = box.min();
-            const sf::Vector2f maximum = box.max();
+            const sf::Vector2f circleCenter = circle.center();
+            const sf::Vector2f boxCenter = box.center();
+            const sf::Vector2f half = box.worldHalfExtents();
+            const double radius = circle.worldRadius();
+            const auto axes = boxAxes(box);
 
-            if (!isFinite(center) || !isFinite(minimum) || !isFinite(maximum))
+            if (!isFinite(circleCenter) || !isFinite(boxCenter) || !isFinite(half) ||
+                !std::isfinite(radius))
             {
                 return false;
             }
 
-            const double centerX = static_cast<double>(center.x);
-            const double centerY = static_cast<double>(center.y);
-            const double minimumX = static_cast<double>(minimum.x);
-            const double minimumY = static_cast<double>(minimum.y);
-            const double maximumX = static_cast<double>(maximum.x);
-            const double maximumY = static_cast<double>(maximum.y);
-            const double radius = static_cast<double>(circle.radius());
-            const double closestX = std::clamp(centerX, minimumX, maximumX);
-            const double closestY = std::clamp(centerY, minimumY, maximumY);
-            const double deltaX = closestX - centerX;
-            const double deltaY = closestY - centerY;
+            const sf::Vector2f relative = circleCenter - boxCenter;
+            const double localX = dot(relative, axes[0]);
+            const double localY = dot(relative, axes[1]);
+            const double closestX =
+                std::clamp(localX, -static_cast<double>(half.x), static_cast<double>(half.x));
+            const double closestY =
+                std::clamp(localY, -static_cast<double>(half.y), static_cast<double>(half.y));
+            const sf::Vector2f closest =
+                add(add(boxCenter, scaled(axes[0], closestX)), scaled(axes[1], closestY));
+            const double deltaX = static_cast<double>(closest.x) - circleCenter.x;
+            const double deltaY = static_cast<double>(closest.y) - circleCenter.y;
             const double distance = std::hypot(deltaX, deltaY);
 
             if (!std::isfinite(distance) || distance > radius) return false;
 
             if (distance > 0.0)
             {
-                return setManifold(finiteVector(deltaX / distance, deltaY / distance),
-                                   finiteVector(closestX, closestY), radius - distance, manifold);
+                return setManifold(finiteVector(deltaX / distance, deltaY / distance), closest,
+                                   radius - distance, manifold);
             }
 
-            const double distanceToLeft = centerX - minimumX;
-            const double distanceToRight = maximumX - centerX;
-            const double distanceToTop = centerY - minimumY;
-            const double distanceToBottom = maximumY - centerY;
+            const double distanceX = static_cast<double>(half.x) - std::fabs(localX);
+            const double distanceY = static_cast<double>(half.y) - std::fabs(localY);
+            sf::Vector2f normal;
+            sf::Vector2f point;
+            double faceDistance = 0.0;
 
-            double nearestDistance = distanceToLeft;
-            sf::Vector2f normal = {1.f, 0.f};
-            sf::Vector2f point = finiteVector(minimumX, centerY);
-
-            if (distanceToRight < nearestDistance)
+            if (distanceX <= distanceY)
             {
-                nearestDistance = distanceToRight;
-                normal = {-1.f, 0.f};
-                point = finiteVector(maximumX, centerY);
+                const double side = localX >= 0.0 ? 1.0 : -1.0;
+                normal = scaled(axes[0], -side);
+                point =
+                    add(add(boxCenter, scaled(axes[0], side * half.x)), scaled(axes[1], localY));
+                faceDistance = distanceX;
             }
-
-            if (distanceToTop < nearestDistance)
+            else
             {
-                nearestDistance = distanceToTop;
-                normal = {0.f, 1.f};
-                point = finiteVector(centerX, minimumY);
+                const double side = localY >= 0.0 ? 1.0 : -1.0;
+                normal = scaled(axes[1], -side);
+                point =
+                    add(add(boxCenter, scaled(axes[0], localX)), scaled(axes[1], side * half.y));
+                faceDistance = distanceY;
             }
 
-            if (distanceToBottom < nearestDistance)
-            {
-                nearestDistance = distanceToBottom;
-                normal = {0.f, -1.f};
-                point = finiteVector(centerX, maximumY);
-            }
-
-            return setManifold(normal, point, radius + nearestDistance, manifold);
+            return setManifold(normal, point, radius + faceDistance, manifold);
         }
     }
 
@@ -230,7 +241,6 @@ namespace l2d
         {
             const auto* circleA = dynamic_cast<const CircleCollider2D*>(&colliderA);
             const auto* circleB = dynamic_cast<const CircleCollider2D*>(&colliderB);
-
             return circleA != nullptr && circleB != nullptr &&
                    circleCircleManifold(*circleA, *circleB, manifold);
         }
@@ -239,7 +249,6 @@ namespace l2d
         {
             const auto* circle = dynamic_cast<const CircleCollider2D*>(&colliderA);
             const auto* box = dynamic_cast<const BoxCollider2D*>(&colliderB);
-
             return circle != nullptr && box != nullptr &&
                    circleBoxManifold(*circle, *box, manifold);
         }
@@ -262,7 +271,6 @@ namespace l2d
         {
             const auto* boxA = dynamic_cast<const BoxCollider2D*>(&colliderA);
             const auto* boxB = dynamic_cast<const BoxCollider2D*>(&colliderB);
-
             return boxA != nullptr && boxB != nullptr && boxBoxManifold(*boxA, *boxB, manifold);
         }
 

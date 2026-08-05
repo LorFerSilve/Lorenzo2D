@@ -19,6 +19,8 @@ namespace l2d
     {
         GameObjectId firstObjectId = InvalidGameObjectId;
         GameObjectId secondObjectId = InvalidGameObjectId;
+        ColliderId firstColliderId = InvalidColliderId;
+        ColliderId secondColliderId = InvalidColliderId;
         ColliderType firstColliderType = ColliderType::Box;
         ColliderType secondColliderType = ColliderType::Box;
         CollisionManifold2D manifold;

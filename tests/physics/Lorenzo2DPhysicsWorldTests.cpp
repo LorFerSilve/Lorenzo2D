@@ -113,16 +113,15 @@ namespace
         L2D_REQUIRE(!transitioningBody.body->isGrounded());
     }
 
-    void testOnlyFirstBaseColliderParticipates()
+    void testAllBaseCollidersParticipate()
     {
         l2d::Scene scene;
         l2d::PhysicsWorld2D world(zeroGravityConfig());
 
         l2d::GameObject& mover = scene.createGameObject("Mover");
         l2d::RigidBody2D& body = mover.addComponent<l2d::RigidBody2D>();
-        l2d::BoxCollider2D& participatingBox =
-            mover.addComponent<l2d::BoxCollider2D>(sf::Vector2f{2.f, 2.f});
-        l2d::CircleCollider2D& ignoredCircle = mover.addComponent<l2d::CircleCollider2D>(1.f);
+        l2d::BoxCollider2D& box = mover.addComponent<l2d::BoxCollider2D>(sf::Vector2f{2.f, 2.f});
+        l2d::CircleCollider2D& circle = mover.addComponent<l2d::CircleCollider2D>(1.f);
 
         l2d::GameObject& obstacle = scene.createGameObject("Obstacle");
         obstacle.transform.setPosition({1.5f, 0.f});
@@ -132,12 +131,20 @@ namespace
         body.setVelocity({1.f, 0.f});
         fixedStep(scene, world, 0.01f);
 
-        L2D_REQUIRE_EQUAL(world.contacts().size(), 1);
-        L2D_REQUIRE(participatingBox.isColliding());
-        L2D_REQUIRE(!ignoredCircle.isColliding());
+        L2D_REQUIRE_EQUAL(world.contacts().size(), 2);
+        L2D_REQUIRE(box.isColliding());
+        L2D_REQUIRE(circle.isColliding());
         L2D_REQUIRE(obstacleBox.isColliding());
-        L2D_REQUIRE_EQUAL(world.contacts()[0].firstColliderType, l2d::ColliderType::Box);
-        L2D_REQUIRE_EQUAL(world.contacts()[0].secondColliderType, l2d::ColliderType::Box);
+        L2D_REQUIRE(box.id() != circle.id());
+        L2D_REQUIRE(world.isColliderTouching(box.id(), obstacleBox.id()));
+        L2D_REQUIRE(world.isColliderTouching(circle.id(), obstacleBox.id()));
+
+        const bool firstContactUsesBox = world.contacts()[0].firstColliderId == box.id() ||
+                                         world.contacts()[0].secondColliderId == box.id();
+        const bool secondContactUsesCircle = world.contacts()[1].firstColliderId == circle.id() ||
+                                             world.contacts()[1].secondColliderId == circle.id();
+        L2D_REQUIRE(firstContactUsesBox);
+        L2D_REQUIRE(secondContactUsesCircle);
     }
 
     void testShortDynamicBoxStackRemainsFinite()
@@ -203,8 +210,7 @@ int main()
     runTest("reset scene clears physics flags", testResetSceneClearsPhysicsFlags, failures);
     runTest("kinematic bodies never become grounded", testKinematicBodiesNeverBecomeGrounded,
             failures);
-    runTest("only first base collider participates", testOnlyFirstBaseColliderParticipates,
-            failures);
+    runTest("all base colliders participate", testAllBaseCollidersParticipate, failures);
     runTest("short dynamic box stack remains finite", testShortDynamicBoxStackRemainsFinite,
             failures);
     runTest("legacy tangent and outward velocity remain", testLegacyTangentAndOutwardVelocityRemain,

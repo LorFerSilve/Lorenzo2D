@@ -172,6 +172,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DPhysicsAdvancedTests
+    SOURCE physics/Lorenzo2DPhysicsAdvancedTests.cpp
+    LABELS headless physics advanced
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
     Lorenzo2DAssetTests
     SOURCE Lorenzo2DAssetTests.cpp
     LABELS xvfb assets renderer

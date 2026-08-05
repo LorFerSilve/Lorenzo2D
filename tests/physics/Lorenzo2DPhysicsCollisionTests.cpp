@@ -82,12 +82,12 @@ namespace
         second.setSize({10.f, 10.f});
 
         L2D_REQUIRE(l2d::computeCollisionManifold(first, second, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{1.f, 0.f}), kPhysicsComparisonEpsilon);
-        L2D_REQUIRE_APPROX(manifold.penetration, 6.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{-1.f, 0.f}), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 2.f, kPhysicsComparisonEpsilon);
 
         L2D_REQUIRE(l2d::computeCollisionManifold(second, first, reversed));
         L2D_REQUIRE_APPROX(reversed.normal, (sf::Vector2f{1.f, 0.f}), kPhysicsComparisonEpsilon);
-        L2D_REQUIRE_APPROX(reversed.penetration, 6.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(reversed.penetration, 2.f, kPhysicsComparisonEpsilon);
     }
 
     void testCircleBoxManifolds()
@@ -125,8 +125,8 @@ namespace
         circleObject.transform.setPosition({1.f, 1.f});
         box.setSize({4.f, 4.f});
         L2D_REQUIRE(l2d::computeCollisionManifold(circle, box, manifold));
-        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{1.f, 0.f}), kPhysicsComparisonEpsilon);
-        L2D_REQUIRE_APPROX(manifold.penetration, 3.f, kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.normal, (sf::Vector2f{-1.f, 0.f}), kPhysicsComparisonEpsilon);
+        L2D_REQUIRE_APPROX(manifold.penetration, 2.f, kPhysicsComparisonEpsilon);
         L2D_REQUIRE(isFinite(manifold.point));
     }
 

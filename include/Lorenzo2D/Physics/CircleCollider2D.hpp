@@ -16,6 +16,7 @@ namespace l2d
         void setRadius(float radius);
 
         sf::Vector2f center() const;
+        float worldRadius() const;
 
         bool overlaps(const CircleCollider2D& other) const;
         bool overlaps(const BoxCollider2D& box) const;

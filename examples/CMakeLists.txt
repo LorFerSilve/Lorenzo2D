@@ -9,3 +9,4 @@ endfunction()
 
 l2d_add_example(Lorenzo2DMinimalExample minimal.cpp)
 l2d_add_example(Lorenzo2DAnimationExample animation.cpp)
+l2d_add_example(Lorenzo2DPhysicsExample physics.cpp)

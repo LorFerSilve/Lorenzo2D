@@ -132,6 +132,7 @@ namespace l2d::test::physics
         }
 
         l2d::CircleCollider2D& collider = object.addComponent<l2d::CircleCollider2D>(radius);
+        collider.setOffset({radius, radius});
 
         return {object, collider, body};
     }
@@ -159,6 +160,7 @@ namespace l2d::test::physics
         }
 
         l2d::BoxCollider2D& collider = object.addComponent<l2d::BoxCollider2D>(size);
+        collider.setOffset(size * 0.5f);
 
         return {object, collider, body};
     }

@@ -703,7 +703,9 @@ namespace l2d
                     scene.createGameObject(objectPrefix + "_Collision_" + std::to_string(index));
                 newGeneratedObjects.push_back(scene.createHandle(collisionObject));
                 collisionObject.transform.setPosition(geometry.position);
-                collisionObject.addComponent<BoxCollider2D>(geometry.size);
+                BoxCollider2D& collider =
+                    collisionObject.addComponent<BoxCollider2D>(geometry.size);
+                collider.setOffset(geometry.size * 0.5f);
             }
         }
         catch (...)
