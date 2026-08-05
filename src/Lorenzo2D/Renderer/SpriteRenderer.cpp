@@ -74,6 +74,16 @@ namespace l2d
         return m_sprite.getColor();
     }
 
+    void SpriteRenderer::setTextureRect(sf::IntRect textureRect)
+    {
+        m_sprite.setTextureRect(textureRect);
+    }
+
+    sf::IntRect SpriteRenderer::textureRect() const
+    {
+        return m_sprite.getTextureRect();
+    }
+
     void SpriteRenderer::onRender(sf::RenderWindow& window)
     {
         onRender(window, 1.f);

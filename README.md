@@ -16,17 +16,18 @@ production-ready engine.
 - Action bindings with multiple keys per gameplay action
 - Game objects, transforms, polymorphic components, tags, and deferred deletion
 - Scenes, scene switching, object queries, and lifetime-aware object handles
-- Circle and rectangle rendering plus texture-backed sprites
+- Circle and rectangle rendering plus texture-backed sprites and sprite-sheet animation
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
-- ASCII tilemap loading with chunked, view-culled rendering and merged collision geometry
+- ASCII tilemap loading with textured atlas tiles, chunked view culling, and merged collision geometry
 - Static, kinematic, and dynamic rigid bodies with configurable gravity
 - Circle/box collision manifolds, impulse response, friction, and restitution
 - Collision layers, sensors, contact events, and physics debug drawing
-- Lifetime-safe read-only font and texture handles with transactional named
-  storage
+- Lifetime-safe read-only font and texture handles, transactional named storage,
+  and ordered runtime resource lookup
+- Data-only object prefabs and a deterministic, versioned level format
 - Debug overlay and independently switchable world, physics, and UI layers
-- Regression tests for timing, transforms, scenes, camera and renderer numeric
-  contracts, assets, physics, and tilemaps
+- Focused minimal and animation examples plus regression tests for timing,
+  scenes, rendering, resources, serialization, animation, physics, and tilemaps
 
 ## Requirements
 
@@ -70,8 +71,10 @@ ctest --preset dev
 `release`, `sanitize`, `lint`, `coverage`, and `benchmarks` presets keep
 specialized build trees isolated under `build/<preset>`.
 
-The sandbox executable is written to `build/bin`. Disable it for a test- or
-library-only build with `-DL2D_BUILD_SANDBOX=OFF`.
+The sandbox and the focused `Lorenzo2DMinimalExample` and
+`Lorenzo2DAnimationExample` executables are written to `build/bin`. Disable
+them independently with `-DL2D_BUILD_SANDBOX=OFF` and
+`-DL2D_BUILD_EXAMPLES=OFF`.
 
 `Lorenzo2DRendererTests` and `Lorenzo2DTimingAccountingTests` are explicitly
 labeled `headless` and can run on Linux with `DISPLAY` and `WAYLAND_DISPLAY`
@@ -88,6 +91,7 @@ Useful configuration options:
 | Option | Top-level default | Dependency-mode default | Purpose |
 | --- | --- | --- | --- |
 | `L2D_BUILD_SANDBOX` | `ON` | `OFF` | Build the interactive sandbox |
+| `L2D_BUILD_EXAMPLES` | `ON` | `OFF` | Build the focused minimal and animation examples |
 | `L2D_BUILD_TESTS` | `ON` | `OFF` | Build and register regression tests |
 | `L2D_BUILD_BENCHMARKS` | `OFF` | `OFF` | Build the standalone performance benchmarks |
 | `L2D_USE_SYSTEM_SFML` | `OFF` | `OFF` | Use an installed SFML package |
@@ -192,7 +196,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.1 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.2 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -230,6 +234,85 @@ tile-sized cell:
 
 Rows may have different lengths, and blank rows are preserved. The map's world
 width is based on its longest row.
+
+### Textured tilesets
+
+`TileSet` maps any layout character to a positive pixel rectangle in a texture
+atlas. `setTileFromGrid()` calculates that rectangle from an atlas cell and a
+pixel tile size. Assign the tileset before loading so `TileMap` snapshots its
+mappings and texture lease with the generated render batches:
+
+```cpp
+l2d::TileSet tiles;
+tiles.setTexture(assets.getTexture("terrain"));
+tiles.setTileFromGrid('#', {0u, 0u}, {16u, 16u});
+tiles.setTileFromGrid('G', {1u, 0u}, {16u, 16u});
+
+tileMap.setTileSize({32.f, 32.f});
+tileMap.setTileSet(tiles);
+tileMap.loadFromLayout(scene, {"#GG#"});
+```
+
+Mapped characters render even when they are not the solid collision character.
+An unmapped solid character retains the flat `solidTileColor()` fallback.
+Colored and atlas-mapped geometry can therefore share a chunk; each non-empty
+geometry kind contributes one draw call for that visible chunk.
+
+`TileMapBuildStats` separates collision solids, all rendered tiles, and
+atlas-mapped tiles. The configured `tileSet()` and active `loadedTileSet()` are
+separate next-load/current-load snapshots, matching tile and chunk sizing.
+
+## Sprite-sheet animation
+
+`AnimationClip` owns validated texture rectangles and per-frame durations.
+Frames can be appended individually or as a horizontal/vertical atlas grid.
+`Animator` is an ECS component that drives the `SpriteRenderer` on the same
+game object during fixed updates:
+
+```cpp
+auto& sprite = object.addComponent<l2d::SpriteRenderer>(texture);
+sprite.setTextureRect({{0, 0}, {32, 32}});
+sprite.setSize({96.f, 96.f});
+
+l2d::AnimationClip run("run");
+run.addGridFrames({0, 0}, {32, 32}, 6u, 0.08f);
+
+auto& animator = object.addComponent<l2d::Animator>();
+animator.addClip(std::move(run));
+animator.play("run");
+```
+
+Clips support looping and one-shot playback. Animators expose pause, stop,
+restart, speed, current-frame, and completion state. Invalid time deltas are
+no-ops, and very large looping deltas are reduced by the clip duration before
+frame traversal. Use equal-sized frames when a fixed displayed sprite size is
+desired; `SpriteRenderer::setSize()` scales against its active texture rect.
+
+## Prefabs and serialized levels
+
+`Prefab` is a data-only object template for transform, tag, active state,
+shape renderers, rigid body, and one box or circle collider. `PrefabLibrary`
+stores validated named snapshots and instantiates them into any `Scene`.
+Custom gameplay components remain game-owned and can be attached immediately
+after instantiation.
+
+`LevelDocument` contains an ordered list of those prefabs. `LevelSerializer`
+round-trips it through streams or `.l2dlevel` files and can instantiate the
+complete document while returning lifetime-aware object handles. The format
+starts with `LORENZO2D_LEVEL 1`; unsupported versions, non-finite values,
+invalid component data, excessive object counts, malformed records, and
+trailing input are rejected without changing the destination document.
+The complete field reference and a checked-in example live in
+[`docs/level-format.md`](docs/level-format.md) and
+[`assets/levels/phase2-showcase.l2dlevel`](assets/levels/phase2-showcase.l2dlevel).
+
+```cpp
+l2d::LevelDocument level;
+if (l2d::LevelSerializer::loadFromFile("level.l2dlevel", level))
+{
+    const auto objects = l2d::LevelSerializer::instantiate(scene, level);
+}
+```
 
 ### Tilemap scalability
 
@@ -302,12 +385,34 @@ Automatic hot reload and file watching are deliberately deferred. Replacing a
 named asset does not silently update renderers that hold an older snapshot;
 acquire the new handle and explicitly rebind each renderer that should use it.
 
+### Runtime resource lookup
+
+`ResourceLocator` replaces source-tree compile definitions with ordered runtime
+roots. Add a working-directory asset root and an executable-relative root,
+then pass portable resource names to its `locate()` query or directly to the
+`AssetManager` overloads:
+
+```cpp
+l2d::ResourceLocator resources;
+resources.addRoot(std::filesystem::current_path() / "assets");
+resources.addRoot(l2d::ResourceLocator::executableDirectory(argv[0]) / "assets");
+
+assets.loadTexture("hero", resources, "textures/hero.png");
+```
+
+Roots are normalized to absolute paths, deduplicated, and queried in insertion
+order. Absolute existing resource paths remain valid. The sandbox copies its
+asset directory beside the executable after each build and uses only this
+runtime lookup path; it no longer embeds the source asset directory at compile
+time.
+
 ## Source layout
 
 ```text
 include/Lorenzo2D/  Public engine headers
 src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
+examples/           Focused minimal and animation applications
 assets/             Text levels and optional runtime assets
 tests/              Regression and consumer integration tests
 benchmarks/         Standalone physics and tile-map performance probes
@@ -315,7 +420,7 @@ cmake/              Installed-package configuration templates
 ```
 
 The public engine is separated into `Core`, `ECS`, `Scene`, `Renderer`,
-`Physics`, `Assets`, and `Tilemap` modules. Scenes own game objects, and game
+`Animation`, `Physics`, `Assets`, and `Tilemap` modules. Scenes own game objects, and game
 objects own their components. Destruction is queued so an object can safely
 request its own removal during an update.
 
@@ -534,14 +639,14 @@ owned by the world's fixed simulation step rather than component update.
   pair counts; continuous collision detection, sleeping, joints, and angular
   dynamics are future work.
 - Tilemap chunks rebuild as a whole when a layout changes; incremental chunk
-  editing, streamed regions, textured tilesets, and animated tiles remain
-  future work.
+  editing, streamed regions, and animated tiles remain future work.
 - Render ordering is a fixed layer mask rather than a general render queue.
 - Asset handles provide lifetime-safe, read-only access to published
   generations, but automatic file watching, hot reload propagation, dependency
   tracking, and background loading remain future work.
-- The sandbox is still a single integration example. Smaller examples and more
-  subsystem tests should be added as APIs stabilize.
+- Prefab serialization currently covers built-in shape renderers and physics
+  components. Sprite asset references, animation state, custom component
+  codecs, and schema migrations remain future work.
 - Regression sources use a lightweight first-party harness with shared support
   and focused subsystem executables. More data-driven cases and richer failure
   context can be added as the suite grows.

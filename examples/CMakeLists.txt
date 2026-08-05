@@ -1,0 +1,11 @@
+function(l2d_add_example target source)
+    add_executable(${target} ${source})
+    target_link_libraries(${target} PRIVATE Lorenzo2D::Lorenzo2D)
+    l2d_enable_warnings(${target})
+    l2d_enable_sanitizers(${target})
+    l2d_enable_coverage(${target})
+    l2d_enable_clang_tidy(${target})
+endfunction()
+
+l2d_add_example(Lorenzo2DMinimalExample minimal.cpp)
+l2d_add_example(Lorenzo2DAnimationExample animation.cpp)

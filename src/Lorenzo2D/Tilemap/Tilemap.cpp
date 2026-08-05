@@ -6,6 +6,7 @@
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/Vertex.hpp>
 #include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/Graphics/View.hpp>
@@ -39,21 +40,45 @@ namespace l2d
 
         struct RenderChunk
         {
-            sf::VertexArray vertices;
+            sf::VertexArray coloredVertices;
+            sf::VertexArray texturedVertices;
             Bounds worldBounds;
-            std::size_t tileCount = 0;
+            std::size_t coloredTileCount = 0;
+            std::size_t texturedTileCount = 0;
 
-            RenderChunk(sf::VertexArray&& chunkVertices, Bounds bounds, std::size_t count)
-                : vertices(std::move(chunkVertices)), worldBounds(bounds), tileCount(count)
+            RenderChunk(sf::VertexArray&& colored, sf::VertexArray&& textured, Bounds bounds,
+                        std::size_t coloredCount, std::size_t texturedCount)
+                : coloredVertices(std::move(colored)), texturedVertices(std::move(textured)),
+                  worldBounds(bounds), coloredTileCount(coloredCount),
+                  texturedTileCount(texturedCount)
             {
+            }
+
+            std::size_t tileCount() const
+            {
+                return coloredTileCount + texturedTileCount;
             }
         };
 
         struct RenderChunkBuilder
         {
-            sf::VertexArray vertices{sf::PrimitiveType::Triangles};
+            sf::VertexArray coloredVertices{sf::PrimitiveType::Triangles};
+            sf::VertexArray texturedVertices{sf::PrimitiveType::Triangles};
             Bounds worldBounds;
-            std::size_t tileCount = 0;
+            std::size_t coloredTileCount = 0;
+            std::size_t texturedTileCount = 0;
+
+            std::size_t tileCount() const
+            {
+                return coloredTileCount + texturedTileCount;
+            }
+        };
+
+        struct RenderBuild
+        {
+            std::vector<RenderChunk> chunks;
+            std::size_t renderedTileCount = 0;
+            std::size_t texturedTileCount = 0;
         };
 
         struct CollisionRectangle
@@ -149,16 +174,19 @@ namespace l2d
             return intersects(chunk.worldBounds, cullingArea.bounds);
         }
 
-        void appendVertex(sf::VertexArray& vertices, sf::Vector2f position, sf::Color color)
+        void appendVertex(sf::VertexArray& vertices, sf::Vector2f position, sf::Color color,
+                          sf::Vector2f textureCoordinate = {0.f, 0.f})
         {
             sf::Vertex vertex;
             vertex.position = position;
             vertex.color = color;
+            vertex.texCoords = textureCoordinate;
             vertices.append(vertex);
         }
 
         void appendTile(RenderChunkBuilder& chunk, std::size_t column, std::size_t row,
-                        sf::Vector2f tileSize, sf::Color color)
+                        sf::Vector2f tileSize, sf::Color color,
+                        const std::optional<sf::IntRect>& textureRect)
         {
             const float left = checkedTileExtent(column, tileSize.x);
             const float top = checkedTileExtent(row, tileSize.y);
@@ -171,14 +199,38 @@ namespace l2d
                     "Tile map cells are too small for their world coordinates.");
             }
 
-            appendVertex(chunk.vertices, {left, top}, color);
-            appendVertex(chunk.vertices, {left, bottom}, color);
-            appendVertex(chunk.vertices, {right, bottom}, color);
-            appendVertex(chunk.vertices, {left, top}, color);
-            appendVertex(chunk.vertices, {right, bottom}, color);
-            appendVertex(chunk.vertices, {right, top}, color);
+            sf::VertexArray& vertices =
+                textureRect ? chunk.texturedVertices : chunk.coloredVertices;
 
-            if (chunk.tileCount == 0)
+            if (textureRect)
+            {
+                const float textureLeft = static_cast<float>(textureRect->position.x);
+                const float textureTop = static_cast<float>(textureRect->position.y);
+                const float textureRight =
+                    static_cast<float>(textureRect->position.x + textureRect->size.x);
+                const float textureBottom =
+                    static_cast<float>(textureRect->position.y + textureRect->size.y);
+
+                appendVertex(vertices, {left, top}, color, {textureLeft, textureTop});
+                appendVertex(vertices, {left, bottom}, color, {textureLeft, textureBottom});
+                appendVertex(vertices, {right, bottom}, color, {textureRight, textureBottom});
+                appendVertex(vertices, {left, top}, color, {textureLeft, textureTop});
+                appendVertex(vertices, {right, bottom}, color, {textureRight, textureBottom});
+                appendVertex(vertices, {right, top}, color, {textureRight, textureTop});
+                chunk.texturedTileCount++;
+            }
+            else
+            {
+                appendVertex(vertices, {left, top}, color);
+                appendVertex(vertices, {left, bottom}, color);
+                appendVertex(vertices, {right, bottom}, color);
+                appendVertex(vertices, {left, top}, color);
+                appendVertex(vertices, {right, bottom}, color);
+                appendVertex(vertices, {right, top}, color);
+                chunk.coloredTileCount++;
+            }
+
+            if (chunk.tileCount() == 1u)
             {
                 chunk.worldBounds = {left, top, right, bottom};
             }
@@ -189,13 +241,11 @@ namespace l2d
                 chunk.worldBounds.right = std::max(chunk.worldBounds.right, right);
                 chunk.worldBounds.bottom = std::max(chunk.worldBounds.bottom, bottom);
             }
-
-            chunk.tileCount++;
         }
 
-        std::vector<RenderChunk> buildRenderChunks(const TileMap::Layout& layout, char solidChar,
-                                                   sf::Vector2f tileSize, sf::Vector2u chunkSize,
-                                                   sf::Color color)
+        RenderBuild buildRenderChunks(const TileMap::Layout& layout, char solidChar,
+                                      sf::Vector2f tileSize, sf::Vector2u chunkSize,
+                                      sf::Color color, const TileSet& tileSet)
         {
             using ChunkCoordinate = std::pair<std::size_t, std::size_t>;
             std::map<ChunkCoordinate, RenderChunkBuilder> builders;
@@ -204,27 +254,34 @@ namespace l2d
             {
                 for (std::size_t column = 0; column < layout[row].size(); ++column)
                 {
-                    if (layout[row][column] != solidChar) continue;
+                    const char tile = layout[row][column];
+                    const std::optional<sf::IntRect> textureRect = tileSet.textureRect(tile);
+
+                    if (!textureRect && tile != solidChar) continue;
 
                     const ChunkCoordinate coordinate = {row / static_cast<std::size_t>(chunkSize.y),
                                                         column /
                                                             static_cast<std::size_t>(chunkSize.x)};
 
-                    appendTile(builders[coordinate], column, row, tileSize, color);
+                    appendTile(builders[coordinate], column, row, tileSize,
+                               textureRect ? sf::Color::White : color, textureRect);
                 }
             }
 
-            std::vector<RenderChunk> chunks;
-            chunks.reserve(builders.size());
+            RenderBuild build;
+            build.chunks.reserve(builders.size());
 
             for (auto& entry : builders)
             {
                 RenderChunkBuilder& builder = entry.second;
-                chunks.emplace_back(std::move(builder.vertices), builder.worldBounds,
-                                    builder.tileCount);
+                build.renderedTileCount += builder.tileCount();
+                build.texturedTileCount += builder.texturedTileCount;
+                build.chunks.emplace_back(std::move(builder.coloredVertices),
+                                          std::move(builder.texturedVertices), builder.worldBounds,
+                                          builder.coloredTileCount, builder.texturedTileCount);
             }
 
-            return chunks;
+            return build;
         }
 
         std::vector<CollisionRectangle> buildCollisionRectangles(const TileMap::Layout& layout,
@@ -334,8 +391,10 @@ namespace l2d
         class TileMapRenderComponent final : public Component
         {
           public:
-            TileMapRenderComponent(std::vector<RenderChunk>&& chunks, std::size_t solidTileCount)
-                : m_chunks(std::move(chunks)), m_solidTileCount(solidTileCount)
+            TileMapRenderComponent(std::vector<RenderChunk>&& chunks, TextureHandle texture,
+                                   std::size_t solidTileCount)
+                : m_chunks(std::move(chunks)), m_texture(std::move(texture)),
+                  m_solidTileCount(solidTileCount)
             {
             }
 
@@ -385,7 +444,18 @@ namespace l2d
                         continue;
                     }
 
-                    window.draw(chunk.vertices);
+                    if (chunk.coloredTileCount > 0u)
+                    {
+                        window.draw(chunk.coloredVertices);
+                    }
+
+                    if (chunk.texturedTileCount > 0u)
+                    {
+                        sf::RenderStates states;
+                        states.texture = m_texture.get();
+                        window.draw(chunk.texturedVertices, states);
+                    }
+
                     addVisibleChunk(stats, chunk);
                 }
 
@@ -404,13 +474,15 @@ namespace l2d
             static void addVisibleChunk(TileMapRenderStats& stats, const RenderChunk& chunk)
             {
                 stats.visibleChunkCount++;
-                stats.submittedTileCount += chunk.tileCount;
-                stats.submittedVertexCount += chunk.tileCount * VERTICES_PER_TILE;
-                stats.drawCallCount++;
+                stats.submittedTileCount += chunk.tileCount();
+                stats.submittedVertexCount += chunk.tileCount() * VERTICES_PER_TILE;
+                stats.drawCallCount += static_cast<std::size_t>(chunk.coloredTileCount > 0u);
+                stats.drawCallCount += static_cast<std::size_t>(chunk.texturedTileCount > 0u);
             }
 
           private:
             std::vector<RenderChunk> m_chunks;
+            TextureHandle m_texture;
             std::size_t m_solidTileCount = 0;
             TileMapRenderStats m_lastRenderStats;
         };
@@ -431,7 +503,8 @@ namespace l2d
         : m_tileSize(other.m_tileSize), m_loadedTileSize(other.m_loadedTileSize),
           m_renderChunkSize(other.m_renderChunkSize),
           m_loadedRenderChunkSize(other.m_loadedRenderChunkSize),
-          m_solidTileColor(other.m_solidTileColor), m_worldSize(other.m_worldSize),
+          m_solidTileColor(other.m_solidTileColor), m_tileSet(std::move(other.m_tileSet)),
+          m_loadedTileSet(std::move(other.m_loadedTileSet)), m_worldSize(other.m_worldSize),
           m_buildStats(other.m_buildStats), m_layout(std::move(other.m_layout)),
           m_generatedObjects(std::move(other.m_generatedObjects)),
           m_renderObject(std::move(other.m_renderObject))
@@ -456,6 +529,8 @@ namespace l2d
         m_renderChunkSize = other.m_renderChunkSize;
         m_loadedRenderChunkSize = other.m_loadedRenderChunkSize;
         m_solidTileColor = other.m_solidTileColor;
+        m_tileSet = std::move(other.m_tileSet);
+        m_loadedTileSet = std::move(other.m_loadedTileSet);
         m_worldSize = other.m_worldSize;
         m_buildStats = other.m_buildStats;
         m_layout = std::move(other.m_layout);
@@ -527,15 +602,32 @@ namespace l2d
         return m_solidTileColor;
     }
 
+    void TileMap::setTileSet(TileSet tileSet)
+    {
+        m_tileSet = std::move(tileSet);
+    }
+
+    const TileSet& TileMap::tileSet() const
+    {
+        return m_tileSet;
+    }
+
+    const TileSet& TileMap::loadedTileSet() const
+    {
+        return m_loadedTileSet;
+    }
+
     void TileMap::loadFromLayout(Scene& scene, const Layout& layout, char solidChar,
                                  const std::string& objectPrefix)
     {
         Layout newLayout = layout;
         const sf::Vector2f newLoadedTileSize = m_tileSize;
         const sf::Vector2u newLoadedRenderChunkSize = m_renderChunkSize;
+        TileSet newLoadedTileSet = m_tileSet;
 
         std::size_t maxColumns = 0;
         std::size_t solidTileCount = 0;
+        std::size_t renderedTileCount = 0;
 
         for (const std::string& row : newLayout)
         {
@@ -549,19 +641,32 @@ namespace l2d
             }
 
             solidTileCount += rowSolidTileCount;
+
+            for (char tile : row)
+            {
+                if (tile != solidChar && !newLoadedTileSet.contains(tile)) continue;
+
+                if (renderedTileCount == std::numeric_limits<std::size_t>::max())
+                {
+                    throw std::length_error("Tile map contains too many rendered tiles.");
+                }
+
+                ++renderedTileCount;
+            }
         }
 
-        if (solidTileCount > std::numeric_limits<std::size_t>::max() / VERTICES_PER_TILE)
+        if (renderedTileCount > std::numeric_limits<std::size_t>::max() / VERTICES_PER_TILE)
         {
-            throw std::length_error("Tile map contains too many solid tiles to render.");
+            throw std::length_error("Tile map contains too many tiles to render.");
         }
 
         const sf::Vector2f newWorldSize = {
             checkedTileExtent(maxColumns, newLoadedTileSize.x),
             checkedTileExtent(newLayout.size(), newLoadedTileSize.y)};
 
-        std::vector<RenderChunk> renderChunks = buildRenderChunks(
-            newLayout, solidChar, newLoadedTileSize, newLoadedRenderChunkSize, m_solidTileColor);
+        RenderBuild renderBuild =
+            buildRenderChunks(newLayout, solidChar, newLoadedTileSize, newLoadedRenderChunkSize,
+                              m_solidTileColor, newLoadedTileSet);
         const std::vector<CollisionRectangle> collisionRectangles =
             buildCollisionRectangles(newLayout, solidChar);
         const std::vector<CollisionGeometry> collisionGeometry =
@@ -569,22 +674,25 @@ namespace l2d
 
         TileMapBuildStats newBuildStats;
         newBuildStats.solidTileCount = solidTileCount;
-        newBuildStats.renderChunkCount = renderChunks.size();
+        newBuildStats.renderedTileCount = renderBuild.renderedTileCount;
+        newBuildStats.texturedTileCount = renderBuild.texturedTileCount;
+        newBuildStats.renderChunkCount = renderBuild.chunks.size();
         newBuildStats.collisionRectangleCount = collisionRectangles.size();
 
         std::vector<GameObjectHandle> newGeneratedObjects;
-        newGeneratedObjects.reserve(collisionRectangles.size() + (renderChunks.empty() ? 0u : 1u));
+        newGeneratedObjects.reserve(collisionRectangles.size() +
+                                    (renderBuild.chunks.empty() ? 0u : 1u));
         GameObjectHandle newRenderObject;
 
         try
         {
-            if (!renderChunks.empty())
+            if (!renderBuild.chunks.empty())
             {
                 GameObject& renderObject = scene.createGameObject(objectPrefix + "_Render");
                 newRenderObject = scene.createHandle(renderObject);
                 newGeneratedObjects.push_back(newRenderObject);
-                renderObject.addComponent<TileMapRenderComponent>(std::move(renderChunks),
-                                                                  solidTileCount);
+                renderObject.addComponent<TileMapRenderComponent>(
+                    std::move(renderBuild.chunks), newLoadedTileSet.texture(), solidTileCount);
             }
 
             for (std::size_t index = 0; index < collisionRectangles.size(); ++index)
@@ -609,6 +717,7 @@ namespace l2d
         m_layout = std::move(newLayout);
         m_loadedTileSize = newLoadedTileSize;
         m_loadedRenderChunkSize = newLoadedRenderChunkSize;
+        m_loadedTileSet = std::move(newLoadedTileSet);
         m_worldSize = newWorldSize;
         m_buildStats = newBuildStats;
         m_generatedObjects = std::move(newGeneratedObjects);
@@ -635,6 +744,7 @@ namespace l2d
         m_layout.clear();
         m_loadedTileSize = {0.f, 0.f};
         m_loadedRenderChunkSize = {0u, 0u};
+        m_loadedTileSet = {};
         m_worldSize = {0.f, 0.f};
         m_buildStats = {};
     }

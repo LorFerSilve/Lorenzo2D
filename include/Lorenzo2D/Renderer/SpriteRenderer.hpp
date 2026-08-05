@@ -26,6 +26,9 @@ namespace l2d
         void setColor(sf::Color color);
         sf::Color color() const;
 
+        void setTextureRect(sf::IntRect textureRect);
+        sf::IntRect textureRect() const;
+
         void onRender(sf::RenderWindow& window) override;
         void onRender(sf::RenderWindow& window, float interpolationAlpha) override;
 

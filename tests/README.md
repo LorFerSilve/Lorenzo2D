@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The regression executables use a small first-party harness. All fifteen suites
+The regression executables use a small first-party harness. All eighteen suites
 share assertion and named-test execution support through `TestSupport.hpp`.
 Physics and renderer assertions use the same value-rich diagnostics while
 keeping their subsystem comparison tolerances explicit in the owning source.
@@ -18,7 +18,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DInputTests` | Action-map sampling, multi-key bindings, frame edges, and consumption | `headless` | 30 s |
 | `Lorenzo2DEcsSceneTests` | Component mutation, activation, scene dispatch, handles, indexing, and deferred destruction | `headless` | 90 s |
 | `Lorenzo2DPhysicsIntegrationTests` | Scene-to-physics fixed-tick participation and render-cadence independence | `headless` | 90 s |
-| `Lorenzo2DTilemapTests` | Chunk statistics, view culling, collision merging, reload ownership, moves, and file loading | `headless` | 90 s |
+| `Lorenzo2DTilemapTests` | Atlas mappings, chunk statistics, view culling, collision merging, reload ownership, moves, and file loading | `headless` | 90 s |
 | `Lorenzo2DTimingAccountingTests` | Cumulative fixed-step and frame-clamp accounting | `headless` | 30 s |
 | `Lorenzo2DPhysicsBodyTests` | Body configuration, integration, impulses, restitution, and friction | `headless` | 90 s |
 | `Lorenzo2DPhysicsCollisionTests` | Manifolds, filters, sensors, contacts, grounded state, and extreme values | `headless` | 120 s |
@@ -27,6 +27,9 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DPhysicsTilemapTests` | Physics continuity across merged tile-map collision geometry | `headless` | 90 s |
 | `Lorenzo2DPhysicsStabilityTests` | Long-horizon contacts, stacks, determinism, broad-phase equivalence, and tunnelling baseline | `headless` | 240 s |
 | `Lorenzo2DAssetTests` | Font and texture handle lifetime, registries, and renderer leases | `xvfb` | 60 s |
+| `Lorenzo2DAnimationTests` | Clip validation, atlas frames, animator timing, looping, pause, speed, and completion | `xvfb` | 60 s |
+| `Lorenzo2DResourceTests` | Ordered roots, absolute paths, executable-relative lookup, and asset-manager integration | `headless` | 30 s |
+| `Lorenzo2DSerializationTests` | Prefab validation, versioned level round trips, transactional rejection, files, and ECS instantiation | `headless` | 60 s |
 | `Lorenzo2DRendererTests` | Camera, transform, and renderer numeric contracts without GPU resources | `headless` | 60 s |
 
 The previous broad regression targets mixed unrelated core, scene, physics,
@@ -72,13 +75,15 @@ Every regression executable must declare exactly one runtime label:
 - `headless`: CI unsets `DISPLAY` and `WAYLAND_DISPLAY` before execution.
 - `xvfb`: CI executes the suite through Xvfb on Linux.
 
-Only `Lorenzo2DAssetTests` currently uses the Xvfb partition because it
-constructs SFML texture and font resources. The harness, core, ECS, physics,
-tilemap, timing, and renderer suites contain no window, graphics-context,
-texture, or font construction and are executed with display variables removed.
+`Lorenzo2DAssetTests` and `Lorenzo2DAnimationTests` use the Xvfb partition
+because they construct SFML texture or font resources. The harness, core, ECS,
+physics, tilemap, resource, serialization, timing, and renderer suites contain
+no window, graphics-context, texture, or font construction and are executed
+with display variables removed.
 
 Subsystem labels such as `test-support`, `timing`, `ecs`, `scene`, `physics`,
-`tilemap`, `assets`, and `renderer` support focused local runs. A suite may have
+`tilemap`, `assets`, `resources`, `serialization`, `animation`, and `renderer`
+support focused local runs. A suite may have
 several subsystem labels, but it must still have exactly one runtime partition
 label.
 
