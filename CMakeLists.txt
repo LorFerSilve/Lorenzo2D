@@ -6,6 +6,18 @@ include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 include(cmake/Lorenzo2DDeveloperTools.cmake)
 
+set(L2D_GENERATED_INCLUDE_DIRECTORY
+    "${PROJECT_BINARY_DIR}/generated/include"
+)
+file(MAKE_DIRECTORY
+    "${L2D_GENERATED_INCLUDE_DIRECTORY}/Lorenzo2D/Core"
+)
+configure_file(
+    cmake/Lorenzo2DVersion.hpp.in
+    "${L2D_GENERATED_INCLUDE_DIRECTORY}/Lorenzo2D/Core/Version.hpp"
+    @ONLY
+)
+
 option(
     L2D_BUILD_SANDBOX
     "Build the Lorenzo2D sandbox application"
@@ -195,6 +207,7 @@ set_target_properties(Lorenzo2D PROPERTIES
 target_include_directories(Lorenzo2D
     PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+        "$<BUILD_INTERFACE:${L2D_GENERATED_INCLUDE_DIRECTORY}>"
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
@@ -253,6 +266,12 @@ if(L2D_INSTALL)
     install(
         DIRECTORY include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    install(
+        FILES
+            "${L2D_GENERATED_INCLUDE_DIRECTORY}/Lorenzo2D/Core/Version.hpp"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Lorenzo2D/Core"
     )
 
     get_target_property(

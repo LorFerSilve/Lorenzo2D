@@ -164,6 +164,25 @@ namespace
 
         L2D_REQUIRE(!std::filesystem::exists(temporaryPath));
     }
+
+    void testDeterministicReplayAcceptsMatchingSnapshots()
+    {
+        const auto replay = []() { return Vector2{3.f, 7.f}; };
+
+        L2D_REQUIRE_DETERMINISTIC_REPLAY(replay);
+    }
+
+    void testDeterministicReplayReportsDivergence()
+    {
+        int invocation = 0;
+        const auto replay = [&invocation]() { return invocation++; };
+
+        const std::string message = captureFailure(
+            [&replay]() { l2d::test::requireDeterministicReplay(replay, "replay", 61); });
+
+        L2D_REQUIRE_EQUAL(message, "line 61: deterministic replay replay diverged "
+                                   "(first: 0, second: 1)");
+    }
 }
 
 int main()
@@ -188,6 +207,10 @@ int main()
     runTest("requireApproximate2D reports components", testRequireApproximate2DReportsComponents,
             failures);
     runTest("TemporaryFile removes created file", testTemporaryFileRemovesCreatedFile, failures);
+    runTest("deterministic replay accepts matching snapshots",
+            testDeterministicReplayAcceptsMatchingSnapshots, failures);
+    runTest("deterministic replay reports divergence", testDeterministicReplayReportsDivergence,
+            failures);
 
     if (failures != 0)
     {

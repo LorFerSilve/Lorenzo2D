@@ -1,0 +1,16 @@
+#pragma once
+
+#include <string_view>
+
+#define LORENZO2D_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define LORENZO2D_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define LORENZO2D_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define LORENZO2D_VERSION_STRING "@PROJECT_VERSION@"
+
+namespace l2d
+{
+    inline constexpr unsigned int VersionMajor = LORENZO2D_VERSION_MAJOR;
+    inline constexpr unsigned int VersionMinor = LORENZO2D_VERSION_MINOR;
+    inline constexpr unsigned int VersionPatch = LORENZO2D_VERSION_PATCH;
+    inline constexpr std::string_view VersionString = LORENZO2D_VERSION_STRING;
+}

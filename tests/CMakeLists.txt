@@ -79,7 +79,14 @@ endfunction()
 l2d_add_regression_test(
     Lorenzo2DTestSupportTests
     SOURCE TestSupportTests.cpp
-    LABELS headless core test-support
+    LABELS headless core test-support determinism
+    TIMEOUT 30
+)
+
+l2d_add_regression_test(
+    Lorenzo2DVersionTests
+    SOURCE Lorenzo2DVersionTests.cpp
+    LABELS headless core version compatibility
     TIMEOUT 30
 )
 
@@ -167,7 +174,7 @@ l2d_add_regression_test(
 l2d_add_regression_test(
     Lorenzo2DPhysicsStabilityTests
     SOURCE Lorenzo2DPhysicsStabilityTests.cpp
-    LABELS headless physics stability
+    LABELS headless physics stability determinism
     TIMEOUT 240
 )
 

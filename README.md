@@ -8,6 +8,21 @@ The project is intentionally small and readable. It is suitable for learning
 engine architecture and iterating on core 2D systems, but it is not yet a
 production-ready engine.
 
+The public engine version is generated from CMake's project version and is
+available through `<Lorenzo2D/Core/Version.hpp>`. Project-wide contracts and
+current support claims are documented separately:
+
+- [`docs/architecture.md`](docs/architecture.md) defines ownership, update
+  order, dependency direction, numeric safety, and determinism boundaries.
+- [`docs/versioning.md`](docs/versioning.md) defines the pre-1.0 compatibility
+  and deprecation policy.
+- [`docs/support-matrix.md`](docs/support-matrix.md) distinguishes planned,
+  experimental, supported, and production-tested development paths.
+- [`docs/roadmap.md`](docs/roadmap.md) records the dependency-ordered phases for
+  point-and-click, top-down, platformer, and isometric support.
+- [`docs/benchmarking.md`](docs/benchmarking.md) defines diagnostic scenarios,
+  machine-readable reports, and the policy for future performance budgets.
+
 ## Current features
 
 - SFML application loop with fixed simulation ticks and bounded catch-up
@@ -151,14 +166,20 @@ This establishes a measurable baseline without rewarding superficial tests.
 ### Performance benchmarks
 
 The standalone benchmark executable measures uniform-grid and brute-force
-physics steps plus full tile-map construction. Results are diagnostic rather
-than pass/fail gates:
+physics steps, scene updates, render-queue construction, full tile-map
+construction, and tile-map view culling. Results are diagnostic rather than
+pass/fail gates:
 
 ```sh
 cmake --preset benchmarks
 cmake --build --preset benchmarks
 ./build/benchmarks/benchmarks/Lorenzo2DBenchmarks
 ```
+
+Pass `--json <path>` and/or `--csv <path>` to retain machine-readable reports
+while keeping the human-readable table on standard output. See
+[`docs/benchmarking.md`](docs/benchmarking.md) for the report contract and the
+rules for introducing blocking performance budgets.
 
 Multi-config generators may place the executable in a configuration-specific
 subdirectory.

@@ -200,6 +200,20 @@ namespace l2d::test
                                     line);
     }
 
+    template <typename Replay>
+    void requireDeterministicReplay(Replay&& replay, const char* replayExpression, int line)
+    {
+        const auto firstSnapshot = replay();
+        const auto secondSnapshot = replay();
+
+        if (detail::valuesEqual(firstSnapshot, secondSnapshot)) return;
+
+        throw std::runtime_error("line " + std::to_string(line) + ": deterministic replay " +
+                                 replayExpression +
+                                 " diverged (first: " + detail::formatValue(firstSnapshot) +
+                                 ", second: " + detail::formatValue(secondSnapshot) + ")");
+    }
+
     class TemporaryFile final
     {
       public:
@@ -262,3 +276,6 @@ namespace l2d::test
 #define L2D_REQUIRE_APPROX_2D(actual, expected, epsilon)                                           \
     ::l2d::test::requireApproximatelyEqual2D((actual), (expected), (epsilon), #actual, #expected,  \
                                              __LINE__)
+
+#define L2D_REQUIRE_DETERMINISTIC_REPLAY(replay)                                                   \
+    ::l2d::test::requireDeterministicReplay((replay), #replay, __LINE__)

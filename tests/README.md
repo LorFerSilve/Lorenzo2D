@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The regression executables use a small first-party harness. All eighteen suites
+The regression executables use a small first-party harness. All twenty suites
 share assertion and named-test execution support through `TestSupport.hpp`.
 Physics and renderer assertions use the same value-rich diagnostics while
 keeping their subsystem comparison tolerances explicit in the owning source.
@@ -14,6 +14,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | Target | Primary coverage | Runtime partition | Timeout |
 | --- | --- | --- | --- |
 | `Lorenzo2DTestSupportTests` | Harness diagnostics, explicit tolerances, 2D comparison, and temporary-file cleanup | `headless` | 30 s |
+| `Lorenzo2DVersionTests` | Generated build/install version constants and macros | `headless` | 30 s |
 | `Lorenzo2DCoreTimingTests` | Identity contracts, fixed-step scheduling, and transform interpolation | `headless` | 60 s |
 | `Lorenzo2DInputTests` | Action-map sampling, multi-key bindings, frame edges, and consumption | `headless` | 30 s |
 | `Lorenzo2DEcsSceneTests` | Component mutation, activation, scene dispatch, handles, indexing, and deferred destruction | `headless` | 90 s |
@@ -49,6 +50,8 @@ narrowest applicable suite or to a new focused executable.
   for scalar or vector-like values;
 - `L2D_REQUIRE_APPROX_2D`, which explicitly compares `x` and `y` components
   with a caller-supplied epsilon and reports both vectors;
+- `L2D_REQUIRE_DETERMINISTIC_REPLAY`, which executes a snapshot-returning
+  replay twice and reports both results when they diverge;
 - scalar `approximatelyEqual` overloads for `float` and `double`;
 - `approximatelyEqual2D` for vector-like values with `x` and `y` members;
 - `runTest` for named pass/fail reporting without aborting the remaining suite;
@@ -56,7 +59,8 @@ narrowest applicable suite or to a new focused executable.
 
 `Lorenzo2DTestSupportTests` directly verifies the harness failure messages,
 enum and vector formatting, scalar/vector dispatch, explicit-epsilon behavior,
-2D component comparison, and temporary-file cleanup.
+2D component comparison, deterministic replay comparison, and temporary-file
+cleanup.
 The original `L2D_REQUIRE` output remains unchanged for compatibility.
 
 Every first-party regression executable uses the shared assertion and runner.
@@ -82,7 +86,8 @@ no window, graphics-context, texture, or font construction and are executed
 with display variables removed.
 
 Subsystem labels such as `test-support`, `timing`, `ecs`, `scene`, `physics`,
-`tilemap`, `assets`, `resources`, `serialization`, `animation`, and `renderer`
+`tilemap`, `assets`, `resources`, `serialization`, `animation`, `renderer`,
+`version`, `compatibility`, and `determinism`
 support focused local runs. A suite may have
 several subsystem labels, but it must still have exactly one runtime partition
 label.

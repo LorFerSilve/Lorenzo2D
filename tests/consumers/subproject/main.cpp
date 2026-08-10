@@ -1,5 +1,6 @@
 #include <Lorenzo2D/Animation/AnimationClip.hpp>
 #include <Lorenzo2D/Assets/ResourceLocator.hpp>
+#include <Lorenzo2D/Core/Version.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/DistanceJoint2D.hpp>
@@ -32,9 +33,9 @@ int main()
     l2d::CircleCollider2D collider(2.f);
     l2d::DistanceJoint2D joint(42u, 3.f);
 
-    return position == sf::Vector2f{6.f, 8.f} && frameAdded && tileAdded && levelSaved &&
-                   resourceRootAdded && collider.id() != l2d::InvalidColliderId &&
-                   joint.id() != l2d::InvalidJointId
+    return l2d::VersionString == "0.4.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
+                   tileAdded && levelSaved && resourceRootAdded &&
+                   collider.id() != l2d::InvalidColliderId && joint.id() != l2d::InvalidJointId
                ? 0
                : 1;
 }
