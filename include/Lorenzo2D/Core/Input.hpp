@@ -1,9 +1,13 @@
 #pragma once
 
-#include <array>
-#include <cstddef>
+#include <Lorenzo2D/Core/InputSnapshot.hpp>
 
 #include <SFML/Window/Keyboard.hpp>
+
+namespace sf
+{
+    class Event;
+}
 
 namespace l2d
 {
@@ -37,19 +41,26 @@ namespace l2d
     class Input
     {
       public:
+        [[nodiscard]] static const InputSnapshot& snapshot() noexcept;
+
+        [[nodiscard]] static InputCode physicalKey(sf::Keyboard::Scancode scancode) noexcept;
+        [[nodiscard]] static InputCode logicalKey(sf::Keyboard::Key key) noexcept;
+        [[nodiscard]] static InputCode code(Key key) noexcept;
+
         static bool isKeyPressed(Key key);
         static bool wasKeyPressed(Key key);
         static bool wasKeyReleased(Key key);
 
       private:
+        static void reset();
+        static void beginFrame();
+        static void processEvent(const sf::Event& event);
         static void update();
 
         static sf::Keyboard::Key toSfmlKey(Key key);
-        static std::size_t keyToIndex(Key key);
 
       private:
-        static std::array<bool, static_cast<std::size_t>(Key::Count)> s_currentKeys;
-        static std::array<bool, static_cast<std::size_t>(Key::Count)> s_previousKeys;
+        static InputSnapshot s_snapshot;
 
         friend class Application;
     };

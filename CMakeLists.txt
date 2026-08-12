@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.4.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.5.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -160,7 +160,11 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Core/Application.cpp
     src/Lorenzo2D/Core/FixedStepScheduler.cpp
     src/Lorenzo2D/Core/Input.cpp
+    src/Lorenzo2D/Core/InputContextStack.cpp
+    src/Lorenzo2D/Core/InputMap.cpp
+    src/Lorenzo2D/Core/InputSnapshot.cpp
     src/Lorenzo2D/Core/Mouse.cpp
+    src/Lorenzo2D/Core/Pointer.cpp
     src/Lorenzo2D/Core/Time.cpp
     src/Lorenzo2D/Core/WindowEvents.cpp
     src/Lorenzo2D/ECS/Component.cpp

@@ -1,6 +1,7 @@
 #include <Lorenzo2D/Core/Application.hpp>
 #include <Lorenzo2D/Core/Input.hpp>
 #include <Lorenzo2D/Core/Mouse.hpp>
+#include <Lorenzo2D/Core/Pointer.hpp>
 #include <Lorenzo2D/Core/Time.hpp>
 #include <Lorenzo2D/Core/WindowEvents.hpp>
 
@@ -56,6 +57,8 @@ namespace l2d
     {
         m_fixedStepScheduler.reset();
         Time::reset(m_fixedStepScheduler.config().fixedDeltaTime);
+        Input::reset();
+        Pointer::reset();
 
         // Exclude derived-constructor and asset-loading time from the first
         // measured frame.
@@ -70,11 +73,14 @@ namespace l2d
             Time::beginFrame(frame.rawDeltaTime, frame.frameDeltaTime);
 
             WindowEvents::beginFrame();
+            Input::beginFrame();
+            Pointer::beginFrame();
             processEvents();
 
             if (!shouldClose())
             {
                 Input::update();
+                Pointer::update(m_window);
                 Mouse::update(m_window);
 
                 onFrameStart(Time::frameDeltaTime());
@@ -134,6 +140,8 @@ namespace l2d
         while (const auto event = m_window.pollEvent())
         {
             WindowEvents::processEvent(*event);
+            Input::processEvent(*event);
+            Pointer::processEvent(*event);
 
             if (WindowEvents::closeRequested())
             {

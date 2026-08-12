@@ -7,6 +7,7 @@ performance trends visible without encoding timing-dependent correctness claims.
 
 The current executable measures:
 
+- typed input-action sampling over a representative digital 2D binding;
 - scene fixed updates over a populated component set;
 - render queue construction and stable z-order sorting;
 - uniform-grid and brute-force physics steps;

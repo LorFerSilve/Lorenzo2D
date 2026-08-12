@@ -199,6 +199,8 @@ jobs:
           test -f install/lib/libLorenzo2D.a
           test -f install/include/Lorenzo2D/ECS/Transform.hpp
           test -f install/include/Lorenzo2D/Core/Version.hpp
+          test -f install/include/Lorenzo2D/Core/InputMap.hpp
+          test -f install/include/Lorenzo2D/Core/Pointer.hpp
           test -f install/include/Lorenzo2D/Animation/Animator.hpp
           test -f install/include/Lorenzo2D/Scene/LevelSerializer.hpp
           test -f install/include/Lorenzo2D/Tilemap/TileSet.hpp

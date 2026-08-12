@@ -1,75 +1,48 @@
 #include <Lorenzo2D/Core/Mouse.hpp>
+#include <Lorenzo2D/Core/Input.hpp>
+#include <Lorenzo2D/Core/Pointer.hpp>
 
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/View.hpp>
 
 namespace l2d
 {
-    std::array<bool, static_cast<std::size_t>(MouseButton::Count)> Mouse::s_currentButtons = {};
-    std::array<bool, static_cast<std::size_t>(MouseButton::Count)> Mouse::s_previousButtons = {};
-
-    sf::Vector2i Mouse::s_screenPosition = {0, 0};
-
     bool Mouse::isButtonPressed(MouseButton button)
     {
-        const std::size_t index = buttonToIndex(button);
-
-        if (index >= s_currentButtons.size()) return false;
-
-        return s_currentButtons[index];
+        if (button == MouseButton::Unknown || button == MouseButton::Count) return false;
+        return Input::snapshot().down(InputCode::mouse(toSfmlButton(button)));
     }
 
     bool Mouse::wasButtonPressed(MouseButton button)
     {
-        const std::size_t index = buttonToIndex(button);
-
-        if (index >= s_currentButtons.size()) return false;
-
-        return s_currentButtons[index] && !s_previousButtons[index];
+        if (button == MouseButton::Unknown || button == MouseButton::Count) return false;
+        return Input::snapshot().pressed(InputCode::mouse(toSfmlButton(button)));
     }
 
     bool Mouse::wasButtonReleased(MouseButton button)
     {
-        const std::size_t index = buttonToIndex(button);
-
-        if (index >= s_currentButtons.size()) return false;
-
-        return !s_currentButtons[index] && s_previousButtons[index];
+        if (button == MouseButton::Unknown || button == MouseButton::Count) return false;
+        return Input::snapshot().released(InputCode::mouse(toSfmlButton(button)));
     }
 
     const sf::Vector2i& Mouse::screenPosition()
     {
-        return s_screenPosition;
+        return Pointer::primary().screenPosition;
     }
 
     sf::Vector2f Mouse::worldPosition(const sf::RenderWindow& window)
     {
-        return window.mapPixelToCoords(s_screenPosition);
+        return Pointer::worldPosition(window);
     }
 
     sf::Vector2f Mouse::worldPosition(const sf::RenderWindow& window, const sf::View& view)
     {
-        return window.mapPixelToCoords(s_screenPosition, view);
+        return Pointer::worldPosition(window, view);
     }
 
     void Mouse::update(const sf::RenderWindow& window)
     {
-        s_previousButtons = s_currentButtons;
-
-        for (std::size_t index = 0; index < s_currentButtons.size(); ++index)
-        {
-            const MouseButton button = static_cast<MouseButton>(index);
-
-            if (button == MouseButton::Unknown || button == MouseButton::Count)
-            {
-                s_currentButtons[index] = false;
-                continue;
-            }
-
-            s_currentButtons[index] = sf::Mouse::isButtonPressed(toSfmlButton(button));
-        }
-
-        s_screenPosition = sf::Mouse::getPosition(window);
+        (void)window;
     }
 
     sf::Mouse::Button Mouse::toSfmlButton(MouseButton button)
@@ -92,8 +65,4 @@ namespace l2d
         }
     }
 
-    std::size_t Mouse::buttonToIndex(MouseButton button)
-    {
-        return static_cast<std::size_t>(button);
-    }
 }

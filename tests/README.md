@@ -16,7 +16,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DTestSupportTests` | Harness diagnostics, explicit tolerances, 2D comparison, and temporary-file cleanup | `headless` | 30 s |
 | `Lorenzo2DVersionTests` | Generated build/install version constants and macros | `headless` | 30 s |
 | `Lorenzo2DCoreTimingTests` | Identity contracts, fixed-step scheduling, and transform interpolation | `headless` | 60 s |
-| `Lorenzo2DInputTests` | Action-map sampling, multi-key bindings, frame edges, and consumption | `headless` | 30 s |
+| `Lorenzo2DInputTests` | Device codes, typed actions, layouts, deadzones, contexts, fixed-tick edges, reconnects, and pointer projection | `headless` | 30 s |
 | `Lorenzo2DEcsSceneTests` | Component mutation, activation, scene dispatch, handles, indexing, and deferred destruction | `headless` | 90 s |
 | `Lorenzo2DPhysicsIntegrationTests` | Scene-to-physics fixed-tick participation and render-cadence independence | `headless` | 90 s |
 | `Lorenzo2DTilemapTests` | Atlas mappings, chunk statistics, view culling, collision merging, reload ownership, moves, and file loading | `headless` | 90 s |

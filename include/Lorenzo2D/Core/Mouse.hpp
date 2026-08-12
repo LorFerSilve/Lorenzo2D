@@ -1,8 +1,5 @@
 #pragma once
 
-#include <array>
-#include <cstddef>
-
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Mouse.hpp>
 
@@ -43,14 +40,6 @@ namespace l2d
         static void update(const sf::RenderWindow& window);
 
         static sf::Mouse::Button toSfmlButton(MouseButton button);
-        static std::size_t buttonToIndex(MouseButton button);
-
-      private:
-        static std::array<bool, static_cast<std::size_t>(MouseButton::Count)> s_currentButtons;
-        static std::array<bool, static_cast<std::size_t>(MouseButton::Count)> s_previousButtons;
-
-        static sf::Vector2i s_screenPosition;
-
         friend class Application;
     };
 }

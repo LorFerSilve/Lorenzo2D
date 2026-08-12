@@ -1,9 +1,9 @@
 #include <Lorenzo2D/Assets/AssetManager.hpp>
 #include <Lorenzo2D/Assets/ResourceLocator.hpp>
-#include <Lorenzo2D/Core/ActionMap.hpp>
 #include <Lorenzo2D/Core/Application.hpp>
 #include <Lorenzo2D/Core/Input.hpp>
-#include <Lorenzo2D/Core/Mouse.hpp>
+#include <Lorenzo2D/Core/InputMap.hpp>
+#include <Lorenzo2D/Core/Pointer.hpp>
 #include <Lorenzo2D/Core/Time.hpp>
 #include <Lorenzo2D/Core/WindowEvents.hpp>
 #include <Lorenzo2D/ECS/Component.hpp>
@@ -38,8 +38,7 @@
 
 namespace GameActions
 {
-    constexpr const char* MoveLeft = "MoveLeft";
-    constexpr const char* MoveRight = "MoveRight";
+    constexpr const char* MoveHorizontal = "MoveHorizontal";
     constexpr const char* Jump = "Jump";
     constexpr const char* TogglePhysicsDebug = "TogglePhysicsDebug";
     constexpr const char* Quit = "Quit";
@@ -63,7 +62,7 @@ namespace PhysicsLayers
 class PlayerController : public l2d::Component
 {
   public:
-    explicit PlayerController(const l2d::ActionMap& actions) : m_actions(&actions) {}
+    explicit PlayerController(const l2d::InputMap& actions) : m_actions(&actions) {}
 
     void requestJump()
     {
@@ -89,11 +88,8 @@ class PlayerController : public l2d::Component
 
         velocity.x = 0.f;
 
-        if (m_actions != nullptr && m_actions->isActionPressed(GameActions::MoveLeft))
-            velocity.x -= moveSpeed;
-
-        if (m_actions != nullptr && m_actions->isActionPressed(GameActions::MoveRight))
-            velocity.x += moveSpeed;
+        if (m_actions != nullptr)
+            velocity.x = m_actions->axis1D(GameActions::MoveHorizontal) * moveSpeed;
 
         if (m_jumpRequested && rigidBody->isGrounded())
         {
@@ -106,7 +102,7 @@ class PlayerController : public l2d::Component
     }
 
   private:
-    const l2d::ActionMap* m_actions;
+    const l2d::InputMap* m_actions;
     bool m_jumpRequested = false;
 };
 
@@ -197,8 +193,8 @@ class SandboxApp : public l2d::Application
 {
   public:
     explicit SandboxApp(const std::filesystem::path& executablePath)
-        : l2d::Application(1280, 720, "Lorenzo2D Engine"), m_camera({1280.f, 720.f}),
-          m_cameraController(m_camera)
+        : l2d::Application(1280, 720, "Lorenzo2D Engine"), m_actions(l2d::Input::snapshot()),
+          m_camera({1280.f, 720.f}), m_cameraController(m_camera)
     {
         m_workingDirectory = std::filesystem::current_path().string();
         m_resources.addRoot(std::filesystem::current_path() / "assets");
@@ -230,7 +226,7 @@ class SandboxApp : public l2d::Application
     {
         (void)frameDeltaTime;
 
-        if (m_actions.wasActionPressed(GameActions::Quit))
+        if (m_actions.consumePressed(GameActions::Quit))
         {
             requestClose();
             return;
@@ -238,7 +234,7 @@ class SandboxApp : public l2d::Application
 
         queuePlayerJump();
 
-        if (m_actions.wasActionPressed(GameActions::TogglePhysicsDebug))
+        if (m_actions.consumePressed(GameActions::TogglePhysicsDebug))
         {
             const bool enabled = !m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::PhysicsDebug);
 
@@ -598,17 +594,25 @@ class SandboxApp : public l2d::Application
 
     void setupInputActions()
     {
-        m_actions.bindAction(GameActions::MoveLeft, l2d::Key::Q);
-        m_actions.bindAction(GameActions::MoveLeft, l2d::Key::Left);
+        m_actions.bindAxis1D(GameActions::MoveHorizontal,
+                             l2d::Input::logicalKey(sf::Keyboard::Key::Q),
+                             l2d::Input::logicalKey(sf::Keyboard::Key::D));
+        m_actions.bindAxis1D(GameActions::MoveHorizontal,
+                             l2d::Input::physicalKey(sf::Keyboard::Scancode::Left),
+                             l2d::Input::physicalKey(sf::Keyboard::Scancode::Right));
+        m_actions.bindAxis1D(GameActions::MoveHorizontal,
+                             l2d::InputCode::gamepadAxis(0u, sf::Joystick::Axis::X), 0.18f);
 
-        m_actions.bindAction(GameActions::MoveRight, l2d::Key::D);
-        m_actions.bindAction(GameActions::MoveRight, l2d::Key::Right);
+        m_actions.bindButton(GameActions::Jump,
+                             l2d::Input::physicalKey(sf::Keyboard::Scancode::Space));
+        m_actions.bindButton(GameActions::Jump,
+                             l2d::Input::physicalKey(sf::Keyboard::Scancode::Up));
+        m_actions.bindButton(GameActions::Jump, l2d::InputCode::gamepadButton(0u, 0u));
 
-        m_actions.bindAction(GameActions::Jump, l2d::Key::Space);
-        m_actions.bindAction(GameActions::Jump, l2d::Key::Up);
-
-        m_actions.bindAction(GameActions::TogglePhysicsDebug, l2d::Key::F1);
-        m_actions.bindAction(GameActions::Quit, l2d::Key::Escape);
+        m_actions.bindButton(GameActions::TogglePhysicsDebug,
+                             l2d::Input::physicalKey(sf::Keyboard::Scancode::F1));
+        m_actions.bindButton(GameActions::Quit,
+                             l2d::Input::physicalKey(sf::Keyboard::Scancode::Escape));
     }
 
     void setupAssets()
@@ -656,7 +660,7 @@ class SandboxApp : public l2d::Application
 
     void queuePlayerJump()
     {
-        if (!m_actions.wasActionPressed(GameActions::Jump)) return;
+        if (!m_actions.consumePressed(GameActions::Jump)) return;
 
         l2d::GameObject* player = m_playerHandle.get();
 
@@ -792,11 +796,12 @@ class SandboxApp : public l2d::Application
 
     void updateMouseDebug(float interpolationAlpha)
     {
-        m_mouseScreenPosition = l2d::Mouse::screenPosition();
+        const l2d::PointerState& pointer = l2d::Pointer::primary();
+        m_mouseScreenPosition = pointer.screenPosition;
 
-        m_mouseWorldPosition = l2d::Mouse::worldPosition(getWindow(), m_camera.view());
+        m_mouseWorldPosition = l2d::Pointer::worldPosition(getWindow(), m_camera.view());
 
-        if (l2d::Mouse::wasButtonPressed(l2d::MouseButton::Left))
+        if (pointer.pressed)
         {
             m_leftMouseClicks++;
             pickObjectAtWorldPosition(m_mouseWorldPosition, interpolationAlpha);
@@ -1042,7 +1047,7 @@ class SandboxApp : public l2d::Application
   private:
     l2d::ResourceLocator m_resources;
     l2d::AssetManager m_assets;
-    l2d::ActionMap m_actions;
+    l2d::InputMap m_actions;
 
     l2d::SceneManager m_sceneManager;
     l2d::Scene* m_levelScene = nullptr;

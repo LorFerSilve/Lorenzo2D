@@ -22,13 +22,17 @@ current support claims are documented separately:
   point-and-click, top-down, platformer, and isometric support.
 - [`docs/benchmarking.md`](docs/benchmarking.md) defines diagnostic scenarios,
   machine-readable reports, and the policy for future performance budgets.
+- [`docs/input.md`](docs/input.md) documents typed actions, context blocking,
+  gamepad handling, fixed-tick edge consumption, and the unified pointer model.
 
 ## Current features
 
 - SFML application loop with fixed simulation ticks and bounded catch-up
 - Previous/current transform interpolation for smooth presentation
-- Frame timing, keyboard, mouse, and window events
-- Action bindings with multiple keys per gameplay action
+- Frame timing, keyboard, mouse, gamepad, touch, and window events
+- Typed button/1D/2D actions, multiple bindings, analog deadzones, normalized
+  diagonals, fixed-tick edge consumption, and blocking input contexts
+- Unified mouse/touch pointers with camera-aware world conversion and drag state
 - Game objects, transforms, polymorphic components, tags, stable z-order, and deferred deletion
 - Scenes, scene switching, object queries, and lifetime-aware object handles
 - Circle and rectangle rendering plus texture-backed sprites and sprite-sheet animation
@@ -220,7 +224,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.4 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.5 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -237,6 +241,8 @@ available, either in the same prefix or through the consumer's
 | Space / Up arrow | Jump |
 | `F1` | Toggle physics debug outlines |
 | `Escape` | Quit the sandbox |
+| Gamepad left stick | Move horizontally |
+| Gamepad button 0 | Jump |
 | Mouse wheel | Zoom the camera |
 | Left mouse button | Inspect the object under the cursor |
 

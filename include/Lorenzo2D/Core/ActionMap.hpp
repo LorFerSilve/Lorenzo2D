@@ -1,10 +1,9 @@
 #pragma once
 
 #include <Lorenzo2D/Core/Input.hpp>
+#include <Lorenzo2D/Core/InputMap.hpp>
 
 #include <string>
-#include <unordered_map>
-#include <vector>
 
 namespace l2d
 {
@@ -20,9 +19,6 @@ namespace l2d
         bool wasActionReleased(const std::string& actionName) const;
 
       private:
-        const std::vector<Key>* findKeys(const std::string& actionName) const;
-
-      private:
-        std::unordered_map<std::string, std::vector<Key>> m_actions;
+        InputMap m_inputMap{Input::snapshot()};
     };
 }

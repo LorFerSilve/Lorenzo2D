@@ -1,4 +1,5 @@
 #include <Lorenzo2D/Core/Version.hpp>
+#include <Lorenzo2D/Core/InputMap.hpp>
 #include <Lorenzo2D/ECS/Component.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
@@ -105,6 +106,38 @@ namespace
 
                            return (firstCounter != nullptr ? firstCounter->updateCount() : 0u) +
                                   (lastCounter != nullptr ? lastCounter->updateCount() : 0u);
+                       });
+    }
+
+    BenchmarkResult benchmarkInputActionSampling(std::size_t iterations)
+    {
+        constexpr std::size_t evaluationsPerIteration = 4096u;
+        l2d::InputSnapshot snapshot;
+        l2d::InputMap inputMap(snapshot);
+        const l2d::InputCode left = l2d::InputCode::keyboard(sf::Keyboard::Scancode::A);
+        const l2d::InputCode right = l2d::InputCode::keyboard(sf::Keyboard::Scancode::D);
+        const l2d::InputCode up = l2d::InputCode::keyboard(sf::Keyboard::Scancode::W);
+        const l2d::InputCode down = l2d::InputCode::keyboard(sf::Keyboard::Scancode::S);
+
+        inputMap.bindAxis2D("move", left, right, up, down);
+        inputMap.bindButton("interact", l2d::InputCode::keyboard(sf::Keyboard::Scancode::Space));
+        snapshot.beginFrame();
+        snapshot.setButton(right, true);
+        snapshot.setButton(up, true);
+
+        return measure(iterations,
+                       [&inputMap]()
+                       {
+                           std::size_t checksum = 0u;
+                           for (std::size_t evaluation = 0u; evaluation < evaluationsPerIteration;
+                                ++evaluation)
+                           {
+                               const sf::Vector2f movement = inputMap.axis2D("move");
+                               checksum += movement.x > 0.f ? 1u : 0u;
+                               checksum += movement.y < 0.f ? 1u : 0u;
+                               checksum += inputMap.down("interact") ? 1u : 0u;
+                           }
+                           return checksum;
                        });
     }
 
@@ -228,12 +261,15 @@ namespace
     std::vector<BenchmarkEntry> runBenchmarks()
     {
         constexpr std::size_t sceneIterations = 120u;
+        constexpr std::size_t inputIterations = 120u;
         constexpr std::size_t renderQueueIterations = 120u;
         constexpr std::size_t physicsIterations = 30u;
         constexpr std::size_t tileMapBuildIterations = 5u;
         constexpr std::size_t tileMapCullingIterations = 1000u;
 
         std::vector<BenchmarkEntry> entries;
+        entries.push_back({"input action sampling", inputIterations,
+                           benchmarkInputActionSampling(inputIterations)});
         entries.push_back(
             {"scene fixed update", sceneIterations, benchmarkSceneUpdate(sceneIterations)});
         entries.push_back({"render queue build", renderQueueIterations,
