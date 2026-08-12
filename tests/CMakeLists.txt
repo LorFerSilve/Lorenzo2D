@@ -165,6 +165,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DPhysicsQueryTests
+    SOURCE physics/Lorenzo2DPhysicsQueryTests.cpp
+    LABELS headless physics queries collision determinism
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
     Lorenzo2DPhysicsTilemapTests
     SOURCE physics/Lorenzo2DPhysicsTilemapTests.cpp
     LABELS headless physics tilemap

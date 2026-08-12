@@ -3,6 +3,8 @@
 #include <Lorenzo2D/ECS/Component.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
+#include <Lorenzo2D/Physics/BoxCollider2D.hpp>
+#include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
@@ -209,6 +211,53 @@ namespace
                        });
     }
 
+    void populateQueryScene(l2d::Scene& scene)
+    {
+        constexpr std::size_t width = 32u;
+        constexpr std::size_t height = 32u;
+        for (std::size_t y = 0; y < height; ++y)
+        {
+            for (std::size_t x = 0; x < width; ++x)
+            {
+                l2d::GameObject& object = scene.createGameObject("Query obstacle");
+                object.transform.setPosition(
+                    {static_cast<float>(x) * 32.f, static_cast<float>(y) * 32.f});
+                object.addComponent<l2d::BoxCollider2D>(sf::Vector2f{20.f, 20.f});
+            }
+        }
+    }
+
+    BenchmarkResult benchmarkPhysicsQuerySnapshot(std::size_t iterations)
+    {
+        l2d::Scene scene;
+        populateQueryScene(scene);
+        return measure(iterations,
+                       [&scene]()
+                       {
+                           const l2d::PhysicsQueryContext2D context(scene);
+                           return context.proxyCount();
+                       });
+    }
+
+    BenchmarkResult benchmarkPhysicsQueryBatch(std::size_t iterations)
+    {
+        l2d::Scene scene;
+        populateQueryScene(scene);
+        const l2d::PhysicsQueryContext2D context(scene);
+        return measure(iterations,
+                       [&context]()
+                       {
+                           std::size_t checksum = 0u;
+                           for (std::size_t row = 0; row < 32u; ++row)
+                           {
+                               const float y = static_cast<float>(row) * 32.f + 10.f;
+                               const auto hit = context.raycast({-20.f, y}, {1040.f, y});
+                               checksum += hit ? static_cast<std::size_t>(hit->colliderId) : 0u;
+                           }
+                           return checksum;
+                       });
+    }
+
     l2d::TileMap::Layout makeTileLayout()
     {
         constexpr std::size_t width = 256u;
@@ -264,6 +313,8 @@ namespace
         constexpr std::size_t inputIterations = 120u;
         constexpr std::size_t renderQueueIterations = 120u;
         constexpr std::size_t physicsIterations = 30u;
+        constexpr std::size_t physicsQuerySnapshotIterations = 50u;
+        constexpr std::size_t physicsQueryBatchIterations = 100u;
         constexpr std::size_t tileMapBuildIterations = 5u;
         constexpr std::size_t tileMapCullingIterations = 1000u;
 
@@ -280,6 +331,10 @@ namespace
         entries.push_back(
             {"physics brute force", physicsIterations,
              benchmarkPhysics(l2d::PhysicsBroadPhaseMode2D::BruteForce, physicsIterations)});
+        entries.push_back({"physics query snapshot", physicsQuerySnapshotIterations,
+                           benchmarkPhysicsQuerySnapshot(physicsQuerySnapshotIterations)});
+        entries.push_back({"physics query ray batch", physicsQueryBatchIterations,
+                           benchmarkPhysicsQueryBatch(physicsQueryBatchIterations)});
         entries.push_back({"tile-map full build", tileMapBuildIterations,
                            benchmarkTileMapBuild(tileMapBuildIterations)});
         entries.push_back({"tile-map view culling", tileMapCullingIterations,

@@ -16,6 +16,8 @@ namespace l2d
     class GameObject;
     class BoxCollider2D;
     class CircleCollider2D;
+    class CapsuleCollider2D;
+    class ConvexPolygonCollider2D;
 
     class PhysicsDebugRenderer2D
     {
@@ -48,6 +50,12 @@ namespace l2d
         void renderCircleCollider(const CircleCollider2D& collider,
                                   const TransformState& ownerTransform,
                                   sf::RenderWindow& window) const;
+        void renderCapsuleCollider(const CapsuleCollider2D& collider,
+                                   const TransformState& ownerTransform,
+                                   sf::RenderWindow& window) const;
+        void renderConvexPolygonCollider(const ConvexPolygonCollider2D& collider,
+                                         const TransformState& ownerTransform,
+                                         sf::RenderWindow& window) const;
 
       private:
         bool m_enabled;

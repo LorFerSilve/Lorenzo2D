@@ -1,6 +1,6 @@
 # Lorenzo2D physics contract
 
-This document describes the observable Lorenzo2D 0.3 physics behavior. It is
+This document describes the observable Lorenzo2D 0.6 physics behavior. It is
 the compatibility contract for the compound-collider and constraint solver.
 
 ## Units and coordinate system
@@ -56,6 +56,9 @@ owner transform before being added to the owner position.
   transform scale and owner rotation, producing an oriented box.
 - A circle is centered on that world position and scales by the greater
   absolute owner-scale axis so it remains circular.
+- A capsule is vertical in local space. Its spine uses absolute Y scale, its
+  circular radius uses the greater absolute scale axis, and owner rotation rotates the result.
+- A convex polygon transforms each of its 3 through 16 validated local vertices.
 - Circle construction and `setRadius` do not modify the offset.
 
 For a renderer whose transform is the top-left of its local bounds, migrate by
@@ -69,8 +72,8 @@ body. Collider pairs on the same owner never self-collide. `GameObject` exposes
 
 ## Collision detection and response
 
-The narrow phase supports circle-circle, circle-oriented-box, and
-oriented-box/oriented-box pairs. Exact tangency is a contact. Manifolds contain
+The narrow phase supports every pair of circles, oriented boxes, capsules, and
+convex polygons. Exact tangency is a contact. Manifolds contain
 one representative point, one normal, and one penetration depth. Degenerate
 tie axes are deterministic.
 
@@ -139,7 +142,8 @@ missing connected objects make the joint inert for that step.
 step. `stepStats()` reports CCD substeps, active and sleeping bodies, maximum
 contact and joint constraints in a substep, and reused warm-start contacts.
 
-Current deliberate limits are circles and oriented boxes only, one contact
-point per manifold, distance joints only, no automatic compound mass-property
-calculation, bounded substep CCD, and explicit world stepping rather than scene
-ownership.
+Current deliberate limits are strictly convex polygons only, one contact point
+per manifold, distance joints only, no automatic compound mass-property calculation,
+bounded substep CCD, and explicit world stepping rather than scene ownership. Read-only ray,
+point, overlap, and shape-cast contracts are documented in
+[`physics-queries.md`](physics-queries.md).

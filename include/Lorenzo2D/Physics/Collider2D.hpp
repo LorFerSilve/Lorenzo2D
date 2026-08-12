@@ -19,7 +19,9 @@ namespace l2d
     enum class ColliderType
     {
         Box,
-        Circle
+        Circle,
+        Capsule,
+        ConvexPolygon
     };
 
     struct CollisionFilter2D

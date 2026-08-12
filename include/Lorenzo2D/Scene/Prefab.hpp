@@ -13,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace l2d
 {
@@ -61,6 +62,19 @@ namespace l2d
         ColliderPrefabProperties properties;
     };
 
+    struct CapsuleColliderPrefab
+    {
+        float radius = 25.f;
+        float height = 100.f;
+        ColliderPrefabProperties properties;
+    };
+
+    struct ConvexPolygonColliderPrefab
+    {
+        std::vector<sf::Vector2f> vertices = {{-50.f, 50.f}, {0.f, -50.f}, {50.f, 50.f}};
+        ColliderPrefabProperties properties;
+    };
+
     // A data-only object template. Custom gameplay components can be attached
     // after instantiation without coupling serialization to game code.
     struct Prefab
@@ -76,6 +90,8 @@ namespace l2d
         std::optional<RigidBodyPrefab> rigidBody;
         std::optional<BoxColliderPrefab> boxCollider;
         std::optional<CircleColliderPrefab> circleCollider;
+        std::optional<CapsuleColliderPrefab> capsuleCollider;
+        std::optional<ConvexPolygonColliderPrefab> convexPolygonCollider;
     };
 
     bool isValidPrefab(const Prefab& prefab);

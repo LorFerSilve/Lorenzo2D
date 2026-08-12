@@ -11,6 +11,8 @@ current runtime first and the allowed dependency direction for upcoming modules.
 - `GameObject` owns its components and transform.
 - `PhysicsWorld2D` owns simulation configuration, contact history, solver caches, and telemetry; it
   does not own scene objects.
+- `PhysicsQueryContext2D` owns an immutable collider snapshot and lifetime-aware object handles; it
+  does not mutate or borrow the world's contact state.
 - Asset handles own immutable published resource generations independently from the registry that
   issued them.
 - `TileMap` owns its layout snapshot and lifetime-aware handles to generated scene objects.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Lorenzo2D/Physics/PhysicsContact2D.hpp>
+#include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
 
 #include <SFML/System/Vector2.hpp>
 
@@ -94,6 +95,27 @@ namespace l2d
 
         bool isTouching(GameObjectId firstObjectId, GameObjectId secondObjectId) const;
         bool isColliderTouching(ColliderId firstColliderId, ColliderId secondColliderId) const;
+
+        PhysicsQueryContext2D createQueryContext(Scene& scene) const;
+        std::optional<PhysicsQueryHit2D> raycast(Scene& scene, sf::Vector2f start, sf::Vector2f end,
+                                                 const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> raycastAll(Scene& scene, sf::Vector2f start,
+                                                  sf::Vector2f end,
+                                                  const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> pointQuery(Scene& scene, sf::Vector2f point,
+                                                  const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> overlapCircle(Scene& scene, sf::Vector2f center,
+                                                     float radius,
+                                                     const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> overlapBox(Scene& scene, sf::Vector2f center,
+                                                  sf::Vector2f size, float rotationDegrees = 0.f,
+                                                  const PhysicsQueryFilter2D& filter = {}) const;
+        std::optional<PhysicsQueryHit2D> castCircle(Scene& scene, sf::Vector2f start,
+                                                    sf::Vector2f end, float radius,
+                                                    const PhysicsQueryFilter2D& filter = {}) const;
+        std::optional<PhysicsQueryHit2D> castBox(Scene& scene, sf::Vector2f start, sf::Vector2f end,
+                                                 sf::Vector2f size, float rotationDegrees = 0.f,
+                                                 const PhysicsQueryFilter2D& filter = {}) const;
 
         void reset();
         void reset(Scene& scene);

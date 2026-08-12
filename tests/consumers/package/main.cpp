@@ -4,6 +4,9 @@
 #include <Lorenzo2D/Core/InputMap.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
+#include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
+#include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
+#include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
 #include <Lorenzo2D/Physics/DistanceJoint2D.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
 #include <Lorenzo2D/Tilemap/TileSet.hpp>
@@ -32,6 +35,9 @@ int main()
     const bool resourceRootAdded = resources.addRoot("assets");
 
     l2d::CircleCollider2D collider(2.f);
+    l2d::CapsuleCollider2D capsule(2.f, 8.f);
+    l2d::ConvexPolygonCollider2D polygon;
+    l2d::PhysicsQueryFilter2D queryFilter;
     l2d::DistanceJoint2D joint(42u, 3.f);
 
     l2d::InputSnapshot inputSnapshot;
@@ -42,9 +48,11 @@ int main()
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::S));
 
-    return l2d::VersionString == "0.5.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
+    return l2d::VersionString == "0.6.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
                    tileAdded && levelSaved && resourceRootAdded && inputConfigured &&
-                   collider.id() != l2d::InvalidColliderId && joint.id() != l2d::InvalidJointId
+                   collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
+                   polygon.vertices().size() == 3u && queryFilter.categoryMask != 0u &&
+                   joint.id() != l2d::InvalidJointId
                ? 0
                : 1;
 }

@@ -1,6 +1,7 @@
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
+#include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include <fstream>
@@ -201,11 +202,57 @@ namespace l2d
                                }
                                prefab.circleCollider = collider;
                                return true;
-                           }) ||
-                !parseLine(input, "end", [](std::istream&) { return true; }))
+                           }))
             {
                 return false;
             }
+
+            if (version >= 3u)
+            {
+                if (!parseLine(input, "capsule_collider",
+                               [&](std::istream& line)
+                               {
+                                   if (!parseBoolean(line, present)) return false;
+                                   if (!present) return true;
+
+                                   CapsuleColliderPrefab collider;
+                                   if (!(line >> collider.radius >> collider.height) ||
+                                       !parseColliderProperties(line, collider.properties))
+                                   {
+                                       return false;
+                                   }
+                                   prefab.capsuleCollider = collider;
+                                   return true;
+                               }) ||
+                    !parseLine(input, "convex_polygon_collider",
+                               [&](std::istream& line)
+                               {
+                                   if (!parseBoolean(line, present)) return false;
+                                   if (!present) return true;
+
+                                   std::size_t count = 0u;
+                                   ConvexPolygonColliderPrefab collider;
+                                   if (!(line >> count) || count < 3u ||
+                                       count > ConvexPolygonCollider2D::MaximumVertexCount)
+                                   {
+                                       return false;
+                                   }
+                                   collider.vertices.resize(count);
+                                   for (sf::Vector2f& vertex : collider.vertices)
+                                   {
+                                       if (!(line >> vertex.x >> vertex.y)) return false;
+                                   }
+                                   if (!parseColliderProperties(line, collider.properties))
+                                       return false;
+                                   prefab.convexPolygonCollider = std::move(collider);
+                                   return true;
+                               }))
+                {
+                    return false;
+                }
+            }
+
+            if (!parseLine(input, "end", [](std::istream&) { return true; })) return false;
 
             return isValidPrefab(prefab);
         }
@@ -264,6 +311,26 @@ namespace l2d
             {
                 output << ' ' << prefab.circleCollider->radius << ' ';
                 writeColliderProperties(output, prefab.circleCollider->properties);
+            }
+            output << '\n';
+
+            output << "capsule_collider " << (prefab.capsuleCollider ? 1 : 0);
+            if (prefab.capsuleCollider)
+            {
+                output << ' ' << prefab.capsuleCollider->radius << ' '
+                       << prefab.capsuleCollider->height << ' ';
+                writeColliderProperties(output, prefab.capsuleCollider->properties);
+            }
+            output << '\n';
+
+            output << "convex_polygon_collider " << (prefab.convexPolygonCollider ? 1 : 0);
+            if (prefab.convexPolygonCollider)
+            {
+                output << ' ' << prefab.convexPolygonCollider->vertices.size();
+                for (const sf::Vector2f vertex : prefab.convexPolygonCollider->vertices)
+                    output << ' ' << vertex.x << ' ' << vertex.y;
+                output << ' ';
+                writeColliderProperties(output, prefab.convexPolygonCollider->properties);
             }
             output << "\nend\n";
         }

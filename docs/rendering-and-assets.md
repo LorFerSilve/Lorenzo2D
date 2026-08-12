@@ -9,7 +9,7 @@ the previous APIs source-compatible.
 `GameObject::setZOrder()` controls scene presentation. Smaller values render
 first; equal values retain scene insertion order. `RenderQueue2D::build()`
 creates a stable per-pass snapshot and excludes inactive or destroy-queued
-objects. Level format version 2 persists the value as `z_order`; version 1
+objects. Level format versions 2 and 3 persist the value as `z_order`; version 1
 levels still load with z-order zero.
 
 ## Incremental and streamed tilemaps

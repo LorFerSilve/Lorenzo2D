@@ -24,6 +24,8 @@ current support claims are documented separately:
   machine-readable reports, and the policy for future performance budgets.
 - [`docs/input.md`](docs/input.md) documents typed actions, context blocking,
   gamepad handling, fixed-tick edge consumption, and the unified pointer model.
+- [`docs/physics-queries.md`](docs/physics-queries.md) documents deterministic
+  world queries, shape casts, filtering, capsules, and convex slope polygons.
 
 ## Current features
 
@@ -39,9 +41,10 @@ current support claims are documented separately:
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
 - Editable ASCII tilemaps with streamed chunks, animated atlas tiles, view culling, and merged collision geometry
 - Static, kinematic, and dynamic rigid bodies with linear and angular dynamics
-- Compound circle/oriented-box colliders with scale-aware local transforms
+- Compound circle, oriented-box, capsule, and convex-polygon colliders with scale-aware transforms
 - CCD, sleeping, persistent warm-started contacts, and distance joints
-- Circle/box collision manifolds, impulse response, friction, and restitution
+- All-pair collider manifolds, impulse response, friction, and restitution
+- Ray, point, overlap, and swept circle/box queries with reusable fixed-tick snapshots
 - Collision layers, sensors, contact events, and physics debug drawing
 - Snapshot and live font/texture handles, background loading, hot reload,
   dependency tracking, and ordered runtime resource lookup
@@ -224,7 +227,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.5 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.6 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -321,7 +324,7 @@ desired; `SpriteRenderer::setSize()` scales against its active texture rect.
 ## Prefabs and serialized levels
 
 `Prefab` is a data-only object template for transform, tag, active state,
-shape renderers, rigid body, one box or circle collider, and z-order. `PrefabLibrary`
+shape renderers, rigid body, one collider of each supported shape type, and z-order. `PrefabLibrary`
 stores validated named snapshots and instantiates them into any `Scene`.
 Custom gameplay components remain game-owned and can be attached immediately
 after instantiation.
@@ -329,7 +332,7 @@ after instantiation.
 `LevelDocument` contains an ordered list of those prefabs. `LevelSerializer`
 round-trips it through streams or `.l2dlevel` files and can instantiate the
 complete document while returning lifetime-aware object handles. The format
-is currently written as `LORENZO2D_LEVEL 2`; version 1 remains readable while
+is currently written as `LORENZO2D_LEVEL 3`; versions 1 and 2 remain readable while
 unsupported versions, non-finite values,
 invalid component data, excessive object counts, malformed records, and
 trailing input are rejected without changing the destination document.
@@ -400,7 +403,7 @@ and physics geometry stable. Configuration remains snapshot-based per load.
 
 Every game object has an explicit signed z-order. The per-pass `RenderQueue2D`
 sorts lower values first and preserves scene insertion order for ties. Prefabs
-and level-format version 2 persist z-order; version 1 files remain readable and
+and level-format versions 2 and 3 persist z-order; version 1 files remain readable and
 default it to zero.
 
 `ParticleEmitter2D` provides seeded, bounded bursts and continuous emission
@@ -630,11 +633,11 @@ rigid body is also treated as static, preserving the convenient level-geometry
 workflow used by the tilemap. `isGrounded()` is defined only for Dynamic bodies;
 Static and Kinematic bodies report false.
 
-The narrow phase supports circle-circle, circle-box, and oriented box-box
-pairs. Exact tangency counts as contact. Collider offsets are local center
-points and inherit owner translation, rotation, and scale. Boxes use absolute
-per-axis scale; circles use the greater absolute scale axis so they remain
-circular under non-uniform scaling. Collision response uses iterative linear
+The narrow phase supports every pair of circles, oriented boxes, capsules, and
+convex polygons. Exact tangency counts as contact. Collider offsets are local center
+points and inherit owner translation, rotation, and scale. Boxes and polygons use per-axis
+scale; circles and capsule caps use a conservative uniform radius under non-uniform scale.
+Collision response uses iterative linear
 and angular normal/friction impulses plus positional correction. Rigid bodies
 keep rotation fixed by default for source compatibility; call
 `setFixedRotation(false)` to enable angular velocity, torque, inertia, and
@@ -687,6 +690,8 @@ sensors and are collected from contact events rather than overlap polling. To
 avoid static tile-pair spam, at least one object in a reported pair must have an
 active Dynamic or Kinematic body. The shape-specific `overlaps` helpers remain
 raw geometry queries and deliberately ignore activity, filters, and sensors.
+Public ray, point, overlap, and shape-cast queries instead use
+`PhysicsQueryFilter2D` and may include sensors explicitly.
 
 After each valid step, `contacts()` exposes the current deterministic contact
 list and `contactEvents()` reports `Begin`, `Stay`, and `End` transitions.
@@ -707,9 +712,9 @@ static, and integration remains owned by the world's fixed simulation step.
 
 ## Current limitations and next milestones
 
-- Physics currently supports circles, oriented boxes, and distance joints;
-  polygons, compound mass-property calculation, multi-point manifolds, and
-  other joint types remain future work. CCD uses bounded adaptive substeps, so
+- Physics supports circles, oriented boxes, capsules, convex polygons, and distance joints;
+  concave/edge shapes, compound mass-property calculation, multi-point manifolds, and other joint
+  types remain future work. CCD uses bounded adaptive substeps, so
   translations beyond the configured cap can still tunnel. Dense single-cell
   scenes and fallback proxies can still approach quadratic pair counts.
 - Tile editing is bounded to existing rows and columns. Collision geometry is

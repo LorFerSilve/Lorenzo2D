@@ -1,90 +1,27 @@
 #include "PhysicsWorld2DInternals.hpp"
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
-#include <Lorenzo2D/Physics/BoxCollider2D.hpp>
-#include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include <algorithm>
-#include <cmath>
-#include <limits>
 #include <memory>
 #include <vector>
+
+#include "PhysicsGeometry2D.hpp"
 
 namespace l2d
 {
     namespace
     {
-        bool isFinite(sf::Vector2f value)
-        {
-            return std::isfinite(value.x) && std::isfinite(value.y);
-        }
-
-        bool conservativeFloat(double value, bool lowerBound, float& result)
-        {
-            const double maximum = static_cast<double>(std::numeric_limits<float>::max());
-
-            if (!std::isfinite(value) || value < -maximum || value > maximum) return false;
-
-            result = static_cast<float>(value);
-            const double converted = static_cast<double>(result);
-            const float infinity = std::numeric_limits<float>::infinity();
-
-            if (lowerBound && converted > value)
-                result = std::nextafter(result, -infinity);
-            else if (!lowerBound && converted < value)
-                result = std::nextafter(result, infinity);
-
-            return std::isfinite(result);
-        }
-
         bool colliderBounds(const Collider2D& collider, sf::Vector2f& minimum,
                             sf::Vector2f& maximum)
         {
-            if (collider.type() == ColliderType::Box)
-            {
-                const BoxCollider2D* box = dynamic_cast<const BoxCollider2D*>(&collider);
-
-                if (box == nullptr) return false;
-
-                minimum = box->min();
-                maximum = box->max();
-            }
-            else if (collider.type() == ColliderType::Circle)
-            {
-                const CircleCollider2D* circle = dynamic_cast<const CircleCollider2D*>(&collider);
-
-                if (circle == nullptr) return false;
-
-                const sf::Vector2f center = circle->center();
-                const double radius = circle->worldRadius();
-                const double minimumX = static_cast<double>(center.x) - radius;
-                const double minimumY = static_cast<double>(center.y) - radius;
-                const double maximumX = static_cast<double>(center.x) + radius;
-                const double maximumY = static_cast<double>(center.y) + radius;
-
-                if (!isFinite(center) || !std::isfinite(radius) ||
-                    !conservativeFloat(minimumX, true, minimum.x) ||
-                    !conservativeFloat(minimumY, true, minimum.y) ||
-                    !conservativeFloat(maximumX, false, maximum.x) ||
-                    !conservativeFloat(maximumY, false, maximum.y))
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            if (!isFinite(minimum) || !isFinite(maximum) || minimum.x > maximum.x ||
-                minimum.y > maximum.y)
-            {
-                return false;
-            }
-
+            detail::ColliderGeometry2D geometry;
+            if (!detail::buildColliderGeometry(collider, geometry)) return false;
+            minimum = geometry.bounds.minimum;
+            maximum = geometry.bounds.maximum;
             return true;
         }
 

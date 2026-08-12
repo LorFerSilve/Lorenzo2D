@@ -12,6 +12,7 @@
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsDebugRenderer2D.hpp>
+#include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Renderer/Camera2D.hpp>
@@ -274,7 +275,7 @@ class SandboxApp : public l2d::Application
     void onUpdate(float frameDeltaTime) override
     {
         updateCamera(frameDeltaTime, l2d::Time::interpolationAlpha());
-        updateMouseDebug(l2d::Time::interpolationAlpha());
+        updateMouseDebug();
         updateWindowEventDebug();
         updateDebug();
     }
@@ -688,60 +689,7 @@ class SandboxApp : public l2d::Application
         return transformState.position;
     }
 
-    bool isPointInsideCircleCollider(const sf::Vector2f& point,
-                                     const l2d::CircleCollider2D& collider,
-                                     const sf::Vector2f& ownerPosition) const
-    {
-        const sf::Vector2f center = ownerPosition + collider.offset();
-
-        const float dx = point.x - center.x;
-        const float dy = point.y - center.y;
-
-        const float distanceSquared = dx * dx + dy * dy;
-        const float radius = collider.radius();
-
-        return distanceSquared <= radius * radius;
-    }
-
-    bool isPointInsideBoxCollider(const sf::Vector2f& point, const l2d::BoxCollider2D& collider,
-                                  const sf::Vector2f& ownerPosition) const
-    {
-        const sf::Vector2f minimum = ownerPosition + collider.offset();
-        const sf::Vector2f maximum = minimum + collider.size();
-
-        return point.x >= minimum.x && point.x <= maximum.x && point.y >= minimum.y &&
-               point.y <= maximum.y;
-    }
-
-    bool isPointInsideGameObject(const sf::Vector2f& point, l2d::GameObject& gameObject,
-                                 float interpolationAlpha) const
-    {
-        const sf::Vector2f ownerPosition =
-            gameObject.transform.interpolated(interpolationAlpha).position;
-
-        l2d::Collider2D* collider = gameObject.getComponent<l2d::Collider2D>();
-
-        if (collider == nullptr || !collider->isActive()) return false;
-
-        if (collider->type() == l2d::ColliderType::Circle)
-        {
-            if (auto* circle = dynamic_cast<l2d::CircleCollider2D*>(collider))
-            {
-                return isPointInsideCircleCollider(point, *circle, ownerPosition);
-            }
-
-            return false;
-        }
-
-        if (auto* box = dynamic_cast<l2d::BoxCollider2D*>(collider))
-        {
-            return isPointInsideBoxCollider(point, *box, ownerPosition);
-        }
-
-        return false;
-    }
-
-    void pickObjectAtWorldPosition(const sf::Vector2f& worldPosition, float interpolationAlpha)
+    void pickObjectAtWorldPosition(const sf::Vector2f& worldPosition)
     {
         if (m_levelScene == nullptr)
         {
@@ -749,28 +697,11 @@ class SandboxApp : public l2d::Application
             return;
         }
 
-        const std::vector<std::unique_ptr<l2d::GameObject>>& gameObjects =
-            m_levelScene->gameObjects();
-
-        for (std::size_t index = gameObjects.size(); index > 0; index--)
-        {
-            l2d::GameObject* gameObject = gameObjects[index - 1].get();
-
-            if (gameObject == nullptr) continue;
-
-            if (!gameObject->isActive()) continue;
-
-            if (gameObject->isDestroyQueued()) continue;
-
-            if (isPointInsideGameObject(worldPosition, *gameObject, interpolationAlpha))
-            {
-                m_selectedObjectHandle = m_levelScene->createHandle(*gameObject);
-
-                return;
-            }
-        }
-
-        m_selectedObjectHandle.reset();
+        l2d::PhysicsQueryFilter2D filter;
+        filter.includeSensors = true;
+        const std::vector<l2d::PhysicsQueryHit2D> hits =
+            m_physicsWorld.pointQuery(*m_levelScene, worldPosition, filter);
+        m_selectedObjectHandle = hits.empty() ? l2d::GameObjectHandle{} : hits.back().object;
     }
 
     void snapCameraToPlayer()
@@ -794,7 +725,7 @@ class SandboxApp : public l2d::Application
         m_cameraController.update(deltaTime);
     }
 
-    void updateMouseDebug(float interpolationAlpha)
+    void updateMouseDebug()
     {
         const l2d::PointerState& pointer = l2d::Pointer::primary();
         m_mouseScreenPosition = pointer.screenPosition;
@@ -804,7 +735,7 @@ class SandboxApp : public l2d::Application
         if (pointer.pressed)
         {
             m_leftMouseClicks++;
-            pickObjectAtWorldPosition(m_mouseWorldPosition, interpolationAlpha);
+            pickObjectAtWorldPosition(m_mouseWorldPosition);
         }
     }
 

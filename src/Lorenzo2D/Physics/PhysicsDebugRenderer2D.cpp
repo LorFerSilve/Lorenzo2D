@@ -2,18 +2,22 @@
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
+#include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/Collider2D.hpp>
+#include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include "../Renderer/RendererNumeric.hpp"
 
 #include <SFML/Graphics/CircleShape.hpp>
+#include <SFML/Graphics/ConvexShape.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Angle.hpp>
 
 #include <cmath>
+#include <limits>
 
 namespace l2d
 {
@@ -26,6 +30,32 @@ namespace l2d
             if (collider.isColliding()) return collidingColor;
 
             return defaultColor;
+        }
+
+        constexpr double Pi = 3.14159265358979323846;
+
+        bool finite(sf::Vector2f value)
+        {
+            return std::isfinite(value.x) && std::isfinite(value.y);
+        }
+
+        sf::Vector2f transformedPoint(sf::Vector2f local, const TransformState& transform)
+        {
+            const double radians = static_cast<double>(transform.rotation) * Pi / 180.0;
+            const double cosine = std::cos(radians);
+            const double sine = std::sin(radians);
+            const double x = static_cast<double>(local.x) * transform.scale.x;
+            const double y = static_cast<double>(local.y) * transform.scale.y;
+            const double worldX = transform.position.x + x * cosine - y * sine;
+            const double worldY = transform.position.y + x * sine + y * cosine;
+            const double maximum = std::numeric_limits<float>::max();
+            if (!std::isfinite(worldX) || !std::isfinite(worldY) || std::fabs(worldX) > maximum ||
+                std::fabs(worldY) > maximum)
+            {
+                const float invalid = std::numeric_limits<float>::quiet_NaN();
+                return {invalid, invalid};
+            }
+            return {static_cast<float>(worldX), static_cast<float>(worldY)};
         }
     }
 
@@ -121,6 +151,14 @@ namespace l2d
             {
                 renderCircleCollider(*circle, transform, window);
             }
+            else if (const auto* capsule = dynamic_cast<const CapsuleCollider2D*>(collider))
+            {
+                renderCapsuleCollider(*capsule, transform, window);
+            }
+            else if (const auto* polygon = dynamic_cast<const ConvexPolygonCollider2D*>(collider))
+            {
+                renderConvexPolygonCollider(*polygon, transform, window);
+            }
         }
     }
 
@@ -165,6 +203,66 @@ namespace l2d
         shape.setRotation(
             sf::degrees(renderer_detail::normalizedRotationDegrees(ownerTransform.rotation)));
         shape.setScale({uniformScale, uniformScale});
+        shape.setFillColor(sf::Color::Transparent);
+        shape.setOutlineThickness(m_outlineThickness);
+        shape.setOutlineColor(
+            colliderColor(collider, m_defaultColor, m_collidingColor, m_sensorColor));
+        window.draw(shape);
+    }
+
+    void PhysicsDebugRenderer2D::renderCapsuleCollider(const CapsuleCollider2D& collider,
+                                                       const TransformState& ownerTransform,
+                                                       sf::RenderWindow& window) const
+    {
+        constexpr std::size_t HalfSteps = 12u;
+        const sf::Vector2f center = transformedPoint(collider.offset(), ownerTransform);
+        if (!finite(center)) return;
+        const double radians = static_cast<double>(ownerTransform.rotation) * Pi / 180.0;
+        const sf::Vector2f axisX = {static_cast<float>(std::cos(radians)),
+                                    static_cast<float>(std::sin(radians))};
+        const sf::Vector2f axisY = {-axisX.y, axisX.x};
+        const float radius = collider.radius() * std::max(std::fabs(ownerTransform.scale.x),
+                                                          std::fabs(ownerTransform.scale.y));
+        const float halfSegment = std::max(0.f, collider.height() * 0.5f - collider.radius()) *
+                                  std::fabs(ownerTransform.scale.y);
+        if (!std::isfinite(radius) || !std::isfinite(halfSegment)) return;
+
+        sf::ConvexShape shape((HalfSteps + 1u) * 2u);
+        const sf::Vector2f firstCenter = center - axisY * halfSegment;
+        const sf::Vector2f secondCenter = center + axisY * halfSegment;
+        for (std::size_t index = 0; index <= HalfSteps; ++index)
+        {
+            const double angle = Pi + Pi * index / HalfSteps;
+            shape.setPoint(index, firstCenter +
+                                      axisX * static_cast<float>(std::cos(angle) * radius) +
+                                      axisY * static_cast<float>(std::sin(angle) * radius));
+        }
+        for (std::size_t index = 0; index <= HalfSteps; ++index)
+        {
+            const double angle = Pi * index / HalfSteps;
+            shape.setPoint(HalfSteps + 1u + index,
+                           secondCenter + axisX * static_cast<float>(std::cos(angle) * radius) +
+                               axisY * static_cast<float>(std::sin(angle) * radius));
+        }
+        shape.setFillColor(sf::Color::Transparent);
+        shape.setOutlineThickness(m_outlineThickness);
+        shape.setOutlineColor(
+            colliderColor(collider, m_defaultColor, m_collidingColor, m_sensorColor));
+        window.draw(shape);
+    }
+
+    void PhysicsDebugRenderer2D::renderConvexPolygonCollider(
+        const ConvexPolygonCollider2D& collider, const TransformState& ownerTransform,
+        sf::RenderWindow& window) const
+    {
+        sf::ConvexShape shape(collider.vertices().size());
+        for (std::size_t index = 0; index < collider.vertices().size(); ++index)
+        {
+            const sf::Vector2f point =
+                transformedPoint(collider.offset() + collider.vertices()[index], ownerTransform);
+            if (!finite(point)) return;
+            shape.setPoint(index, point);
+        }
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(m_outlineThickness);
         shape.setOutlineColor(

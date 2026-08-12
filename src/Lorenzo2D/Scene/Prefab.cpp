@@ -2,7 +2,9 @@
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
+#include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
+#include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
 #include <Lorenzo2D/Renderer/CircleRenderer.hpp>
 #include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
@@ -105,6 +107,22 @@ namespace l2d
             return false;
         }
 
+        if (prefab.capsuleCollider &&
+            (!isFinite(prefab.capsuleCollider->radius) || prefab.capsuleCollider->radius <= 0.f ||
+             !isFinite(prefab.capsuleCollider->height) ||
+             prefab.capsuleCollider->height < 2.f * prefab.capsuleCollider->radius ||
+             !isValidColliderProperties(prefab.capsuleCollider->properties)))
+        {
+            return false;
+        }
+
+        if (prefab.convexPolygonCollider &&
+            (!ConvexPolygonCollider2D::isValidVertices(prefab.convexPolygonCollider->vertices) ||
+             !isValidColliderProperties(prefab.convexPolygonCollider->properties)))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -156,6 +174,20 @@ namespace l2d
             CircleCollider2D& collider =
                 object.addComponent<CircleCollider2D>(prefab.circleCollider->radius);
             applyColliderProperties(collider, prefab.circleCollider->properties);
+        }
+
+        if (prefab.capsuleCollider)
+        {
+            CapsuleCollider2D& collider = object.addComponent<CapsuleCollider2D>(
+                prefab.capsuleCollider->radius, prefab.capsuleCollider->height);
+            applyColliderProperties(collider, prefab.capsuleCollider->properties);
+        }
+
+        if (prefab.convexPolygonCollider)
+        {
+            ConvexPolygonCollider2D& collider = object.addComponent<ConvexPolygonCollider2D>(
+                prefab.convexPolygonCollider->vertices);
+            applyColliderProperties(collider, prefab.convexPolygonCollider->properties);
         }
 
         object.setActive(prefab.active);

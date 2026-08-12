@@ -1,15 +1,16 @@
 # Lorenzo2D level format
 
 `.l2dlevel` is a deterministic line-oriented representation of `LevelDocument`.
-Version 2 uses a fixed record order so malformed or incompatible data can be
-rejected before the destination document changes. Version 1 remains readable
-and defaults missing z-order values to zero. See
-`assets/levels/phase2-showcase.l2dlevel` for a complete example.
+Version 3 uses a fixed record order so malformed or incompatible data can be
+rejected before the destination document changes. Versions 1 and 2 remain readable;
+version 1 defaults missing z-order values to zero. The checked-in
+`assets/levels/phase2-showcase.l2dlevel` intentionally remains a version 1 compatibility fixture;
+the version 3 record below is the current format reference.
 
 ## Header
 
 ```text
-LORENZO2D_LEVEL 2
+LORENZO2D_LEVEL 3
 level "Level name"
 objects 2
 ```
@@ -33,6 +34,8 @@ circle 0
 rigid_body 1 2 0 0 0 0 1 1 1
 box_collider 1 30 44 1 2 0 0.6 0.4 2 5 0
 circle_collider 0
+capsule_collider 0
+convex_polygon_collider 0
 end
 ```
 
@@ -46,13 +49,17 @@ followed by:
 | `rigid_body` | body type, velocity x/y, acceleration x/y, mass, use-gravity, gravity scale |
 | `box_collider` | size x/y, then common collider properties |
 | `circle_collider` | radius, then common collider properties |
+| `capsule_collider` | radius, total height, then common collider properties |
+| `convex_polygon_collider` | vertex count, x/y pairs, then common collider properties |
 
 Body types are `0` static, `1` kinematic, and `2` dynamic. Common collider
 properties are offset x/y, restitution, static friction, dynamic friction,
 category bits, mask bits, and the sensor flag. Boolean fields must be `0` or
 `1`. Colors use integer channels from 0 through 255. Floating-point values must
 be finite, sizes and radii cannot be negative, mass must be positive, and the
-material must already satisfy the engine's normalized `[0, 1]` contract.
+material must already satisfy the engine's normalized `[0, 1]` contract. Capsules require a
+positive radius and a height of at least twice that radius. Polygons require 3 through 16 finite,
+strictly convex vertices.
 
 Collider offsets are local center points. They inherit the serialized transform
 scale and rotation. A top-left-origin box renderer normally uses half its size
@@ -63,8 +70,8 @@ as the box offset; a top-left-origin circle renderer normally uses
 scene insertion order.
 
 The runtime physics model supports arbitrary compound colliders, angular state,
-sleeping, and distance joints. Version 2 serialization can combine one box and
-one circle collider, but cannot repeat a collider type or encode the added
+sleeping, and distance joints. Version 3 serialization can combine one box, circle, capsule, and
+convex polygon collider, but cannot repeat a collider type or encode the added
 angular, sleeping, or joint fields. Shape renderers may be combined. Sprite
 asset references, animation state, custom component codecs, and further schema
 migrations are reserved for later versions.

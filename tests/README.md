@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The regression executables use a small first-party harness. All twenty suites
+The regression executables use a small first-party harness. All twenty-one suites
 share assertion and named-test execution support through `TestSupport.hpp`.
 Physics and renderer assertions use the same value-rich diagnostics while
 keeping their subsystem comparison tolerances explicit in the owning source.
@@ -25,8 +25,10 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DPhysicsCollisionTests` | Manifolds, filters, sensors, contacts, grounded state, and extreme values | `headless` | 120 s |
 | `Lorenzo2DPhysicsWorldTests` | Scene identity, reset behavior, collider participation, stacks, and legacy response | `headless` | 90 s |
 | `Lorenzo2DPhysicsBroadPhaseTests` | Uniform-grid boundaries, deduplication, fallback, equivalence, and telemetry | `headless` | 120 s |
+| `Lorenzo2DPhysicsQueryTests` | Deterministic queries, filtering, shape casts, snapshots, new collider manifolds, and invalid input | `headless` | 120 s |
 | `Lorenzo2DPhysicsTilemapTests` | Physics continuity across merged tile-map collision geometry | `headless` | 90 s |
 | `Lorenzo2DPhysicsStabilityTests` | Long-horizon contacts, stacks, determinism, broad-phase equivalence, and tunnelling baseline | `headless` | 240 s |
+| `Lorenzo2DPhysicsAdvancedTests` | CCD, angular response, sleeping, warm starting, and joint behavior | `headless` | 120 s |
 | `Lorenzo2DAssetTests` | Font and texture handle lifetime, registries, and renderer leases | `xvfb` | 60 s |
 | `Lorenzo2DAnimationTests` | Clip validation, atlas frames, animator timing, looping, pause, speed, and completion | `xvfb` | 60 s |
 | `Lorenzo2DResourceTests` | Ordered roots, absolute paths, executable-relative lookup, and asset-manager integration | `headless` | 30 s |

@@ -1,6 +1,8 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
+#include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
+#include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
@@ -47,6 +49,19 @@ namespace
         circleCollider.properties.offset = {16.f, 24.f};
         circleCollider.properties.filter = {4u, 9u};
         prefab.circleCollider = circleCollider;
+
+        l2d::CapsuleColliderPrefab capsuleCollider;
+        capsuleCollider.radius = 7.f;
+        capsuleCollider.height = 30.f;
+        capsuleCollider.properties.offset = {15.f, 22.f};
+        capsuleCollider.properties.material = {0.1f, 0.5f, 0.3f};
+        prefab.capsuleCollider = capsuleCollider;
+
+        l2d::ConvexPolygonColliderPrefab polygonCollider;
+        polygonCollider.vertices = {{-10.f, 10.f}, {0.f, -10.f}, {10.f, 10.f}};
+        polygonCollider.properties.offset = {15.f, 20.f};
+        polygonCollider.properties.sensor = true;
+        prefab.convexPolygonCollider = polygonCollider;
         return prefab;
     }
 
@@ -63,7 +78,7 @@ namespace
 
         std::stringstream serialized;
         L2D_REQUIRE(l2d::LevelSerializer::save(serialized, source));
-        L2D_REQUIRE(serialized.str().find("LORENZO2D_LEVEL 2") == 0u);
+        L2D_REQUIRE(serialized.str().find("LORENZO2D_LEVEL 3") == 0u);
 
         l2d::LevelDocument loaded;
         L2D_REQUIRE(l2d::LevelSerializer::load(serialized, loaded));
@@ -78,6 +93,9 @@ namespace
         L2D_REQUIRE(playerPrefab.rigidBody.has_value());
         L2D_REQUIRE(playerPrefab.boxCollider.has_value());
         L2D_REQUIRE(playerPrefab.circleCollider.has_value());
+        L2D_REQUIRE(playerPrefab.capsuleCollider.has_value());
+        L2D_REQUIRE(playerPrefab.convexPolygonCollider.has_value());
+        L2D_REQUIRE_EQUAL(playerPrefab.convexPolygonCollider->vertices.size(), 3u);
         L2D_REQUIRE(playerPrefab.rectangleRenderer->color == sf::Color(20, 80, 220, 200));
         L2D_REQUIRE_APPROX_2D(playerPrefab.transform.position, sf::Vector2f(12.5f, -8.f), 0.0001f);
 
@@ -96,10 +114,16 @@ namespace
         const l2d::RigidBody2D* body = player->getComponent<l2d::RigidBody2D>();
         const l2d::BoxCollider2D* collider = player->getComponent<l2d::BoxCollider2D>();
         const l2d::CircleCollider2D* circleCollider = player->getComponent<l2d::CircleCollider2D>();
+        const l2d::CapsuleCollider2D* capsuleCollider =
+            player->getComponent<l2d::CapsuleCollider2D>();
+        const l2d::ConvexPolygonCollider2D* polygonCollider =
+            player->getComponent<l2d::ConvexPolygonCollider2D>();
         L2D_REQUIRE(body != nullptr);
         L2D_REQUIRE(collider != nullptr);
         L2D_REQUIRE(circleCollider != nullptr);
-        L2D_REQUIRE_EQUAL(player->getComponents<l2d::Collider2D>().size(), 2);
+        L2D_REQUIRE(capsuleCollider != nullptr);
+        L2D_REQUIRE(polygonCollider != nullptr);
+        L2D_REQUIRE_EQUAL(player->getComponents<l2d::Collider2D>().size(), 4u);
         L2D_REQUIRE(collider->id() != circleCollider->id());
         L2D_REQUIRE(body->bodyType() == l2d::BodyType2D::Kinematic);
         L2D_REQUIRE_APPROX(body->mass(), 3.f, 0.0001f);
@@ -108,6 +132,8 @@ namespace
         L2D_REQUIRE(collider->filter().categoryBits == 4u);
         L2D_REQUIRE(collider->filter().maskBits == 9u);
         L2D_REQUIRE_APPROX(collider->material().dynamicFriction, 0.4f, 0.0001f);
+        L2D_REQUIRE_APPROX(capsuleCollider->height(), 30.f, 0.0001f);
+        L2D_REQUIRE_EQUAL(polygonCollider->vertices().size(), 3u);
     }
 
     void testMalformedAndUnsupportedInputIsTransactional()
@@ -140,6 +166,15 @@ namespace
         L2D_REQUIRE(!library.store("player", invalid));
         L2D_REQUIRE(library.find("player") != nullptr);
         L2D_REQUIRE(library.find("player")->name == "Player One");
+
+        l2d::Prefab invalidPolygon = valid;
+        invalidPolygon.convexPolygonCollider->vertices = {
+            {0.f, 0.f}, {10.f, 0.f}, {5.f, 2.f}, {10.f, 10.f}, {0.f, 10.f}};
+        L2D_REQUIRE(!library.store("player", invalidPolygon));
+
+        l2d::Prefab invalidCapsule = valid;
+        invalidCapsule.capsuleCollider->height = invalidCapsule.capsuleCollider->radius;
+        L2D_REQUIRE(!library.store("player", invalidCapsule));
 
         l2d::Scene scene;
         l2d::GameObject* instance = library.instantiate(scene, "player");
