@@ -11,6 +11,9 @@
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
+#include <Lorenzo2D/Scene/ComponentCodecRegistry.hpp>
+#include <Lorenzo2D/Tilemap/AsciiTileMapImporter.hpp>
+#include <Lorenzo2D/Tilemap/TileMapColliderBuilder2D.hpp>
 #include <Lorenzo2D/Tilemap/TileSet.hpp>
 
 #include <sstream>
@@ -27,6 +30,18 @@ int main()
 
     l2d::TileSet tileSet;
     const bool tileAdded = tileSet.setTileFromGrid('#', {1u, 0u}, {16u, 16u});
+
+    l2d::AsciiTileMapImporter tileImporter;
+    tileImporter.mapCharacter('#', 1u);
+    l2d::TileMapData tileData;
+    const bool tileDataImported = tileImporter.import({"##"}, {16.f, 16.f}, tileData);
+    const auto tileColliders = l2d::TileMapColliderBuilder2D::build(tileData);
+
+    l2d::ComponentCodecRegistry codecs;
+    const bool codecRegistered = codecs.registerCodec(
+        "consumer.marker", 1u,
+        [](const l2d::GameObject&) { return std::optional<std::string>("{}"); },
+        [](l2d::GameObject&, const std::string&) { return true; });
 
     l2d::LevelDocument level;
     level.objects.push_back(l2d::Prefab{});
@@ -53,8 +68,9 @@ int main()
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::S));
 
-    return l2d::VersionString == "0.7.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
-                   tileAdded && levelSaved && resourceRootAdded && inputConfigured &&
+    return l2d::VersionString == "0.8.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
+                   tileAdded && tileDataImported && tileColliders.empty() && codecRegistered &&
+                   levelSaved && resourceRootAdded && inputConfigured &&
                    collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
                    polygon.vertices().size() == 3u && queryFilter.categoryMask != 0u &&
                    joint.id() != l2d::InvalidJointId &&

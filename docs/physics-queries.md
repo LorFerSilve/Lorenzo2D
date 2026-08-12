@@ -91,6 +91,7 @@ error is below 0.9% of the capsule radius.
 
 ## Level format
 
-Level format version 3 adds optional `capsule_collider` and `convex_polygon_collider` records.
-Versions 1 and 2 remain readable. Prefab validation and loading reject malformed capsule dimensions
-and invalid polygon vertex sets before mutating a destination scene or document.
+Legacy level format version 3 added optional `capsule_collider` and
+`convex_polygon_collider` records. Text versions 1 through 3 remain readable; JSON version 4 is
+the current save format. Prefab validation and loading reject malformed capsule dimensions and
+invalid polygon vertex sets before mutating a destination scene or document.

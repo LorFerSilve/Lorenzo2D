@@ -2,6 +2,7 @@
 
 #include <Lorenzo2D/Scene/GameObjectHandle.hpp>
 #include <Lorenzo2D/Tilemap/TileSet.hpp>
+#include <Lorenzo2D/Tilemap/TileMapData.hpp>
 
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -18,6 +19,7 @@ namespace sf
 
 namespace l2d
 {
+    class AssetManager;
     class Scene;
 
     // Describes the currently loaded geometry, or zeros when unloaded.
@@ -107,6 +109,15 @@ namespace l2d
         void loadFromLayout(Scene& scene, const Layout& layout, char solidChar = '#',
                             const std::string& objectPrefix = "Tile");
 
+        // Snapshots layered data and generates render/collision objects.
+        // Visual layers retain declaration order; collision roles are unioned.
+        // The AssetManager overload resolves texture AssetIds transactionally.
+        bool loadFromData(Scene& scene, const TileMapData& data,
+                          const std::string& objectPrefix = "Tile");
+        bool loadFromData(Scene& scene, const TileMapData& data, AssetManager& assets,
+                          const std::string& objectPrefix = "Tile");
+        const TileMapData& data() const;
+
         // Queues generated render and collision objects for destruction in
         // their owning scenes. Expired handles are ignored, so this is safe
         // and idempotent.
@@ -146,6 +157,8 @@ namespace l2d
         TileMapRenderStats lastRenderStats() const;
 
       private:
+        bool loadFromData(Scene& scene, const TileMapData& data, const AssetManager* assets,
+                          const std::string& objectPrefix);
         Layout readLayoutFromFile(const std::string& filepath) const;
         void queueGeneratedObjectsForDestruction(
             const std::vector<GameObjectHandle>& generatedObjects) const;
@@ -164,6 +177,7 @@ namespace l2d
         TileMapUpdateStats m_lastUpdateStats;
 
         Layout m_layout;
+        TileMapData m_data;
         std::vector<GameObjectHandle> m_generatedObjects;
         std::vector<GameObjectHandle> m_collisionObjects;
         GameObjectHandle m_renderObject;
@@ -171,5 +185,6 @@ namespace l2d
         char m_loadedSolidChar = '#';
         std::string m_loadedObjectPrefix = "Tile";
         std::optional<TileMapRegion> m_streamRegion;
+        bool m_legacyEditMode = false;
     };
 }

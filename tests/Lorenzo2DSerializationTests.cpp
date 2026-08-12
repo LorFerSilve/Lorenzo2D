@@ -1,15 +1,22 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
+#include <Lorenzo2D/Animation/AnimationClip.hpp>
+#include <Lorenzo2D/Animation/Animator.hpp>
+#include <Lorenzo2D/Assets/AssetManager.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
+#include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
+#include <Lorenzo2D/Renderer/SpriteRenderer.hpp>
+#include <Lorenzo2D/Scene/ComponentCodecRegistry.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
 #include <Lorenzo2D/Scene/Prefab.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include <fstream>
+#include <memory>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
@@ -21,6 +28,13 @@ namespace
 {
     using l2d::test::runTest;
     using l2d::test::TemporaryFile;
+
+    class MarkerComponent final : public l2d::Component
+    {
+      public:
+        explicit MarkerComponent(std::string marker) : value(std::move(marker)) {}
+        std::string value;
+    };
 
     l2d::Prefab makePlayerPrefab()
     {
@@ -78,7 +92,8 @@ namespace
 
         std::stringstream serialized;
         L2D_REQUIRE(l2d::LevelSerializer::save(serialized, source));
-        L2D_REQUIRE(serialized.str().find("LORENZO2D_LEVEL 3") == 0u);
+        L2D_REQUIRE(serialized.str().find("\"format\": \"Lorenzo2DLevel\"") != std::string::npos);
+        L2D_REQUIRE(serialized.str().find("\"version\": 4") != std::string::npos);
 
         l2d::LevelDocument loaded;
         L2D_REQUIRE(l2d::LevelSerializer::load(serialized, loaded));
@@ -244,6 +259,114 @@ namespace
         L2D_REQUIRE(threw);
         L2D_REQUIRE(scene.gameObjectCount() == 0u);
     }
+
+    void testSpriteAnimatorAssetsAndCustomCodecsRoundTrip()
+    {
+        l2d::Prefab actor;
+        actor.name = "Sprite actor";
+        l2d::SpriteRendererPrefab sprite;
+        sprite.texture = "hero";
+        sprite.textureRect = {{0, 0}, {16, 24}};
+        sprite.size = {32.f, 48.f};
+        sprite.origin = {8.f, 24.f};
+        sprite.flipX = true;
+        sprite.renderOrder.layer = 3;
+        sprite.renderOrder.depth = 4.f;
+        sprite.renderOrder.order = 5;
+        sprite.renderOrder.depthMode =
+            static_cast<std::uint8_t>(l2d::RenderDepthMode2D::ProjectedY);
+        actor.spriteRenderer = sprite;
+        actor.animator = l2d::AnimatorPrefab{{"idle"}, "idle", 1.5f, true};
+        actor.customComponents.push_back({"Marker", 1u, true, "{\"value\":\"blue\"}"});
+        actor.customComponents.push_back({"OptionalFuture", 7u, false, "{}"});
+
+        l2d::LevelDocument source;
+        source.name = "Asset level";
+        source.objects.push_back(actor);
+        std::stringstream serialized;
+        L2D_REQUIRE(l2d::LevelSerializer::saveJson(serialized, source));
+
+        l2d::LevelDocument loaded;
+        L2D_REQUIRE(l2d::LevelSerializer::loadJson(serialized, loaded));
+        L2D_REQUIRE(loaded.objects[0].spriteRenderer.has_value());
+        L2D_REQUIRE(loaded.objects[0].animator.has_value());
+        L2D_REQUIRE_EQUAL(loaded.objects[0].customComponents.size(), 2u);
+
+        l2d::AssetManager assets;
+        L2D_REQUIRE(
+            assets.storeTexture("hero", l2d::TextureHandle(std::make_shared<sf::Texture>())));
+        auto clip = std::make_shared<l2d::AnimationClip>("idle");
+        L2D_REQUIRE(clip->addFrame({{0, 0}, {16, 24}}));
+        L2D_REQUIRE(assets.storeAnimationClip("idle", l2d::AnimationClipHandle(clip)));
+
+        l2d::ComponentCodecRegistry codecs;
+        L2D_REQUIRE(codecs.registerCodec(
+            "Marker", 1u,
+            [](const l2d::GameObject& object) -> std::optional<std::string>
+            {
+                const MarkerComponent* marker = object.getComponent<MarkerComponent>();
+                return marker == nullptr ? std::nullopt : std::optional<std::string>(marker->value);
+            },
+            [](l2d::GameObject& object, const std::string& data)
+            {
+                object.addComponent<MarkerComponent>(data);
+                return true;
+            }));
+
+        l2d::Scene scene;
+        const auto handles = l2d::LevelSerializer::instantiate(scene, loaded, assets, &codecs);
+        L2D_REQUIRE_EQUAL(handles.size(), 1u);
+        l2d::GameObject* object = handles[0].get();
+        L2D_REQUIRE(object != nullptr);
+        L2D_REQUIRE(object->getComponent<l2d::SpriteRenderer>() != nullptr);
+        L2D_REQUIRE(object->getComponent<l2d::Animator>() != nullptr);
+        L2D_REQUIRE(object->getComponent<l2d::RenderOrder2D>() != nullptr);
+        L2D_REQUIRE(object->getComponent<MarkerComponent>() != nullptr);
+        L2D_REQUIRE(object->getComponent<MarkerComponent>()->value == "{\"value\":\"blue\"}");
+
+        l2d::LevelDocument missingRequired = loaded;
+        missingRequired.objects[0].customComponents[0].version = 99u;
+        l2d::Scene rejectedScene;
+        bool rejected = false;
+        try
+        {
+            (void)l2d::LevelSerializer::instantiate(rejectedScene, missingRequired, assets,
+                                                    &codecs);
+        }
+        catch (const std::invalid_argument&)
+        {
+            rejected = true;
+        }
+        L2D_REQUIRE(rejected);
+        L2D_REQUIRE_EQUAL(rejectedScene.gameObjectCount(), 0u);
+
+        l2d::LevelDocument unchanged = loaded;
+        std::stringstream duplicate(
+            R"({"format":"Lorenzo2DLevel","version":4,"name":"bad","objects":[{"name":"x","tag":"","active":true,"zOrder":0,"transform":{"position":[0,0],"rotation":0,"scale":[1,1]},"components":[{"type":"CircleRenderer","version":1,"required":true,"data":{"radius":1,"color":[255,255,255,255]}},{"type":"CircleRenderer","version":1,"required":true,"data":{"radius":2,"color":[255,255,255,255]}}]}]})");
+        L2D_REQUIRE(!l2d::LevelSerializer::loadJson(duplicate, unchanged));
+        L2D_REQUIRE(unchanged.name == loaded.name);
+
+        std::stringstream wrongTypes(
+            R"({"format":"Lorenzo2DLevel","version":4,"name":{},"objects":[]})");
+        L2D_REQUIRE(!l2d::LevelSerializer::loadJson(wrongTypes, unchanged));
+        L2D_REQUIRE(unchanged.name == loaded.name);
+
+        l2d::LevelDocument missingAsset = loaded;
+        l2d::AssetManager emptyAssets;
+        l2d::Scene missingAssetScene;
+        rejected = false;
+        try
+        {
+            (void)l2d::LevelSerializer::instantiate(missingAssetScene, missingAsset, emptyAssets,
+                                                    &codecs);
+        }
+        catch (const std::invalid_argument&)
+        {
+            rejected = true;
+        }
+        L2D_REQUIRE(rejected);
+        L2D_REQUIRE_EQUAL(missingAssetScene.gameObjectCount(), 0u);
+    }
 }
 
 int main()
@@ -259,6 +382,8 @@ int main()
     runTest("checked-in example level loads", testCheckedInExampleLevelLoads, failures);
     runTest("invalid levels preserve files and scenes",
             testInvalidDocumentsDoNotOverwriteFilesOrScenes, failures);
+    runTest("sprite animator assets and custom codecs round-trip",
+            testSpriteAnimatorAssetsAndCustomCodecsRoundTrip, failures);
 
     if (failures != 0)
     {

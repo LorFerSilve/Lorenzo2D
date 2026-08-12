@@ -15,7 +15,9 @@ current runtime first and the allowed dependency direction for upcoming modules.
   does not mutate or borrow the world's contact state.
 - Asset handles own immutable published resource generations independently from the registry that
   issued them.
-- `TileMap` owns its layout snapshot and lifetime-aware handles to generated scene objects.
+- `TileMapData` owns imported tile definitions, layers, objects, and properties without depending
+  on a scene. `TileMap` owns a validated data snapshot and lifetime-aware handles to generated
+  render/collision scene objects. `TileMapColliderBuilder2D` remains a pure geometry builder.
 
 Identity-bearing runtime objects remain non-copyable and non-movable unless a future design proves
 that moving them preserves every handle and owner relationship.

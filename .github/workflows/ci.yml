@@ -206,6 +206,10 @@ jobs:
           test -f install/include/Lorenzo2D/Physics/PhysicsQueries2D.hpp
           test -f install/include/Lorenzo2D/Animation/Animator.hpp
           test -f install/include/Lorenzo2D/Scene/LevelSerializer.hpp
+          test -f install/include/Lorenzo2D/Scene/ComponentCodecRegistry.hpp
+          test -f install/include/Lorenzo2D/Assets/AssetId.hpp
+          test -f install/include/Lorenzo2D/Tilemap/TileMapData.hpp
+          test -f install/include/Lorenzo2D/Tilemap/TiledJsonImporter.hpp
           test -f install/include/Lorenzo2D/Tilemap/TileSet.hpp
           test -f install/lib/cmake/Lorenzo2D/Lorenzo2DConfig.cmake
           test -f install/lib/cmake/Lorenzo2D/Lorenzo2DTargets.cmake

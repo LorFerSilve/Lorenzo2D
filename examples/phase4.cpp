@@ -6,13 +6,10 @@
 #include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
-#include <Lorenzo2D/Tilemap/TileSet.hpp>
+#include <Lorenzo2D/Tilemap/AsciiTileMapImporter.hpp>
 
-#include <SFML/Graphics/Image.hpp>
-#include <SFML/Graphics/Texture.hpp>
-
-#include <memory>
-#include <vector>
+#include <string>
+#include <utility>
 
 class Phase4Example final : public l2d::Application
 {
@@ -24,30 +21,41 @@ class Phase4Example final : public l2d::Application
         background.addComponent<l2d::RectangleRenderer>(sf::Vector2f{800.f, 450.f},
                                                         sf::Color(16, 22, 38));
 
-        sf::Image atlas({32u, 16u}, sf::Color(40, 130, 220));
+        l2d::AsciiTileMapImporter importer;
+        importer.mapCharacter('#', 1u);
+        importer.mapCharacter('G', 2u);
+        importer.mapCharacter('W', 3u);
 
-        for (unsigned int y = 0; y < 16u; ++y)
-        {
-            for (unsigned int x = 16u; x < 32u; ++x)
-            {
-                atlas.setPixel({x, y}, sf::Color(60, 210, 235));
-            }
-        }
+        l2d::TileMapData data;
+        importer.import({"#########################", "#GGGGGGGGGGGGGGGGGGGGGGG#",
+                         "#GGWWWWGGGGGGGGGGGGGGGGG#", "#GGGGGGGGGGGGGGGGGGGGGGG#",
+                         "#GGGGGGGGG######GGGGGGGG#", "#GGGGGGGGGGGGGGGGGGGGGGG#",
+                         "#GGGGGGGGGGGGGGGGGGGGGGG#", "#########################"},
+                        {32.f, 32.f}, data);
 
-        l2d::TextureHandle atlasTexture(std::make_shared<sf::Texture>(atlas));
-        l2d::TileSet tileSet;
-        tileSet.setTexture(atlasTexture);
-        tileSet.setAnimatedTile('W',
-                                std::vector<l2d::TileAnimationFrame>{{{{0, 0}, {16, 16}}, 0.25f},
-                                                                     {{{16, 0}, {16, 16}}, 0.25f}});
-        m_tiles.setTileSize({32.f, 32.f});
+        l2d::TileDefinition wall = *data.definition(1u);
+        wall.collision = l2d::TileCollisionKind::Solid;
+        wall.navigable = false;
+        data.setDefinition(wall);
+        l2d::TileDefinition ground = *data.definition(2u);
+        ground.properties["terrain"] = std::string("grass");
+        data.setDefinition(ground);
+        l2d::TileDefinition water = *data.definition(3u);
+        water.movementCost = 2.5f;
+        water.properties["terrain"] = std::string("water");
+        data.setDefinition(water);
+
+        l2d::TileMapLayer triggers;
+        triggers.name = "Triggers";
+        triggers.role = l2d::TileMapLayerRole::Trigger;
+        triggers.tiles.resize(data.cellCount(), l2d::EmptyTile);
+        triggers.tiles[5u * data.width() + 12u] = 2u;
+        triggers.properties["event"] = std::string("bridge");
+        data.addLayer(std::move(triggers));
+
         m_tiles.setRenderChunkSize({4u, 4u});
         m_tiles.setSolidTileColor(sf::Color(70, 85, 115));
-        m_tiles.setTileSet(tileSet);
-        m_tiles.loadFromLayout(m_scene, {"#########################", "#.......................#",
-                                         "#..WWWW.................#", "#.......................#",
-                                         "#.........######........#", "#.......................#",
-                                         "#.......................#", "#########################"});
+        m_tiles.loadFromData(m_scene, data);
         m_tiles.setStreamRegion({0u, 0u, 25u, 8u});
 
         l2d::GameObject& hero = m_scene.createGameObject("Hero");
@@ -80,15 +88,6 @@ class Phase4Example final : public l2d::Application
   private:
     void onFixedPreSimulation(float fixedDeltaTime) override
     {
-        m_editTimer += fixedDeltaTime;
-
-        if (m_editTimer >= 1.f)
-        {
-            m_editTimer -= 1.f;
-            m_bridgeVisible = !m_bridgeVisible;
-            m_tiles.setTile(5u, 12u, m_bridgeVisible ? '#' : '.');
-        }
-
         m_scene.fixedUpdate(fixedDeltaTime);
     }
 
@@ -101,8 +100,6 @@ class Phase4Example final : public l2d::Application
     l2d::Scene m_scene{"Phase 4"};
     l2d::TileMap m_tiles;
     l2d::PostProcessStack2D m_effects;
-    float m_editTimer = 0.f;
-    bool m_bridgeVisible = false;
 };
 
 int main()

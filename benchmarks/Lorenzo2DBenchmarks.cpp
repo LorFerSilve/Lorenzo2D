@@ -12,6 +12,7 @@
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
+#include <Lorenzo2D/Tilemap/AsciiTileMapImporter.hpp>
 
 #include <SFML/Graphics/View.hpp>
 
@@ -323,6 +324,31 @@ namespace
                        });
     }
 
+    BenchmarkResult benchmarkLayeredTileMapBuild(std::size_t iterations)
+    {
+        const l2d::TileMap::Layout layout = makeTileLayout();
+        l2d::AsciiTileMapImporter importer;
+        importer.mapCharacter('#', 1u);
+        l2d::TileMapData data;
+        if (!importer.import(layout, {40.f, 40.f}, data))
+            throw std::runtime_error("unable to prepare layered tile-map benchmark");
+        l2d::TileDefinition solid = *data.definition(1u);
+        solid.collision = l2d::TileCollisionKind::Solid;
+        if (!data.setDefinition(std::move(solid)))
+            throw std::runtime_error("unable to configure layered tile-map benchmark");
+
+        return measure(iterations,
+                       [&data]()
+                       {
+                           l2d::Scene scene;
+                           l2d::TileMap tileMap;
+                           if (!tileMap.loadFromData(scene, data)) return std::size_t{0u};
+                           const l2d::TileMapBuildStats& stats = tileMap.buildStats();
+                           return stats.solidTileCount + stats.renderChunkCount +
+                                  stats.collisionRectangleCount;
+                       });
+    }
+
     BenchmarkResult benchmarkTileMapCulling(std::size_t iterations)
     {
         l2d::Scene scene;
@@ -371,6 +397,8 @@ namespace
                            benchmarkPhysicsQueryBatch(physicsQueryBatchIterations)});
         entries.push_back({"tile-map full build", tileMapBuildIterations,
                            benchmarkTileMapBuild(tileMapBuildIterations)});
+        entries.push_back({"layered tile-map build", tileMapBuildIterations,
+                           benchmarkLayeredTileMapBuild(tileMapBuildIterations)});
         entries.push_back({"tile-map view culling", tileMapCullingIterations,
                            benchmarkTileMapCulling(tileMapCullingIterations)});
         return entries;

@@ -172,6 +172,35 @@ namespace l2d
         return m_textures.size();
     }
 
+    bool AssetManager::storeAnimationClip(const std::string& name, AnimationClipHandle clip)
+    {
+        if (name.empty() || !clip) return false;
+
+        m_animationClips.insert_or_assign(name, std::move(clip));
+        return true;
+    }
+
+    AnimationClipHandle AssetManager::getAnimationClip(const std::string& name) const
+    {
+        const auto iterator = m_animationClips.find(name);
+        return iterator == m_animationClips.end() ? AnimationClipHandle{} : iterator->second;
+    }
+
+    bool AssetManager::hasAnimationClip(const std::string& name) const
+    {
+        return m_animationClips.find(name) != m_animationClips.end();
+    }
+
+    bool AssetManager::unloadAnimationClip(const std::string& name)
+    {
+        return m_animationClips.erase(name) != 0u;
+    }
+
+    std::size_t AssetManager::animationClipCount() const
+    {
+        return m_animationClips.size();
+    }
+
     void AssetManager::clearFonts()
     {
         for (const auto& entry : m_fonts)
@@ -204,9 +233,15 @@ namespace l2d
         m_textures.clear();
     }
 
+    void AssetManager::clearAnimationClips()
+    {
+        m_animationClips.clear();
+    }
+
     void AssetManager::clearAll()
     {
         clearFonts();
         clearTextures();
+        clearAnimationClips();
     }
 }

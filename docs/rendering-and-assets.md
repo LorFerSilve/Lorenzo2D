@@ -1,6 +1,6 @@
 # Rendering and asset pipeline
 
-Lorenzo2D 0.7 separates logical world coordinates from presentation. The
+Lorenzo2D 0.8 separates logical world coordinates from presentation. The
 render-context and ordering APIs are additive: the previous interpolation-alpha
 and z-order calls remain source-compatible adapters.
 

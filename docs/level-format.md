@@ -1,77 +1,90 @@
 # Lorenzo2D level format
 
-`.l2dlevel` is a deterministic line-oriented representation of `LevelDocument`.
-Version 3 uses a fixed record order so malformed or incompatible data can be
-rejected before the destination document changes. Versions 1 and 2 remain readable;
-version 1 defaults missing z-order values to zero. The checked-in
-`assets/levels/phase2-showcase.l2dlevel` intentionally remains a version 1 compatibility fixture;
-the version 3 record below is the current format reference.
+`LevelSerializer::save` writes deterministic JSON version 4. The serializer validates the entire
+`LevelDocument` before writing, and `load` replaces its destination only after the complete input
+has parsed and passed validation. The object limit is 100,000.
 
-## Header
+## Version 4 schema
 
-```text
-LORENZO2D_LEVEL 3
-level "Level name"
-objects 2
+The root record contains `format`, `version`, `name`, and `objects`. Each object contains its base
+state plus a component array:
+
+```json
+{
+  "format": "Lorenzo2DLevel",
+  "version": 4,
+  "name": "Village",
+  "objects": [
+    {
+      "name": "Player",
+      "tag": "player",
+      "active": true,
+      "zOrder": 10,
+      "transform": {
+        "position": [100.0, 200.0],
+        "rotation": 0.0,
+        "scale": [1.0, 1.0]
+      },
+      "components": [
+        {
+          "type": "SpriteRenderer",
+          "version": 1,
+          "required": true,
+          "data": {
+            "texture": "characters/player.png",
+            "rect": [0, 0, 32, 48],
+            "size": [32.0, 48.0],
+            "color": [255, 255, 255, 255],
+            "origin": [16.0, 48.0],
+            "flipX": false,
+            "flipY": false,
+            "renderOrder": {
+              "layer": 10,
+              "depth": 0.0,
+              "order": 0,
+              "mode": 1
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
 ```
 
-Quoted strings use the C++ `std::quoted` representation. Names and tags may be
-empty but cannot contain line breaks. `objects` cannot exceed 100,000.
+Built-in version-1 component records cover rectangle/circle renderers, sprite renderers, animators,
+rigid bodies, and box/circle/capsule/convex-polygon colliders. Sprite textures and animation clips
+are stable `AssetId` strings. Instantiate asset-backed documents with an `AssetManager`; a missing
+required asset rejects and rolls back the complete operation.
 
-## Object record
+## Custom component codecs
 
-Every object uses this exact field order:
+`ComponentCodecRegistry` maps `(type, version)` pairs to an encoder and decoder. `data` may contain
+any JSON value and is delivered to codecs as compact JSON text. Unknown optional records are
+skipped, while an unknown required record or a failing decoder rejects instantiation. This keeps
+saved component versions explicit and prevents silent interpretation of a newer schema.
 
-```text
-object
-name "Player"
-tag "player"
-active 1
-z_order 10
-transform 100 200 0 1 1
-rectangle 1 32 48 20 80 220 255
-circle 0
-rigid_body 1 2 0 0 0 0 1 1 1
-box_collider 1 30 44 1 2 0 0.6 0.4 2 5 0
-circle_collider 0
-capsule_collider 0
-convex_polygon_collider 0
-end
+```cpp
+l2d::ComponentCodecRegistry codecs;
+codecs.registerCodec(
+    "game.Team", 1,
+    [](const l2d::GameObject& object) -> std::optional<std::string> {
+        const auto* team = object.getComponent<Team>();
+        return team ? std::optional<std::string>("{\"id\":1}") : std::nullopt;
+    },
+    [](l2d::GameObject& object, const std::string& json) {
+        return parseAndAttachTeam(object, json);
+    });
+
+auto handles = l2d::LevelSerializer::instantiate(scene, level, assets, &codecs);
 ```
 
-Each optional component starts with `0` or `1`. A zero ends that line. A one is
-followed by:
+## Legacy migration
 
-| Component | Values after presence flag |
-| --- | --- |
-| `rectangle` | size x/y, RGBA bytes |
-| `circle` | radius, RGBA bytes |
-| `rigid_body` | body type, velocity x/y, acceleration x/y, mass, use-gravity, gravity scale |
-| `box_collider` | size x/y, then common collider properties |
-| `circle_collider` | radius, then common collider properties |
-| `capsule_collider` | radius, total height, then common collider properties |
-| `convex_polygon_collider` | vertex count, x/y pairs, then common collider properties |
+`load` auto-detects the former line-oriented `LORENZO2D_LEVEL` format and continues to read
+versions 1, 2, and 3. Saving a loaded legacy document writes JSON version 4. The checked-in
+`assets/levels/phase2-showcase.l2dlevel` remains a version-1 compatibility fixture.
 
-Body types are `0` static, `1` kinematic, and `2` dynamic. Common collider
-properties are offset x/y, restitution, static friction, dynamic friction,
-category bits, mask bits, and the sensor flag. Boolean fields must be `0` or
-`1`. Colors use integer channels from 0 through 255. Floating-point values must
-be finite, sizes and radii cannot be negative, mass must be positive, and the
-material must already satisfy the engine's normalized `[0, 1]` contract. Capsules require a
-positive radius and a height of at least twice that radius. Polygons require 3 through 16 finite,
-strictly convex vertices.
-
-Collider offsets are local center points. They inherit the serialized transform
-scale and rotation. A top-left-origin box renderer normally uses half its size
-as the box offset; a top-left-origin circle renderer normally uses
-`(radius, radius)`. Circle radius changes do not rewrite a stored offset.
-
-`z_order` is a signed 32-bit value; smaller values render first and ties retain
-scene insertion order.
-
-The runtime physics model supports arbitrary compound colliders, angular state,
-sleeping, and distance joints. Version 3 serialization can combine one box, circle, capsule, and
-convex polygon collider, but cannot repeat a collider type or encode the added
-angular, sleeping, or joint fields. Shape renderers may be combined. Sprite
-asset references, animation state, custom component codecs, and further schema
-migrations are reserved for later versions.
+The old formats cannot encode sprite assets, animator state, repeated/custom components, angular
+body state, sleeping, or joints. Existing fields retain their former defaults during migration;
+unknown trailing data and a text header claiming version 4 are rejected.

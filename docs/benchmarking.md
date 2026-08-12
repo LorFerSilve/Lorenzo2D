@@ -14,7 +14,7 @@ The current executable measures:
 - uniform-grid and brute-force physics steps;
 - physics-query snapshot construction over 1,024 colliders;
 - reusable-context ray batches across the same 1,024 colliders;
-- full tile-map construction;
+- full legacy and layered tile-map construction;
 - tile-map view-culling telemetry.
 
 Navigation, character-movement, and complete isometric scene scenarios must be

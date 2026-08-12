@@ -1,11 +1,13 @@
 #pragma once
 
 #include <Lorenzo2D/ECS/Transform.hpp>
+#include <Lorenzo2D/Assets/AssetId.hpp>
 #include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsMaterial2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 
 #include <SFML/Graphics/Color.hpp>
+#include <SFML/Graphics/Rect.hpp>
 #include <SFML/System/Vector2.hpp>
 
 #include <cstddef>
@@ -17,6 +19,7 @@
 
 namespace l2d
 {
+    class AssetManager;
     class GameObject;
     class Scene;
 
@@ -30,6 +33,42 @@ namespace l2d
     {
         float radius = 50.f;
         sf::Color color = sf::Color::White;
+    };
+
+    struct RenderOrderPrefab
+    {
+        std::int32_t layer = 0;
+        float depth = 0.f;
+        std::int32_t order = 0;
+        std::uint8_t depthMode = 0u;
+    };
+
+    struct SpriteRendererPrefab
+    {
+        AssetId texture;
+        sf::IntRect textureRect;
+        sf::Vector2f size = {0.f, 0.f};
+        sf::Color color = sf::Color::White;
+        sf::Vector2f origin = {0.f, 0.f};
+        bool flipX = false;
+        bool flipY = false;
+        RenderOrderPrefab renderOrder;
+    };
+
+    struct AnimatorPrefab
+    {
+        std::vector<AssetId> clips;
+        AssetId initialClip;
+        float playbackSpeed = 1.f;
+        bool playing = true;
+    };
+
+    struct SerializedComponentPrefab
+    {
+        std::string type;
+        std::uint32_t version = 1u;
+        bool required = true;
+        std::string data;
     };
 
     struct RigidBodyPrefab
@@ -87,15 +126,19 @@ namespace l2d
 
         std::optional<RectangleRendererPrefab> rectangleRenderer;
         std::optional<CircleRendererPrefab> circleRenderer;
+        std::optional<SpriteRendererPrefab> spriteRenderer;
+        std::optional<AnimatorPrefab> animator;
         std::optional<RigidBodyPrefab> rigidBody;
         std::optional<BoxColliderPrefab> boxCollider;
         std::optional<CircleColliderPrefab> circleCollider;
         std::optional<CapsuleColliderPrefab> capsuleCollider;
         std::optional<ConvexPolygonColliderPrefab> convexPolygonCollider;
+        std::vector<SerializedComponentPrefab> customComponents;
     };
 
     bool isValidPrefab(const Prefab& prefab);
     GameObject& instantiatePrefab(Scene& scene, const Prefab& prefab);
+    GameObject& instantiatePrefab(Scene& scene, const Prefab& prefab, AssetManager& assets);
 
     class PrefabLibrary
     {

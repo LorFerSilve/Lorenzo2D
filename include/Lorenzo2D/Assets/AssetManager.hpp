@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Lorenzo2D/Assets/AssetHandle.hpp>
+#include <Lorenzo2D/Animation/AnimationClip.hpp>
 
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Texture.hpp>
@@ -50,15 +51,23 @@ namespace l2d
         bool unloadTexture(const std::string& name);
         std::size_t textureCount() const;
 
+        bool storeAnimationClip(const std::string& name, AnimationClipHandle clip);
+        AnimationClipHandle getAnimationClip(const std::string& name) const;
+        bool hasAnimationClip(const std::string& name) const;
+        bool unloadAnimationClip(const std::string& name);
+        std::size_t animationClipCount() const;
+
         // Clearing or destroying the manager releases only registry ownership.
         // Existing handles keep their asset generations alive.
         void clearFonts();
         void clearTextures();
+        void clearAnimationClips();
         void clearAll();
 
       private:
         std::unordered_map<std::string, FontHandle> m_fonts;
         std::unordered_map<std::string, TextureHandle> m_textures;
+        std::unordered_map<std::string, AnimationClipHandle> m_animationClips;
         std::unordered_map<std::string, std::shared_ptr<detail::LiveAssetState<sf::Font>>>
             m_liveFonts;
         std::unordered_map<std::string, std::shared_ptr<detail::LiveAssetState<sf::Texture>>>

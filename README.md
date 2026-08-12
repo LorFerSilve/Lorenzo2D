@@ -26,6 +26,10 @@ current support claims are documented separately:
   gamepad handling, fixed-tick edge consumption, and the unified pointer model.
 - [`docs/physics-queries.md`](docs/physics-queries.md) documents deterministic
   world queries, shape casts, filtering, capsules, and convex slope polygons.
+- [`docs/tile-content.md`](docs/tile-content.md) documents layered tile data,
+  ASCII/Tiled import, runtime generation, and tile asset resolution.
+- [`docs/level-format.md`](docs/level-format.md) documents JSON level version 4,
+  asset-backed prefabs, component codecs, and legacy migration.
 
 ## Current features
 
@@ -39,7 +43,8 @@ current support claims are documented separately:
 - Scenes, scene switching, object queries, and lifetime-aware object handles
 - Context-aware circle/rectangle/sprite rendering, sprite anchors/flips, coordinate projections, and sprite-sheet animation
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
-- Editable ASCII tilemaps with streamed chunks, animated atlas tiles, view culling, and merged collision geometry
+- Layered orthogonal/isometric tile data with metadata, objects, ASCII/Tiled import,
+  asset-backed rendering, streamed chunks, and merged collision geometry
 - Static, kinematic, and dynamic rigid bodies with linear and angular dynamics
 - Compound circle, oriented-box, capsule, and convex-polygon colliders with scale-aware transforms
 - CCD, sleeping, persistent warm-started contacts, and distance joints
@@ -48,7 +53,8 @@ current support claims are documented separately:
 - Collision layers, sensors, contact events, and physics debug drawing
 - Snapshot and live font/texture handles, background loading, hot reload,
   dependency tracking, and ordered runtime resource lookup
-- Deterministic particles, screen-space color passes, data-only prefabs, and a versioned level format
+- Deterministic particles, screen-space color passes, asset-backed prefabs, custom
+  component codecs, JSON level saving, and legacy level loading
 - Debug overlay and independently switchable world, physics, and UI layers
 - Focused minimal, animation, physics, and phase-4 examples plus regression tests for timing,
   scenes, rendering, resources, serialization, animation, physics, and tilemaps
@@ -59,7 +65,8 @@ current support claims are documented separately:
 - A C++17 compiler (MSVC, GCC, or Clang)
 - Git and an internet connection for the default first configure
 
-SFML is fetched automatically and pinned to version 3.1.0. To use an installed
+SFML and nlohmann/json are fetched automatically and pinned to versions 3.1.0
+and 3.12.0. To use an installed
 SFML 3.1 package instead, configure with `-DL2D_USE_SYSTEM_SFML=ON`.
 
 On Debian or Ubuntu, install SFML's native graphics dependencies before the
@@ -205,7 +212,8 @@ target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 
 A parent may explicitly enable any Lorenzo2D option before adding the
 subdirectory. The public target propagates the C++17 requirement, public include
-path, and `SFML::Graphics` dependency. If the parent already provides an
+path, and `SFML::Graphics` dependency; JSON remains an internal implementation
+dependency. If the parent already provides an
 `SFML::Graphics` target, Lorenzo2D reuses it without running its own SFML
 discovery or FetchContent step.
 
@@ -227,7 +235,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.7 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.8 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -324,16 +332,15 @@ desired; `SpriteRenderer::setSize()` scales against its active texture rect.
 ## Prefabs and serialized levels
 
 `Prefab` is a data-only object template for transform, tag, active state,
-shape renderers, rigid body, one collider of each supported shape type, and z-order. `PrefabLibrary`
-stores validated named snapshots and instantiates them into any `Scene`.
-Custom gameplay components remain game-owned and can be attached immediately
-after instantiation.
+shape/sprite renderers, animator assets, rigid body, one collider of each supported shape type,
+custom versioned component records, and render order. `PrefabLibrary` stores validated named
+snapshots and instantiates asset-free prefabs into any `Scene`.
 
 `LevelDocument` contains an ordered list of those prefabs. `LevelSerializer`
 round-trips it through streams or `.l2dlevel` files and can instantiate the
-complete document while returning lifetime-aware object handles. The format
-is currently written as `LORENZO2D_LEVEL 3`; versions 1 and 2 remain readable while
-unsupported versions, non-finite values,
+complete document while returning lifetime-aware object handles. New saves use
+deterministic JSON version 4; legacy text versions 1 through 3 remain readable while
+unsupported versions, unresolved required assets/codecs, non-finite values,
 invalid component data, excessive object counts, malformed records, and
 trailing input are rejected without changing the destination document.
 The complete field reference and a checked-in example live in
@@ -344,7 +351,7 @@ The complete field reference and a checked-in example live in
 l2d::LevelDocument level;
 if (l2d::LevelSerializer::loadFromFile("level.l2dlevel", level))
 {
-    const auto objects = l2d::LevelSerializer::instantiate(scene, level);
+    const auto objects = l2d::LevelSerializer::instantiate(scene, level, assets, &codecs);
 }
 ```
 

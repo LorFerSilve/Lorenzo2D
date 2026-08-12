@@ -14,6 +14,7 @@ namespace sf
 
 namespace l2d
 {
+    class AnimationClip;
     // A read-only shared lease for an asset. Registry removal or replacement
     // cannot invalidate a resource while at least one handle still owns it.
     template <typename Asset> class AssetHandle
@@ -153,6 +154,7 @@ namespace l2d
 
     using FontHandle = AssetHandle<sf::Font>;
     using TextureHandle = AssetHandle<sf::Texture>;
+    using AnimationClipHandle = AssetHandle<AnimationClip>;
     using LiveFontHandle = LiveAssetHandle<sf::Font>;
     using LiveTextureHandle = LiveAssetHandle<sf::Texture>;
 }

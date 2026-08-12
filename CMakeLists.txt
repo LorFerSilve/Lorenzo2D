@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.7.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.8.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -150,6 +150,23 @@ else()
     FetchContent_MakeAvailable(SFML)
 endif()
 
+if(TARGET nlohmann_json::nlohmann_json)
+    message(STATUS "Using the nlohmann_json target provided by the parent project")
+else()
+    include(FetchContent)
+
+    FetchContent_Declare(nlohmann_json
+        URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+        URL_HASH SHA256=42f6e95cad6ec532fd372391373363b62a14af6d771056dbfc86160e6dfff7aa
+        EXCLUDE_FROM_ALL
+        SYSTEM
+    )
+
+    set(JSON_BuildTests OFF CACHE INTERNAL "")
+    set(JSON_Install OFF CACHE INTERNAL "")
+    FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
 set(LORENZO2D_SOURCES
     src/Lorenzo2D/Animation/AnimationClip.cpp
     src/Lorenzo2D/Animation/Animator.cpp
@@ -198,12 +215,17 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Renderer/RenderSortKey2D.cpp
     src/Lorenzo2D/Renderer/SpriteRenderer.cpp
     src/Lorenzo2D/Scene/GameObjectHandle.cpp
+    src/Lorenzo2D/Scene/ComponentCodecRegistry.cpp
     src/Lorenzo2D/Scene/LevelSerializer.cpp
     src/Lorenzo2D/Scene/Prefab.cpp
     src/Lorenzo2D/Scene/Scene.cpp
     src/Lorenzo2D/Scene/SceneManager.cpp
     src/Lorenzo2D/Tilemap/Tilemap.cpp
+    src/Lorenzo2D/Tilemap/AsciiTileMapImporter.cpp
+    src/Lorenzo2D/Tilemap/TileMapColliderBuilder2D.cpp
+    src/Lorenzo2D/Tilemap/TileMapData.cpp
     src/Lorenzo2D/Tilemap/TileSet.cpp
+    src/Lorenzo2D/Tilemap/TiledJsonImporter.cpp
 )
 
 add_library(Lorenzo2D STATIC ${LORENZO2D_SOURCES})
@@ -220,6 +242,13 @@ target_include_directories(Lorenzo2D
         "$<BUILD_INTERFACE:${L2D_GENERATED_INCLUDE_DIRECTORY}>"
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
+
+get_target_property(
+    l2d_json_include_directories
+    nlohmann_json::nlohmann_json
+    INTERFACE_INCLUDE_DIRECTORIES
+)
+target_include_directories(Lorenzo2D PRIVATE ${l2d_json_include_directories})
 
 target_compile_features(Lorenzo2D PUBLIC cxx_std_17)
 target_link_libraries(Lorenzo2D PUBLIC SFML::Graphics)

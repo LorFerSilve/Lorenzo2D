@@ -3,8 +3,14 @@
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
 #include <Lorenzo2D/Tilemap/TileSet.hpp>
+#include <Lorenzo2D/Tilemap/AsciiTileMapImporter.hpp>
+#include <Lorenzo2D/Tilemap/TileMapColliderBuilder2D.hpp>
+#include <Lorenzo2D/Tilemap/TileMapData.hpp>
+#include <Lorenzo2D/Tilemap/TiledJsonImporter.hpp>
+#include <Lorenzo2D/Assets/AssetManager.hpp>
 
 #include <SFML/Graphics/View.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #include <SFML/System/Angle.hpp>
 #include <SFML/System/Vector2.hpp>
 
@@ -12,6 +18,7 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -526,6 +533,124 @@ namespace
         L2D_REQUIRE(tileMap.lastUpdateStats().collisionGeometryRebuilt);
         L2D_REQUIRE(scene.activeGameObjectCount() == 2u);
     }
+
+    void testLayeredTileDataPropertiesAndLegacyImport()
+    {
+        l2d::AsciiTileMapImporter importer;
+        importer.mapCharacter('G', 1u);
+        importer.mapCharacter('W', 2u);
+
+        l2d::TileMapData data;
+        L2D_REQUIRE(importer.import({"GW", "G"}, {16.f, 24.f}, data));
+        L2D_REQUIRE_EQUAL(data.width(), 2u);
+        L2D_REQUIRE_EQUAL(data.height(), 2u);
+        L2D_REQUIRE_EQUAL(data.tileAt(0u, 1u, 1u), std::optional<l2d::TileId>(l2d::EmptyTile));
+
+        l2d::TileDefinition ground = *data.definition(1u);
+        ground.movementCost = 1.25f;
+        ground.properties["biome"] = std::string("grass");
+        L2D_REQUIRE(data.setDefinition(ground));
+        l2d::TileDefinition wall = *data.definition(2u);
+        wall.collision = l2d::TileCollisionKind::Solid;
+        wall.navigable = false;
+        L2D_REQUIRE(data.setDefinition(wall));
+
+        l2d::TileMapLayer triggers;
+        triggers.name = "Triggers";
+        triggers.role = l2d::TileMapLayerRole::Trigger;
+        triggers.tiles = {l2d::EmptyTile, l2d::EmptyTile, 2u, l2d::EmptyTile};
+        triggers.properties["event"] = std::string("enter");
+        L2D_REQUIRE(data.addLayer(triggers));
+        L2D_REQUIRE(data.isValid());
+        L2D_REQUIRE_EQUAL(data.layers().size(), 2u);
+        L2D_REQUIRE(std::get<std::string>(data.definition(1u)->properties.at("biome")) == "grass");
+        L2D_REQUIRE(!data.setTile(0u, 0u, 0u, 999u));
+        L2D_REQUIRE(!data.removeDefinition(1u));
+
+        const auto collision = l2d::TileMapColliderBuilder2D::build(data);
+        L2D_REQUIRE_EQUAL(collision.size(), 1u);
+        L2D_REQUIRE_EQUAL(collision[0].position, sf::Vector2f(16.f, 0.f));
+        L2D_REQUIRE_EQUAL(collision[0].size, sf::Vector2f(16.f, 24.f));
+
+        l2d::Scene scene;
+        l2d::TileMap runtime;
+        L2D_REQUIRE(runtime.loadFromData(scene, data));
+        L2D_REQUIRE_EQUAL(runtime.data().layers().size(), 2u);
+        L2D_REQUIRE_EQUAL(runtime.buildStats().renderedTileCount, 3u);
+        L2D_REQUIRE_EQUAL(runtime.buildStats().collisionRectangleCount, 1u);
+        L2D_REQUIRE(!runtime.setTile(0u, 0u, '#'));
+
+        l2d::TileMapData resized = data;
+        L2D_REQUIRE(resized.setDimensions(3u, 2u));
+        L2D_REQUIRE_EQUAL(resized.tileAt(0u, 1u, 0u), std::optional<l2d::TileId>(1u));
+        L2D_REQUIRE_EQUAL(resized.tileAt(0u, 1u, 1u), std::optional<l2d::TileId>(l2d::EmptyTile));
+
+        l2d::TileMapData legacy;
+        L2D_REQUIRE(l2d::AsciiTileMapImporter::importLegacy({"#P", "#"}, {8.f, 8.f}, '#', legacy));
+        L2D_REQUIRE_EQUAL(legacy.width(), 2u);
+        L2D_REQUIRE_EQUAL(legacy.height(), 2u);
+        L2D_REQUIRE(legacy.definition(static_cast<l2d::TileId>('#') + 1u)->collision ==
+                    l2d::TileCollisionKind::Solid);
+    }
+
+    void testTiledJsonImportsOrthogonalAndIsometricTransactionally()
+    {
+        const std::string tiled = R"json({
+            "width":2,"height":2,"tilewidth":16,"tileheight":8,
+            "orientation":"isometric","infinite":false,
+            "properties":[{"name":"theme","type":"string","value":"village"}],
+            "tilesets":[{"firstgid":1,"tilecount":2,"columns":2,
+                "tilewidth":16,"tileheight":8,"image":"terrain.png",
+                "tiles":[{"id":1,"properties":[
+                    {"name":"solid","type":"bool","value":true},
+                    {"name":"movementCost","type":"float","value":2.5}
+                ]}]}],
+            "layers":[
+                {"type":"tilelayer","name":"Ground","width":2,"height":2,
+                 "data":[1,2147483650,0,1]},
+                {"type":"tilelayer","name":"Collision","width":2,"height":2,
+                 "visible":false,"properties":[{"name":"role","value":"collision"}],
+                 "data":[0,0,2,0]},
+                {"type":"objectgroup","name":"Objects","objects":[
+                    {"id":7,"name":"Spawn","class":"PlayerSpawn","x":12,"y":20,
+                     "width":4,"height":6,"properties":[{"name":"team","value":"blue"}]}
+                ]}
+            ]
+        })json";
+
+        l2d::TileMapData data;
+        std::stringstream input(tiled);
+        L2D_REQUIRE(l2d::TiledJsonImporter::load(input, data));
+        L2D_REQUIRE(data.orientation() == l2d::TileMapOrientation::Isometric);
+        L2D_REQUIRE_EQUAL(data.layers().size(), 3u);
+        L2D_REQUIRE_EQUAL(data.objects().size(), 1u);
+        L2D_REQUIRE(data.objects()[0].type == "PlayerSpawn");
+        L2D_REQUIRE(l2d::hasFlag(data.layers()[0].flipFlags[1], l2d::TileFlipFlags::Horizontal));
+        L2D_REQUIRE_APPROX(data.definition(2u)->movementCost, 2.5f, 0.0001f);
+
+        l2d::Scene scene;
+        l2d::TileMap runtime;
+        L2D_REQUIRE(!runtime.loadFromData(scene, data));
+        L2D_REQUIRE_EQUAL(scene.gameObjectCount(), 0u);
+
+        l2d::AssetManager assets;
+        L2D_REQUIRE(assets.storeTexture("terrain.png",
+                                        l2d::TextureHandle(std::make_shared<sf::Texture>())));
+        L2D_REQUIRE(runtime.loadFromData(scene, data, assets));
+        L2D_REQUIRE_EQUAL(runtime.buildStats().texturedTileCount, 3u);
+        L2D_REQUIRE_EQUAL(runtime.buildStats().collisionRectangleCount, 2u);
+
+        l2d::TileMapData unchanged = data;
+        std::stringstream invalid(R"({"width":999999999999,"height":2})");
+        L2D_REQUIRE(!l2d::TiledJsonImporter::load(invalid, data));
+        L2D_REQUIRE_EQUAL(data.width(), unchanged.width());
+        L2D_REQUIRE_EQUAL(data.layers().size(), unchanged.layers().size());
+
+        std::stringstream wrongTypes(
+            R"({"width":{},"height":2,"tilewidth":16,"tileheight":16,"orientation":"orthogonal"})");
+        L2D_REQUIRE(!l2d::TiledJsonImporter::load(wrongTypes, data));
+        L2D_REQUIRE_EQUAL(data.width(), unchanged.width());
+    }
 }
 
 int main()
@@ -552,6 +677,10 @@ int main()
             failures);
     runTest("empty loaded tilemaps create their first chunk",
             testEmptyLoadedMapCanCreateItsFirstRenderChunk, failures);
+    runTest("layered tile data keeps properties and legacy behavior",
+            testLayeredTileDataPropertiesAndLegacyImport, failures);
+    runTest("Tiled JSON imports isometric maps transactionally",
+            testTiledJsonImportsOrthogonalAndIsometricTransactionally, failures);
 
     if (failures != 0)
     {

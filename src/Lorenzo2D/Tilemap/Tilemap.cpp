@@ -1,5 +1,8 @@
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
+#include <Lorenzo2D/Tilemap/AsciiTileMapImporter.hpp>
+#include <Lorenzo2D/Tilemap/TileMapColliderBuilder2D.hpp>
 
+#include <Lorenzo2D/Assets/AssetManager.hpp>
 #include <Lorenzo2D/ECS/Component.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
@@ -14,6 +17,7 @@
 #include <SFML/System/Angle.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <fstream>
@@ -21,6 +25,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -45,6 +50,8 @@ namespace l2d
             {
                 char tile = '\0';
                 std::size_t firstVertex = 0;
+                std::vector<TileAnimationFrame> frames;
+                TileFlipFlags flipFlags = TileFlipFlags::None;
             };
 
             sf::VertexArray coloredVertices;
@@ -55,6 +62,7 @@ namespace l2d
             std::size_t coloredTileCount = 0;
             std::size_t texturedTileCount = 0;
             std::vector<AnimatedTileSpan> animatedTiles;
+            TextureHandle texture;
 
             RenderChunk(sf::VertexArray&& colored, sf::VertexArray&& textured, Bounds bounds,
                         std::size_t row, std::size_t column, std::size_t coloredCount,
@@ -71,6 +79,33 @@ namespace l2d
                 return coloredTileCount + texturedTileCount;
             }
         };
+
+        void setTextureCoordinates(sf::VertexArray& vertices, std::size_t first,
+                                   sf::IntRect rectangle, TileFlipFlags flags = TileFlipFlags::None)
+        {
+            std::array<sf::Vector2f, 4u> coordinates = {
+                sf::Vector2f{0.f, 0.f}, sf::Vector2f{0.f, 1.f}, sf::Vector2f{1.f, 1.f},
+                sf::Vector2f{1.f, 0.f}};
+
+            for (sf::Vector2f& coordinate : coordinates)
+            {
+                if (hasFlag(flags, TileFlipFlags::Diagonal)) std::swap(coordinate.x, coordinate.y);
+                if (hasFlag(flags, TileFlipFlags::Horizontal)) coordinate.x = 1.f - coordinate.x;
+                if (hasFlag(flags, TileFlipFlags::Vertical)) coordinate.y = 1.f - coordinate.y;
+
+                coordinate.x = static_cast<float>(rectangle.position.x) +
+                               coordinate.x * static_cast<float>(rectangle.size.x);
+                coordinate.y = static_cast<float>(rectangle.position.y) +
+                               coordinate.y * static_cast<float>(rectangle.size.y);
+            }
+
+            vertices[first + 0u].texCoords = coordinates[0u];
+            vertices[first + 1u].texCoords = coordinates[1u];
+            vertices[first + 2u].texCoords = coordinates[2u];
+            vertices[first + 3u].texCoords = coordinates[0u];
+            vertices[first + 4u].texCoords = coordinates[2u];
+            vertices[first + 5u].texCoords = coordinates[3u];
+        }
 
         struct RenderChunkBuilder
         {
@@ -199,7 +234,9 @@ namespace l2d
 
         void appendTile(RenderChunkBuilder& chunk, std::size_t column, std::size_t row, char tile,
                         sf::Vector2f tileSize, sf::Color color, const TileSet& tileSet,
-                        const std::optional<sf::IntRect>& textureRect)
+                        const std::optional<sf::IntRect>& textureRect,
+                        const std::vector<TileAnimationFrame>* animation = nullptr,
+                        TileFlipFlags flipFlags = TileFlipFlags::None)
         {
             const float left = checkedTileExtent(column, tileSize.x);
             const float top = checkedTileExtent(row, tileSize.y);
@@ -219,22 +256,21 @@ namespace l2d
             {
                 if (tileSet.isAnimated(tile))
                 {
-                    chunk.animatedTiles.push_back({tile, vertices.getVertexCount()});
+                    chunk.animatedTiles.push_back({tile, vertices.getVertexCount(), {}, flipFlags});
+                }
+                else if (animation != nullptr && !animation->empty())
+                {
+                    chunk.animatedTiles.push_back(
+                        {'\0', vertices.getVertexCount(), *animation, flipFlags});
                 }
 
-                const float textureLeft = static_cast<float>(textureRect->position.x);
-                const float textureTop = static_cast<float>(textureRect->position.y);
-                const float textureRight =
-                    static_cast<float>(textureRect->position.x + textureRect->size.x);
-                const float textureBottom =
-                    static_cast<float>(textureRect->position.y + textureRect->size.y);
-
-                appendVertex(vertices, {left, top}, color, {textureLeft, textureTop});
-                appendVertex(vertices, {left, bottom}, color, {textureLeft, textureBottom});
-                appendVertex(vertices, {right, bottom}, color, {textureRight, textureBottom});
-                appendVertex(vertices, {left, top}, color, {textureLeft, textureTop});
-                appendVertex(vertices, {right, bottom}, color, {textureRight, textureBottom});
-                appendVertex(vertices, {right, top}, color, {textureRight, textureTop});
+                const std::size_t firstVertex = vertices.getVertexCount();
+                for (const sf::Vector2f position :
+                     {sf::Vector2f{left, top}, sf::Vector2f{left, bottom},
+                      sf::Vector2f{right, bottom}, sf::Vector2f{left, top},
+                      sf::Vector2f{right, bottom}, sf::Vector2f{right, top}})
+                    appendVertex(vertices, position, color);
+                setTextureCoordinates(vertices, firstVertex, *textureRect, flipFlags);
                 chunk.texturedTileCount++;
             }
             else
@@ -338,6 +374,92 @@ namespace l2d
             }
 
             return build;
+        }
+
+        std::optional<RenderBuild> buildDataRenderChunks(const TileMapData& data,
+                                                         sf::Vector2u chunkSize, sf::Color color,
+                                                         const AssetManager* assets)
+        {
+            using ChunkCoordinate = std::tuple<std::size_t, std::size_t, std::size_t, AssetId>;
+            std::map<ChunkCoordinate, RenderChunkBuilder> builders;
+            std::map<AssetId, TextureHandle> textures;
+            const TileSet emptyTileSet;
+
+            for (std::size_t layerIndex = 0u; layerIndex < data.layers().size(); ++layerIndex)
+            {
+                const TileMapLayer& layer = data.layers()[layerIndex];
+                if (!layer.visible || layer.role == TileMapLayerRole::Collision ||
+                    layer.role == TileMapLayerRole::Trigger ||
+                    layer.role == TileMapLayerRole::Navigation ||
+                    layer.role == TileMapLayerRole::Object)
+                {
+                    continue;
+                }
+
+                sf::Color layerColor = color;
+                layerColor.a = static_cast<std::uint8_t>(
+                    std::round(static_cast<float>(color.a) * layer.opacity));
+
+                for (std::size_t index = 0; index < layer.tiles.size(); ++index)
+                {
+                    const TileId tile = layer.tiles[index];
+                    if (tile == EmptyTile) continue;
+
+                    const TileDefinition* definition = data.definition(tile);
+                    if (definition == nullptr) return std::nullopt;
+
+                    TextureHandle texture;
+                    if (!definition->texture.empty())
+                    {
+                        if (assets == nullptr) return std::nullopt;
+                        const auto cached = textures.find(definition->texture);
+                        if (cached == textures.end())
+                        {
+                            texture = assets->getTexture(definition->texture);
+                            if (!texture) return std::nullopt;
+                            textures.emplace(definition->texture, texture);
+                        }
+                        else
+                        {
+                            texture = cached->second;
+                        }
+                    }
+
+                    const std::size_t row = index / data.width();
+                    const std::size_t column = index % data.width();
+                    const ChunkCoordinate coordinate = {
+                        layerIndex, row / static_cast<std::size_t>(chunkSize.y),
+                        column / static_cast<std::size_t>(chunkSize.x), definition->texture};
+                    const std::optional<sf::IntRect> textureRect =
+                        definition->texture.empty()
+                            ? std::nullopt
+                            : std::optional<sf::IntRect>(definition->textureRect);
+                    const TileFlipFlags flipFlags =
+                        layer.flipFlags.empty() ? TileFlipFlags::None : layer.flipFlags[index];
+                    appendTile(builders[coordinate], column, row, '\0', data.tileSize(),
+                               texture ? sf::Color(255u, 255u, 255u, layerColor.a) : layerColor,
+                               emptyTileSet, textureRect, &definition->animation, flipFlags);
+                }
+            }
+
+            RenderBuild build;
+            build.chunks.reserve(builders.size());
+
+            for (auto& entry : builders)
+            {
+                RenderChunkBuilder& builder = entry.second;
+                build.renderedTileCount += builder.tileCount();
+                build.texturedTileCount += builder.texturedTileCount;
+                build.chunks.emplace_back(std::move(builder.coloredVertices),
+                                          std::move(builder.texturedVertices), builder.worldBounds,
+                                          std::get<1u>(entry.first), std::get<2u>(entry.first),
+                                          builder.coloredTileCount, builder.texturedTileCount,
+                                          std::move(builder.animatedTiles));
+                const auto texture = textures.find(std::get<3u>(entry.first));
+                if (texture != textures.end()) build.chunks.back().texture = texture->second;
+            }
+
+            return std::optional<RenderBuild>(std::move(build));
         }
 
         std::vector<CollisionRectangle> buildCollisionRectangles(const TileMap::Layout& layout,
@@ -552,8 +674,29 @@ namespace l2d
                 {
                     for (const RenderChunk::AnimatedTileSpan& animated : chunk.animatedTiles)
                     {
-                        const std::optional<sf::IntRect> rectangle =
-                            m_tileSet.textureRect(animated.tile, m_animationTime);
+                        std::optional<sf::IntRect> rectangle;
+                        if (!animated.frames.empty())
+                        {
+                            float duration = 0.f;
+                            for (const TileAnimationFrame& frame : animated.frames)
+                                duration += frame.duration;
+
+                            float time = std::fmod(m_animationTime, duration);
+                            for (const TileAnimationFrame& frame : animated.frames)
+                            {
+                                if (time < frame.duration)
+                                {
+                                    rectangle = frame.textureRect;
+                                    break;
+                                }
+                                time -= frame.duration;
+                            }
+                            if (!rectangle) rectangle = animated.frames.back().textureRect;
+                        }
+                        else
+                        {
+                            rectangle = m_tileSet.textureRect(animated.tile, m_animationTime);
+                        }
 
                         if (!rectangle || animated.firstVertex + VERTICES_PER_TILE >
                                               chunk.texturedVertices.getVertexCount())
@@ -561,19 +704,8 @@ namespace l2d
                             continue;
                         }
 
-                        const float left = static_cast<float>(rectangle->position.x);
-                        const float top = static_cast<float>(rectangle->position.y);
-                        const float right =
-                            static_cast<float>(rectangle->position.x + rectangle->size.x);
-                        const float bottom =
-                            static_cast<float>(rectangle->position.y + rectangle->size.y);
-                        const std::size_t first = animated.firstVertex;
-                        chunk.texturedVertices[first + 0u].texCoords = {left, top};
-                        chunk.texturedVertices[first + 1u].texCoords = {left, bottom};
-                        chunk.texturedVertices[first + 2u].texCoords = {right, bottom};
-                        chunk.texturedVertices[first + 3u].texCoords = {left, top};
-                        chunk.texturedVertices[first + 4u].texCoords = {right, bottom};
-                        chunk.texturedVertices[first + 5u].texCoords = {right, top};
+                        setTextureCoordinates(chunk.texturedVertices, animated.firstVertex,
+                                              *rectangle, animated.flipFlags);
                     }
                 }
             }
@@ -646,7 +778,9 @@ namespace l2d
 
                     if (chunk.texturedTileCount > 0u)
                     {
-                        drawVertices(chunk.texturedVertices, m_texture.get());
+                        const sf::Texture* texture =
+                            chunk.texture ? chunk.texture.get() : m_texture.get();
+                        drawVertices(chunk.texturedVertices, texture);
                     }
 
                     addVisibleChunk(stats, chunk);
@@ -728,12 +862,12 @@ namespace l2d
           m_tileSet(std::move(other.m_tileSet)), m_loadedTileSet(std::move(other.m_loadedTileSet)),
           m_worldSize(other.m_worldSize), m_buildStats(other.m_buildStats),
           m_lastUpdateStats(other.m_lastUpdateStats), m_layout(std::move(other.m_layout)),
-          m_generatedObjects(std::move(other.m_generatedObjects)),
+          m_data(std::move(other.m_data)), m_generatedObjects(std::move(other.m_generatedObjects)),
           m_collisionObjects(std::move(other.m_collisionObjects)),
           m_renderObject(std::move(other.m_renderObject)),
           m_sceneState(std::move(other.m_sceneState)), m_loadedSolidChar(other.m_loadedSolidChar),
           m_loadedObjectPrefix(std::move(other.m_loadedObjectPrefix)),
-          m_streamRegion(other.m_streamRegion)
+          m_streamRegion(other.m_streamRegion), m_legacyEditMode(other.m_legacyEditMode)
     {
         other.m_loadedTileSize = {0.f, 0.f};
         other.m_loadedRenderChunkSize = {0u, 0u};
@@ -741,11 +875,13 @@ namespace l2d
         other.m_buildStats = {};
         other.m_lastUpdateStats = {};
         other.m_layout.clear();
+        other.m_data.clear();
         other.m_generatedObjects.clear();
         other.m_collisionObjects.clear();
         other.m_renderObject.reset();
         other.m_sceneState.reset();
         other.m_streamRegion.reset();
+        other.m_legacyEditMode = false;
     }
 
     TileMap& TileMap::operator=(TileMap&& other) noexcept
@@ -766,6 +902,7 @@ namespace l2d
         m_buildStats = other.m_buildStats;
         m_lastUpdateStats = other.m_lastUpdateStats;
         m_layout = std::move(other.m_layout);
+        m_data = std::move(other.m_data);
         m_generatedObjects = std::move(other.m_generatedObjects);
         m_collisionObjects = std::move(other.m_collisionObjects);
         m_renderObject = std::move(other.m_renderObject);
@@ -773,6 +910,7 @@ namespace l2d
         m_loadedSolidChar = other.m_loadedSolidChar;
         m_loadedObjectPrefix = std::move(other.m_loadedObjectPrefix);
         m_streamRegion = other.m_streamRegion;
+        m_legacyEditMode = other.m_legacyEditMode;
 
         other.m_loadedTileSize = {0.f, 0.f};
         other.m_loadedRenderChunkSize = {0u, 0u};
@@ -780,11 +918,13 @@ namespace l2d
         other.m_buildStats = {};
         other.m_lastUpdateStats = {};
         other.m_layout.clear();
+        other.m_data.clear();
         other.m_generatedObjects.clear();
         other.m_collisionObjects.clear();
         other.m_renderObject.reset();
         other.m_sceneState.reset();
         other.m_streamRegion.reset();
+        other.m_legacyEditMode = false;
 
         return *this;
     }
@@ -863,6 +1003,14 @@ namespace l2d
     {
         Layout newLayout = layout;
         const sf::Vector2f newLoadedTileSize = m_tileSize;
+        TileMapData newData;
+        const bool hasCells = std::any_of(newLayout.begin(), newLayout.end(),
+                                          [](const std::string& row) { return !row.empty(); });
+        if (hasCells &&
+            !AsciiTileMapImporter::importLegacy(newLayout, newLoadedTileSize, solidChar, newData))
+        {
+            throw std::invalid_argument("Tile map layout cannot be represented as layered data.");
+        }
         const sf::Vector2u newLoadedRenderChunkSize = m_renderChunkSize;
         const sf::Color newLoadedSolidTileColor = m_solidTileColor;
         TileSet newLoadedTileSet = m_tileSet;
@@ -963,6 +1111,7 @@ namespace l2d
         queueGeneratedObjectsForDestruction(m_generatedObjects);
 
         m_layout = std::move(newLayout);
+        m_data = std::move(newData);
         m_loadedTileSize = newLoadedTileSize;
         m_loadedRenderChunkSize = newLoadedRenderChunkSize;
         m_loadedSolidTileColor = newLoadedSolidTileColor;
@@ -977,6 +1126,134 @@ namespace l2d
         m_loadedSolidChar = solidChar;
         m_loadedObjectPrefix = objectPrefix;
         m_streamRegion.reset();
+        m_legacyEditMode = true;
+    }
+
+    bool TileMap::loadFromData(Scene& scene, const TileMapData& data,
+                               const std::string& objectPrefix)
+    {
+        return loadFromData(scene, data, static_cast<const AssetManager*>(nullptr), objectPrefix);
+    }
+
+    bool TileMap::loadFromData(Scene& scene, const TileMapData& data, AssetManager& assets,
+                               const std::string& objectPrefix)
+    {
+        return loadFromData(scene, data, &assets, objectPrefix);
+    }
+
+    bool TileMap::loadFromData(Scene& scene, const TileMapData& data, const AssetManager* assets,
+                               const std::string& objectPrefix)
+    {
+        if (!data.isValid()) return false;
+
+        Layout composited(data.height(), std::string(data.width(), '.'));
+        constexpr char solidCell = '#';
+
+        for (const TileMapLayer& layer : data.layers())
+        {
+            if (layer.role == TileMapLayerRole::Trigger ||
+                layer.role == TileMapLayerRole::Navigation ||
+                layer.role == TileMapLayerRole::Object)
+                continue;
+
+            for (std::size_t index = 0; index < layer.tiles.size(); ++index)
+            {
+                const TileId tile = layer.tiles[index];
+                if (tile == EmptyTile) continue;
+
+                const TileDefinition* definition = data.definition(tile);
+                const bool solid =
+                    layer.role == TileMapLayerRole::Collision ||
+                    (definition != nullptr && definition->collision == TileCollisionKind::Solid);
+                const std::size_t row = index / data.width();
+                const std::size_t column = index % data.width();
+
+                if (solid) composited[row][column] = solidCell;
+            }
+        }
+
+        std::optional<RenderBuild> built =
+            buildDataRenderChunks(data, m_renderChunkSize, m_solidTileColor, assets);
+        if (!built) return false;
+        RenderBuild renderBuild = std::move(*built);
+        const std::size_t renderedTileCount = renderBuild.renderedTileCount;
+        const std::size_t texturedTileCount = renderBuild.texturedTileCount;
+        const std::size_t renderChunkCount = renderBuild.chunks.size();
+        const std::vector<TileMapCollisionRectangle2D> collisionRectangles =
+            TileMapColliderBuilder2D::build(data);
+
+        std::size_t solidTileCount = 0u;
+        for (const TileMapCollisionRectangle2D& rectangle : collisionRectangles)
+        {
+            if (rectangle.columnCount >
+                    std::numeric_limits<std::size_t>::max() / rectangle.rowCount ||
+                rectangle.columnCount * rectangle.rowCount >
+                    std::numeric_limits<std::size_t>::max() - solidTileCount)
+                return false;
+            solidTileCount += rectangle.columnCount * rectangle.rowCount;
+        }
+
+        std::vector<GameObjectHandle> generatedObjects;
+        std::vector<GameObjectHandle> collisionObjects;
+        GameObjectHandle renderObject;
+
+        try
+        {
+            if (!renderBuild.chunks.empty())
+            {
+                GameObject& object = scene.createGameObject(objectPrefix + "_Render");
+                renderObject = scene.createHandle(object);
+                generatedObjects.push_back(renderObject);
+                object.addComponent<TileMapRenderComponent>(std::move(renderBuild.chunks),
+                                                            TextureHandle{}, TileSet{},
+                                                            m_renderChunkSize, solidTileCount);
+            }
+
+            for (std::size_t index = 0; index < collisionRectangles.size(); ++index)
+            {
+                const TileMapCollisionRectangle2D& rectangle = collisionRectangles[index];
+                GameObject& object =
+                    scene.createGameObject(objectPrefix + "_Collision_" + std::to_string(index));
+                const GameObjectHandle handle = scene.createHandle(object);
+                generatedObjects.push_back(handle);
+                collisionObjects.push_back(handle);
+                object.transform.setPosition(rectangle.position);
+                BoxCollider2D& collider = object.addComponent<BoxCollider2D>(rectangle.size);
+                collider.setOffset(rectangle.size * 0.5f);
+            }
+        }
+        catch (...)
+        {
+            queueGeneratedObjectsForDestruction(generatedObjects);
+            throw;
+        }
+
+        queueGeneratedObjectsForDestruction(m_generatedObjects);
+        m_layout = std::move(composited);
+        m_data = data;
+        m_loadedTileSize = data.tileSize();
+        m_loadedRenderChunkSize = m_renderChunkSize;
+        m_loadedSolidTileColor = m_solidTileColor;
+        m_loadedTileSet = {};
+        m_worldSize = {checkedTileExtent(data.width(), data.tileSize().x),
+                       checkedTileExtent(data.height(), data.tileSize().y)};
+        m_buildStats = {solidTileCount, renderedTileCount, texturedTileCount, renderChunkCount,
+                        collisionRectangles.size()};
+        m_lastUpdateStats = {};
+        m_generatedObjects = std::move(generatedObjects);
+        m_collisionObjects = std::move(collisionObjects);
+        m_renderObject = std::move(renderObject);
+        m_sceneState = scene.m_handleState;
+        m_loadedSolidChar = solidCell;
+        m_loadedObjectPrefix = objectPrefix;
+        m_streamRegion.reset();
+        m_legacyEditMode = false;
+        return true;
+    }
+
+    const TileMapData& TileMap::data() const
+    {
+        return m_data;
     }
 
     bool TileMap::loadFromFile(Scene& scene, const std::string& filepath, char solidChar,
@@ -994,6 +1271,7 @@ namespace l2d
     {
         m_lastUpdateStats = {};
 
+        if (!m_legacyEditMode) return false;
         if (row >= m_layout.size() || column >= m_layout[row].size()) return false;
 
         const std::shared_ptr<detail::SceneHandleState> sceneState = m_sceneState.lock();
@@ -1117,6 +1395,20 @@ namespace l2d
         if (renderer != nullptr) renderer->setSolidTileCount(solidTileCount);
 
         m_layout = std::move(updatedLayout);
+
+        if (m_data.isValid())
+        {
+            const TileId id = static_cast<TileId>(static_cast<unsigned char>(tile)) + 1u;
+            if (m_data.definition(id) == nullptr)
+            {
+                TileDefinition definition;
+                definition.id = id;
+                definition.collision =
+                    tile == m_loadedSolidChar ? TileCollisionKind::Solid : TileCollisionKind::None;
+                (void)m_data.setDefinition(std::move(definition));
+            }
+            (void)m_data.setTile(0u, row, column, id);
+        }
         m_buildStats.solidTileCount = solidTileCount;
         m_buildStats.renderedTileCount = renderedTileCount;
         m_buildStats.texturedTileCount = texturedTileCount;
@@ -1206,6 +1498,7 @@ namespace l2d
         m_renderObject.reset();
         m_sceneState.reset();
         m_layout.clear();
+        m_data.clear();
         m_loadedTileSize = {0.f, 0.f};
         m_loadedRenderChunkSize = {0u, 0u};
         m_loadedSolidTileColor = sf::Color::White;
@@ -1214,6 +1507,7 @@ namespace l2d
         m_buildStats = {};
         m_lastUpdateStats = {};
         m_streamRegion.reset();
+        m_legacyEditMode = false;
     }
 
     bool TileMap::findFirstTilePosition(char tileChar, sf::Vector2f& outPosition,
