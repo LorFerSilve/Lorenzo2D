@@ -9,16 +9,26 @@ namespace l2d
 
     void RenderLayerStack2D::setLayerEnabled(RenderLayer2D layer, bool enabled)
     {
-        const std::size_t index = layerToIndex(layer);
+        setPassEnabled(layer, enabled);
+    }
+
+    bool RenderLayerStack2D::isLayerEnabled(RenderLayer2D layer) const
+    {
+        return isPassEnabled(layer);
+    }
+
+    void RenderLayerStack2D::setPassEnabled(RenderPass2D pass, bool enabled)
+    {
+        const std::size_t index = layerToIndex(pass);
 
         if (index >= m_enabledLayers.size()) return;
 
         m_enabledLayers[index] = enabled;
     }
 
-    bool RenderLayerStack2D::isLayerEnabled(RenderLayer2D layer) const
+    bool RenderLayerStack2D::isPassEnabled(RenderPass2D pass) const
     {
-        const std::size_t index = layerToIndex(layer);
+        const std::size_t index = layerToIndex(pass);
 
         if (index >= m_enabledLayers.size()) return false;
 

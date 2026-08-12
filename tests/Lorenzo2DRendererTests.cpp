@@ -2,6 +2,8 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
 #include <Lorenzo2D/Physics/PhysicsDebugRenderer2D.hpp>
+#include <Lorenzo2D/Physics/BoxCollider2D.hpp>
+#include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
 #include <Lorenzo2D/Renderer/Camera2D.hpp>
 #include <Lorenzo2D/Renderer/CircleRenderer.hpp>
 #include <Lorenzo2D/Renderer/DebugOverlay.hpp>
@@ -9,8 +11,11 @@
 #include <Lorenzo2D/Renderer/ParticleEmitter2D.hpp>
 #include <Lorenzo2D/Renderer/PostProcessStack2D.hpp>
 #include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Renderer/RenderLayerStack2D.hpp>
+#include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+#include <Lorenzo2D/Renderer/SpriteRenderer.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include "RendererNumeric.hpp"
@@ -18,6 +23,7 @@
 
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Transform.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/View.hpp>
 #include <SFML/System/Vector2.hpp>
 
@@ -25,6 +31,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -98,6 +105,26 @@ namespace
             gameObject->transform.setPosition({-maximum, maximum});
             gameObject->transform.setRotation(-maximum);
             gameObject->transform.setScale({-maximum, maximum});
+        }
+    };
+
+    class IsometricTestProjection final : public l2d::CoordinateProjection2D
+    {
+      public:
+        sf::Vector2f worldToRender(sf::Vector2f worldPosition) const override
+        {
+            return {worldPosition.x - worldPosition.y, (worldPosition.x + worldPosition.y) * 0.5f};
+        }
+
+        sf::Vector2f renderToWorld(sf::Vector2f renderPosition) const override
+        {
+            return {renderPosition.y + renderPosition.x * 0.5f,
+                    renderPosition.y - renderPosition.x * 0.5f};
+        }
+
+        float depthFor(sf::Vector2f worldFootPoint) const override
+        {
+            return worldFootPoint.x + worldFootPoint.y;
         }
     };
 
@@ -579,6 +606,166 @@ namespace
         L2D_REQUIRE(queue.empty());
     }
 
+    void testRenderContextKeepsUiInScreenSpaceAndRoundTripsProjection()
+    {
+        const IsometricTestProjection projection;
+        const sf::Vector2f world{24.f, 8.f};
+        const sf::Vector2f projected{16.f, 16.f};
+
+        l2d::RenderContext2D worldContext;
+        worldContext.projection = &projection;
+        L2D_REQUIRE_EQUAL(worldContext.worldToRender(world), projected);
+        L2D_REQUIRE_EQUAL(worldContext.renderToWorld(projected), world);
+        L2D_REQUIRE_EQUAL(worldContext.depthFor(world), 32.f);
+
+        l2d::RenderContext2D uiContext = worldContext;
+        uiContext.pass = l2d::RenderPass2D::UI;
+        L2D_REQUIRE_EQUAL(uiContext.worldToRender(world), world);
+        L2D_REQUIRE_EQUAL(uiContext.renderToWorld(projected), projected);
+        L2D_REQUIRE_EQUAL(uiContext.depthFor(world), world.y);
+    }
+
+    void testRenderQueueSortsLayersDepthAndPassesDeterministically()
+    {
+        l2d::Scene scene;
+        l2d::GameObject& first = scene.createGameObject("first");
+        l2d::GameObject& second = scene.createGameObject("second");
+        l2d::GameObject& foreground = scene.createGameObject("foreground");
+        l2d::GameObject& ui = scene.createGameObject("ui");
+
+        first.transform.setPosition({0.f, 20.f});
+        second.transform.setPosition({0.f, 10.f});
+        foreground.transform.setPosition({0.f, -100.f});
+        first.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::WorldY);
+        second.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::WorldY);
+        l2d::RenderOrder2D& foregroundOrder =
+            foreground.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::WorldY);
+        foregroundOrder.setLayer(2);
+        l2d::RenderOrder2D& uiOrder = ui.addComponent<l2d::RenderOrder2D>();
+        uiOrder.setPass(l2d::RenderPass2D::UI);
+
+        l2d::RenderQueue2D queue;
+        queue.build(scene);
+        L2D_REQUIRE_EQUAL(queue.size(), 3u);
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == &second);
+        L2D_REQUIRE(queue.entries()[1].gameObject.get() == &first);
+        L2D_REQUIRE(queue.entries()[2].gameObject.get() == &foreground);
+
+        first.transform.setPosition({0.f, 5.f});
+        queue.build(scene);
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == &first);
+
+        l2d::RenderContext2D uiContext;
+        uiContext.pass = l2d::RenderPass2D::UI;
+        queue.build(scene, uiContext);
+        L2D_REQUIRE_EQUAL(queue.size(), 1u);
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == &ui);
+    }
+
+    void testProjectedDepthUsesInterpolationAndStableTieBreaking()
+    {
+        const IsometricTestProjection projection;
+        l2d::Scene scene;
+        l2d::GameObject& moving = scene.createGameObject("moving");
+        l2d::GameObject& fixed = scene.createGameObject("fixed");
+        l2d::GameObject& tied = scene.createGameObject("tied");
+
+        moving.transform.setPosition({0.f, 0.f});
+        moving.transform.resetInterpolation();
+        moving.transform.setPosition({20.f, 20.f});
+        fixed.transform.setPosition({15.f, 0.f});
+        tied.transform.setPosition({15.f, 0.f});
+        moving.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::ProjectedY);
+        fixed.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::ProjectedY);
+        tied.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::ProjectedY);
+
+        l2d::RenderContext2D context;
+        context.projection = &projection;
+        context.interpolationAlpha = 0.f;
+        l2d::RenderQueue2D queue;
+        queue.build(scene, context);
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == &moving);
+        L2D_REQUIRE(queue.entries()[1].gameObject.get() == &fixed);
+        L2D_REQUIRE(queue.entries()[2].gameObject.get() == &tied);
+
+        context.interpolationAlpha = 1.f;
+        queue.build(scene, context);
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == &fixed);
+        L2D_REQUIRE(queue.entries()[1].gameObject.get() == &tied);
+        L2D_REQUIRE(queue.entries()[2].gameObject.get() == &moving);
+
+        l2d::RenderSortKey2D invalidDepth;
+        invalidDepth.depth = std::numeric_limits<float>::quiet_NaN();
+        invalidDepth.insertionOrder = 1u;
+        l2d::RenderSortKey2D zeroDepth;
+        zeroDepth.insertionOrder = 2u;
+        L2D_REQUIRE(invalidDepth < zeroDepth);
+    }
+
+    void testRenderOrderValidationAndExplicitModes()
+    {
+        l2d::Scene scene;
+        l2d::GameObject& fixed = scene.createGameObject("fixed depth");
+        l2d::GameObject& explicitObject = scene.createGameObject("explicit depth");
+        l2d::RenderOrder2D& fixedOrder =
+            fixed.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::Fixed);
+        l2d::RenderOrder2D& explicitOrder =
+            explicitObject.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::Explicit);
+
+        L2D_REQUIRE(fixedOrder.setExplicitDepth(20.f));
+        L2D_REQUIRE(explicitOrder.setExplicitDepth(10.f));
+        L2D_REQUIRE(!explicitOrder.setExplicitDepth(std::numeric_limits<float>::infinity()));
+        L2D_REQUIRE_EQUAL(explicitOrder.explicitDepth(), 10.f);
+        fixedOrder.setPass(static_cast<l2d::RenderPass2D>(999));
+        fixedOrder.setDepthMode(static_cast<l2d::RenderDepthMode2D>(999));
+        L2D_REQUIRE(fixedOrder.pass() == l2d::RenderPass2D::World);
+        L2D_REQUIRE(fixedOrder.depthMode() == l2d::RenderDepthMode2D::Fixed);
+        L2D_REQUIRE(!fixedOrder.setLocalFootPoint({std::numeric_limits<float>::quiet_NaN(), 0.f}));
+
+        l2d::RenderQueue2D queue;
+        queue.build(scene);
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == &explicitObject);
+        L2D_REQUIRE(queue.entries()[1].gameObject.get() == &fixed);
+    }
+
+    void testSpriteOriginsFlipsAndPhysicsStayIndependent()
+    {
+        l2d::Scene scene;
+        l2d::GameObject& actor = scene.createGameObject("actor");
+        actor.transform.setPosition({100.f, 200.f});
+        actor.addComponent<l2d::BoxCollider2D>(sf::Vector2f{20.f, 40.f});
+        const l2d::TextureHandle texture(std::make_shared<sf::Texture>());
+        l2d::SpriteRenderer& sprite = actor.addComponent<l2d::SpriteRenderer>(texture);
+        sprite.setTextureRect({{0, 0}, {20, 40}});
+
+        L2D_REQUIRE_EQUAL(sprite.origin(), sf::Vector2f(0.f, 0.f));
+        L2D_REQUIRE_EQUAL(sprite.worldFootPoint(), sf::Vector2f(110.f, 240.f));
+        const l2d::PhysicsQueryContext2D before(scene);
+        L2D_REQUIRE_EQUAL(before.pointQuery({105.f, 205.f}).size(), 1u);
+
+        sprite.setOriginPreset(l2d::SpriteOriginPreset2D::BottomCenter);
+        sprite.setFlippedX(true);
+        sprite.setFlippedY(true);
+        L2D_REQUIRE_EQUAL(sprite.origin(), sf::Vector2f(10.f, 40.f));
+        L2D_REQUIRE_EQUAL(sprite.worldFootPoint(), actor.transform.position());
+        L2D_REQUIRE(sprite.isFlippedX());
+        L2D_REQUIRE(sprite.isFlippedY());
+        L2D_REQUIRE_EQUAL(actor.transform.scale(), sf::Vector2f(1.f, 1.f));
+
+        actor.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::WorldY);
+        l2d::RenderQueue2D queue;
+        queue.build(scene);
+        L2D_REQUIRE_EQUAL(queue.size(), 1u);
+        L2D_REQUIRE_EQUAL(queue.entries()[0].sortKey.depth, 200.f);
+
+        const l2d::PhysicsQueryContext2D after(scene);
+        L2D_REQUIRE_EQUAL(after.pointQuery({105.f, 205.f}).size(), 1u);
+        const sf::Vector2f validOrigin = sprite.origin();
+        L2D_REQUIRE(!sprite.setOrigin(
+            {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity()}));
+        L2D_REQUIRE_EQUAL(sprite.origin(), validOrigin);
+    }
+
     void testParticleEmitterIsDeterministicBoundedAndSanitized()
     {
         l2d::ParticleEmitterConfig2D config;
@@ -681,6 +868,16 @@ int main()
     runTest("render layer stack rejects invalid layers", testRenderLayerStackRejectsInvalidLayers,
             failures);
     runTest("render queue sorts by stable z-order", testRenderQueueSortsByZOrderStably, failures);
+    runTest("render context keeps UI in screen space",
+            testRenderContextKeepsUiInScreenSpaceAndRoundTripsProjection, failures);
+    runTest("render queue sorts layers, depth, and passes",
+            testRenderQueueSortsLayersDepthAndPassesDeterministically, failures);
+    runTest("projected depth uses interpolation and stable ties",
+            testProjectedDepthUsesInterpolationAndStableTieBreaking, failures);
+    runTest("render-order validation and explicit modes", testRenderOrderValidationAndExplicitModes,
+            failures);
+    runTest("sprite origins and flips stay independent from physics",
+            testSpriteOriginsFlipsAndPhysicsStayIndependent, failures);
     runTest("particle emitter is deterministic and bounded",
             testParticleEmitterIsDeterministicBoundedAndSanitized, failures);
     runTest("post-process stack owns ordered passes", testPostProcessStackOwnsOrderedEditablePasses,

@@ -8,6 +8,8 @@
 
 namespace l2d
 {
+    struct RenderContext2D;
+
     class RectangleRenderer : public Component
     {
       public:
@@ -23,6 +25,7 @@ namespace l2d
 
         void onRender(sf::RenderWindow& window) override;
         void onRender(sf::RenderWindow& window, float interpolationAlpha) override;
+        void onRender(sf::RenderWindow& window, const RenderContext2D& context) override;
 
       private:
         sf::RectangleShape m_shape;

@@ -9,16 +9,17 @@ The current executable measures:
 
 - typed input-action sampling over a representative digital 2D binding;
 - scene fixed updates over a populated component set;
-- render queue construction and stable z-order sorting;
+- render queue construction and stable legacy z-order sorting;
+- a complete 4,096-object projected-depth sort, including footpoint evaluation;
 - uniform-grid and brute-force physics steps;
 - physics-query snapshot construction over 1,024 colliders;
 - reusable-context ray batches across the same 1,024 colliders;
 - full tile-map construction;
 - tile-map view-culling telemetry.
 
-Navigation, character-movement, and isometric scenarios must be added alongside the
-systems that implement them. The report schema is designed to accept those scenarios without a
-format change.
+Navigation, character-movement, and complete isometric scene scenarios must be
+added alongside the systems that implement them. The report schema accepts
+those scenarios without a format change.
 
 ## Building and running
 

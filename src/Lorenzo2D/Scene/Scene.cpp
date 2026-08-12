@@ -3,6 +3,7 @@
 #include "Lorenzo2D/Scene/SceneManager.hpp"
 
 #include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 
 #include <algorithm>
 #include <limits>
@@ -353,12 +354,17 @@ namespace l2d
 
     void Scene::render(sf::RenderWindow& window, float interpolationAlpha)
     {
+        render(window, RenderContext2D{interpolationAlpha});
+    }
+
+    void Scene::render(sf::RenderWindow& window, const RenderContext2D& context)
+    {
         beginDispatch();
 
         try
         {
             RenderQueue2D queue;
-            queue.build(*this);
+            queue.build(*this, context);
 
             for (const RenderQueueEntry2D& entry : queue.entries())
             {
@@ -366,7 +372,7 @@ namespace l2d
 
                 if (GameObject* gameObject = entry.gameObject.get())
                 {
-                    gameObject->render(window, interpolationAlpha);
+                    gameObject->render(window, context);
                 }
             }
         }

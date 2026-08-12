@@ -1,6 +1,7 @@
 #include <Lorenzo2D/Renderer/SpriteRenderer.hpp>
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 
 #include "RendererNumeric.hpp"
 
@@ -8,6 +9,7 @@
 #include <SFML/System/Angle.hpp>
 
 #include <stdexcept>
+#include <cmath>
 #include <utility>
 
 namespace l2d
@@ -28,6 +30,7 @@ namespace l2d
     SpriteRenderer::SpriteRenderer(TextureHandle texture)
         : m_texture(std::move(texture)), m_sprite(requireTexture(m_texture)), m_sizeScale(1.f, 1.f)
     {
+        applyOriginPreset();
     }
 
     bool SpriteRenderer::setTexture(TextureHandle texture, bool resetRect)
@@ -39,6 +42,7 @@ namespace l2d
         m_texture = std::move(texture);
         m_liveTexture.reset();
         m_liveGeneration = 0;
+        if (resetRect) applyOriginPreset();
         return true;
     }
 
@@ -53,6 +57,7 @@ namespace l2d
         m_texture = snapshot;
         m_liveGeneration = generation;
         m_liveTexture = std::move(texture);
+        if (resetRect) applyOriginPreset();
         return true;
     }
 
@@ -98,11 +103,93 @@ namespace l2d
     void SpriteRenderer::setTextureRect(sf::IntRect textureRect)
     {
         m_sprite.setTextureRect(textureRect);
+        applyOriginPreset();
     }
 
     sf::IntRect SpriteRenderer::textureRect() const
     {
         return m_sprite.getTextureRect();
+    }
+
+    bool SpriteRenderer::setOrigin(sf::Vector2f origin)
+    {
+        if (!std::isfinite(origin.x) || !std::isfinite(origin.y)) return false;
+
+        m_sprite.setOrigin(origin);
+        m_usesOriginPreset = false;
+        return true;
+    }
+
+    sf::Vector2f SpriteRenderer::origin() const
+    {
+        return m_sprite.getOrigin();
+    }
+
+    void SpriteRenderer::setOriginPreset(SpriteOriginPreset2D preset)
+    {
+        switch (preset)
+        {
+        case SpriteOriginPreset2D::TopLeft:
+        case SpriteOriginPreset2D::Center:
+        case SpriteOriginPreset2D::BottomCenter:
+            break;
+        default:
+            return;
+        }
+
+        m_originPreset = preset;
+        m_usesOriginPreset = true;
+        applyOriginPreset();
+    }
+
+    SpriteOriginPreset2D SpriteRenderer::originPreset() const
+    {
+        return m_originPreset;
+    }
+
+    bool SpriteRenderer::usesOriginPreset() const
+    {
+        return m_usesOriginPreset;
+    }
+
+    void SpriteRenderer::setFlippedX(bool flipped)
+    {
+        m_flippedX = flipped;
+    }
+
+    void SpriteRenderer::setFlippedY(bool flipped)
+    {
+        m_flippedY = flipped;
+    }
+
+    bool SpriteRenderer::isFlippedX() const
+    {
+        return m_flippedX;
+    }
+
+    bool SpriteRenderer::isFlippedY() const
+    {
+        return m_flippedY;
+    }
+
+    sf::Vector2f SpriteRenderer::worldFootPoint(float interpolationAlpha) const
+    {
+        const GameObject* gameObject = owner();
+
+        if (gameObject == nullptr) return {};
+
+        const TransformState state = gameObject->transform.interpolated(interpolationAlpha);
+        const sf::FloatRect bounds = m_sprite.getLocalBounds();
+        const sf::Vector2f localFoot =
+            bounds.position + sf::Vector2f{bounds.size.x * 0.5f, bounds.size.y} - origin();
+        const double radians = static_cast<double>(state.rotation) * 3.14159265358979323846 / 180.0;
+        const double cosine = std::cos(radians);
+        const double sine = std::sin(radians);
+        const double x = static_cast<double>(localFoot.x) * m_sizeScale.x * state.scale.x;
+        const double y = static_cast<double>(localFoot.y) * m_sizeScale.y * state.scale.y;
+
+        return {static_cast<float>(state.position.x + cosine * x - sine * y),
+                static_cast<float>(state.position.y + sine * x + cosine * y)};
     }
 
     void SpriteRenderer::onRender(sf::RenderWindow& window)
@@ -112,20 +199,31 @@ namespace l2d
 
     void SpriteRenderer::onRender(sf::RenderWindow& window, float interpolationAlpha)
     {
+        onRender(window, RenderContext2D{interpolationAlpha});
+    }
+
+    void SpriteRenderer::onRender(sf::RenderWindow& window, const RenderContext2D& context)
+    {
         syncLiveTexture();
 
         GameObject* gameObject = owner();
 
         if (gameObject == nullptr) return;
 
-        const TransformState state = gameObject->transform.interpolated(interpolationAlpha);
+        TransformState state = gameObject->transform.interpolated(context.interpolationAlpha);
+        state.position = context.worldToRender(state.position);
+
+        const float flipX = m_flippedX ? -1.f : 1.f;
+        const float flipY = m_flippedY ? -1.f : 1.f;
+        sf::FloatRect localBounds = m_sprite.getLocalBounds();
+        localBounds.position -= m_sprite.getOrigin();
 
         const TransformState spriteState = {
             state.position,
             state.rotation,
-            {m_sizeScale.x * state.scale.x, m_sizeScale.y * state.scale.y}};
+            {flipX * m_sizeScale.x * state.scale.x, flipY * m_sizeScale.y * state.scale.y}};
 
-        if (!renderer_detail::hasSafeTransformedBounds(m_sprite.getLocalBounds(), spriteState))
+        if (!renderer_detail::hasSafeTransformedBounds(localBounds, spriteState))
         {
             return;
         }
@@ -134,7 +232,7 @@ namespace l2d
         m_sprite.setRotation(
             sf::degrees(renderer_detail::normalizedRotationDegrees(state.rotation)));
 
-        m_sprite.setScale({m_sizeScale.x * state.scale.x, m_sizeScale.y * state.scale.y});
+        m_sprite.setScale(spriteState.scale);
 
         window.draw(m_sprite);
     }
@@ -154,5 +252,28 @@ namespace l2d
 
         m_sprite.setTexture(*snapshot, false);
         m_texture = snapshot;
+        applyOriginPreset();
+    }
+
+    void SpriteRenderer::applyOriginPreset()
+    {
+        if (!m_usesOriginPreset) return;
+
+        const sf::FloatRect bounds = m_sprite.getLocalBounds();
+        sf::Vector2f nextOrigin = bounds.position;
+
+        switch (m_originPreset)
+        {
+        case SpriteOriginPreset2D::TopLeft:
+            break;
+        case SpriteOriginPreset2D::Center:
+            nextOrigin += bounds.size * 0.5f;
+            break;
+        case SpriteOriginPreset2D::BottomCenter:
+            nextOrigin += {bounds.size.x * 0.5f, bounds.size.y};
+            break;
+        }
+
+        m_sprite.setOrigin(nextOrigin);
     }
 }

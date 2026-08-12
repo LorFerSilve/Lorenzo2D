@@ -18,6 +18,7 @@ namespace l2d
     class CircleCollider2D;
     class CapsuleCollider2D;
     class ConvexPolygonCollider2D;
+    struct RenderContext2D;
 
     class PhysicsDebugRenderer2D
     {
@@ -41,21 +42,23 @@ namespace l2d
 
         void render(Scene& scene, sf::RenderWindow& window) const;
         void render(Scene& scene, sf::RenderWindow& window, float interpolationAlpha) const;
+        void render(Scene& scene, sf::RenderWindow& window, const RenderContext2D& context) const;
 
       private:
         void renderGameObject(GameObject& gameObject, sf::RenderWindow& window,
-                              float interpolationAlpha) const;
+                              const RenderContext2D& context) const;
         void renderBoxCollider(const BoxCollider2D& collider, const TransformState& ownerTransform,
-                               sf::RenderWindow& window) const;
+                               sf::RenderWindow& window, const RenderContext2D& context) const;
         void renderCircleCollider(const CircleCollider2D& collider,
-                                  const TransformState& ownerTransform,
-                                  sf::RenderWindow& window) const;
+                                  const TransformState& ownerTransform, sf::RenderWindow& window,
+                                  const RenderContext2D& context) const;
         void renderCapsuleCollider(const CapsuleCollider2D& collider,
-                                   const TransformState& ownerTransform,
-                                   sf::RenderWindow& window) const;
+                                   const TransformState& ownerTransform, sf::RenderWindow& window,
+                                   const RenderContext2D& context) const;
         void renderConvexPolygonCollider(const ConvexPolygonCollider2D& collider,
                                          const TransformState& ownerTransform,
-                                         sf::RenderWindow& window) const;
+                                         sf::RenderWindow& window,
+                                         const RenderContext2D& context) const;
 
       private:
         bool m_enabled;

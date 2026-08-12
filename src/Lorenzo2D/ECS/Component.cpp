@@ -1,4 +1,5 @@
 #include <Lorenzo2D/ECS/Component.hpp>
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 
 namespace l2d
 {
@@ -38,6 +39,11 @@ namespace l2d
     {
         (void)interpolationAlpha;
         onRender(window);
+    }
+
+    void Component::onRender(sf::RenderWindow& window, const RenderContext2D& context)
+    {
+        onRender(window, context.interpolationAlpha);
     }
 
     void Component::setOwner(GameObject* owner)

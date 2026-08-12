@@ -18,7 +18,7 @@ available feature.
 | 0 | baseline, versioning, architecture, support policy, deterministic test helper, benchmark reporting, and licensing | In progress; license choice pending |
 | 1 | general input actions, input contexts, controllers, and pointer abstraction | Implemented |
 | 2 | physics/world queries plus character-oriented collider foundations | Implemented |
-| 3 | render context, coordinate projections, and depth sorting | Planned |
+| 3 | render context, coordinate projections, and depth sorting | Implemented |
 | 4 | layered tile/content model and extensible level serialization | Planned |
 | 5 | shared collision-aware character motor | Planned |
 | 6 | top-down and grid-step controllers with a focused template | Planned |

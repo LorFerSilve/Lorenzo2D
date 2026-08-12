@@ -17,6 +17,8 @@ namespace sf
 
 namespace l2d
 {
+    struct RenderContext2D;
+
     struct ParticleEmitterConfig2D
     {
         float emissionRate = 10.f;
@@ -68,6 +70,7 @@ namespace l2d
         void onUpdate(float deltaTime) override;
         void onRender(sf::RenderWindow& window) override;
         void onRender(sf::RenderWindow& window, float interpolationAlpha) override;
+        void onRender(sf::RenderWindow& window, const RenderContext2D& context) override;
 
       private:
         static ParticleEmitterConfig2D sanitize(ParticleEmitterConfig2D config);

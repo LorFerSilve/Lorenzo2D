@@ -2,6 +2,7 @@
 
 #include <Lorenzo2D/ECS/Component.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
@@ -584,10 +585,40 @@ namespace l2d
 
             void onRender(sf::RenderWindow& window, float interpolationAlpha) override
             {
-                (void)interpolationAlpha;
+                onRender(window, RenderContext2D{interpolationAlpha});
+            }
+
+            void onRender(sf::RenderWindow& window, const RenderContext2D& context) override
+            {
                 const CullingArea cullingArea = makeCullingArea(window.getView());
+                const bool projectGeometry = context.pass != RenderPass2D::UI &&
+                                             context.projection != nullptr &&
+                                             !context.projection->isIdentity();
 
                 TileMapRenderStats stats = baseStats();
+
+                const auto drawVertices =
+                    [&](const sf::VertexArray& source, const sf::Texture* texture)
+                {
+                    sf::RenderStates states;
+                    states.texture = texture;
+
+                    if (!projectGeometry)
+                    {
+                        window.draw(source, states);
+                        return;
+                    }
+
+                    sf::VertexArray projected = source;
+
+                    for (std::size_t index = 0; index < projected.getVertexCount(); ++index)
+                    {
+                        projected[index].position =
+                            context.worldToRender(projected[index].position);
+                    }
+
+                    window.draw(projected, states);
+                };
 
                 for (const RenderChunk& chunk : m_chunks)
                 {
@@ -600,7 +631,9 @@ namespace l2d
 
                     stats.residentChunkCount++;
 
-                    if (!isVisible(chunk, cullingArea))
+                    // A general projection can rotate/shear a chunk. Until projected
+                    // bounds are cached, drawing it is the conservative correct choice.
+                    if (!projectGeometry && !isVisible(chunk, cullingArea))
                     {
                         stats.culledChunkCount++;
                         continue;
@@ -608,14 +641,12 @@ namespace l2d
 
                     if (chunk.coloredTileCount > 0u)
                     {
-                        window.draw(chunk.coloredVertices);
+                        drawVertices(chunk.coloredVertices, nullptr);
                     }
 
                     if (chunk.texturedTileCount > 0u)
                     {
-                        sf::RenderStates states;
-                        states.texture = m_texture.get();
-                        window.draw(chunk.texturedVertices, states);
+                        drawVertices(chunk.texturedVertices, m_texture.get());
                     }
 
                     addVisibleChunk(stats, chunk);

@@ -6,6 +6,7 @@
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 
 #include "../Renderer/RendererNumeric.hpp"
@@ -123,21 +124,29 @@ namespace l2d
     void PhysicsDebugRenderer2D::render(Scene& scene, sf::RenderWindow& window,
                                         float interpolationAlpha) const
     {
+        render(scene, window,
+               RenderContext2D{interpolationAlpha, nullptr, RenderPass2D::PhysicsDebug});
+    }
+
+    void PhysicsDebugRenderer2D::render(Scene& scene, sf::RenderWindow& window,
+                                        const RenderContext2D& context) const
+    {
         if (!m_enabled) return;
 
         for (const auto& gameObject : scene.gameObjects())
         {
             if (gameObject != nullptr && gameObject->isActive())
             {
-                renderGameObject(*gameObject, window, interpolationAlpha);
+                renderGameObject(*gameObject, window, context);
             }
         }
     }
 
     void PhysicsDebugRenderer2D::renderGameObject(GameObject& gameObject, sf::RenderWindow& window,
-                                                  float interpolationAlpha) const
+                                                  const RenderContext2D& context) const
     {
-        const TransformState transform = gameObject.transform.interpolated(interpolationAlpha);
+        const TransformState transform =
+            gameObject.transform.interpolated(context.interpolationAlpha);
 
         for (const Collider2D* collider : gameObject.getComponents<Collider2D>())
         {
@@ -145,26 +154,27 @@ namespace l2d
 
             if (const auto* box = dynamic_cast<const BoxCollider2D*>(collider))
             {
-                renderBoxCollider(*box, transform, window);
+                renderBoxCollider(*box, transform, window, context);
             }
             else if (const auto* circle = dynamic_cast<const CircleCollider2D*>(collider))
             {
-                renderCircleCollider(*circle, transform, window);
+                renderCircleCollider(*circle, transform, window, context);
             }
             else if (const auto* capsule = dynamic_cast<const CapsuleCollider2D*>(collider))
             {
-                renderCapsuleCollider(*capsule, transform, window);
+                renderCapsuleCollider(*capsule, transform, window, context);
             }
             else if (const auto* polygon = dynamic_cast<const ConvexPolygonCollider2D*>(collider))
             {
-                renderConvexPolygonCollider(*polygon, transform, window);
+                renderConvexPolygonCollider(*polygon, transform, window, context);
             }
         }
     }
 
     void PhysicsDebugRenderer2D::renderBoxCollider(const BoxCollider2D& collider,
                                                    const TransformState& ownerTransform,
-                                                   sf::RenderWindow& window) const
+                                                   sf::RenderWindow& window,
+                                                   const RenderContext2D& context) const
     {
         const sf::Vector2f size = collider.size();
         const sf::Vector2f halfSize = size * 0.5f;
@@ -172,12 +182,38 @@ namespace l2d
 
         if (!renderer_detail::hasSafeTransformedBounds(localBounds, ownerTransform)) return;
 
-        sf::RectangleShape shape(size);
-        shape.setOrigin(halfSize - collider.offset());
-        shape.setPosition(ownerTransform.position);
-        shape.setRotation(
-            sf::degrees(renderer_detail::normalizedRotationDegrees(ownerTransform.rotation)));
-        shape.setScale(ownerTransform.scale);
+        if (context.projection == nullptr || context.projection->isIdentity())
+        {
+            sf::RectangleShape shape(size);
+            shape.setOrigin(halfSize - collider.offset());
+            shape.setPosition(ownerTransform.position);
+            shape.setRotation(
+                sf::degrees(renderer_detail::normalizedRotationDegrees(ownerTransform.rotation)));
+            shape.setScale(ownerTransform.scale);
+            shape.setFillColor(sf::Color::Transparent);
+            shape.setOutlineThickness(m_outlineThickness);
+            shape.setOutlineColor(
+                colliderColor(collider, m_defaultColor, m_collidingColor, m_sensorColor));
+            window.draw(shape);
+            return;
+        }
+
+        const sf::Vector2f minimum = collider.offset() - halfSize;
+        const sf::Vector2f maximum = collider.offset() + halfSize;
+        const sf::Vector2f localCorners[] = {
+            {minimum.x, minimum.y},
+            {maximum.x, minimum.y},
+            {maximum.x, maximum.y},
+            {minimum.x, maximum.y},
+        };
+        sf::ConvexShape shape(4u);
+
+        for (std::size_t index = 0; index < 4u; ++index)
+        {
+            shape.setPoint(index, context.worldToRender(
+                                      transformedPoint(localCorners[index], ownerTransform)));
+        }
+
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(m_outlineThickness);
         shape.setOutlineColor(
@@ -187,7 +223,8 @@ namespace l2d
 
     void PhysicsDebugRenderer2D::renderCircleCollider(const CircleCollider2D& collider,
                                                       const TransformState& ownerTransform,
-                                                      sf::RenderWindow& window) const
+                                                      sf::RenderWindow& window,
+                                                      const RenderContext2D& context) const
     {
         const float radius = collider.radius();
         const sf::Vector2f diameter{radius * 2.f, radius * 2.f};
@@ -195,14 +232,42 @@ namespace l2d
 
         if (!renderer_detail::hasSafeTransformedBounds(localBounds, ownerTransform)) return;
 
-        const float uniformScale =
-            std::max(std::fabs(ownerTransform.scale.x), std::fabs(ownerTransform.scale.y));
-        sf::CircleShape shape(radius);
-        shape.setOrigin(sf::Vector2f{radius, radius} - collider.offset());
-        shape.setPosition(ownerTransform.position);
-        shape.setRotation(
-            sf::degrees(renderer_detail::normalizedRotationDegrees(ownerTransform.rotation)));
-        shape.setScale({uniformScale, uniformScale});
+        if (context.projection == nullptr || context.projection->isIdentity())
+        {
+            const float uniformScale =
+                std::max(std::fabs(ownerTransform.scale.x), std::fabs(ownerTransform.scale.y));
+            sf::CircleShape shape(radius);
+            shape.setOrigin(sf::Vector2f{radius, radius} - collider.offset());
+            shape.setPosition(ownerTransform.position);
+            shape.setRotation(
+                sf::degrees(renderer_detail::normalizedRotationDegrees(ownerTransform.rotation)));
+            shape.setScale({uniformScale, uniformScale});
+            shape.setFillColor(sf::Color::Transparent);
+            shape.setOutlineThickness(m_outlineThickness);
+            shape.setOutlineColor(
+                colliderColor(collider, m_defaultColor, m_collidingColor, m_sensorColor));
+            window.draw(shape);
+            return;
+        }
+
+        constexpr std::size_t CircleSteps = 32u;
+        const sf::Vector2f center = transformedPoint(collider.offset(), ownerTransform);
+        const float worldRadius =
+            radius * std::max(std::fabs(ownerTransform.scale.x), std::fabs(ownerTransform.scale.y));
+
+        if (!finite(center) || !std::isfinite(worldRadius)) return;
+
+        sf::ConvexShape shape(CircleSteps);
+
+        for (std::size_t index = 0; index < CircleSteps; ++index)
+        {
+            const double angle = 2.0 * Pi * static_cast<double>(index) / CircleSteps;
+            const sf::Vector2f point =
+                center + sf::Vector2f{static_cast<float>(std::cos(angle) * worldRadius),
+                                      static_cast<float>(std::sin(angle) * worldRadius)};
+            shape.setPoint(index, context.worldToRender(point));
+        }
+
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(m_outlineThickness);
         shape.setOutlineColor(
@@ -212,7 +277,8 @@ namespace l2d
 
     void PhysicsDebugRenderer2D::renderCapsuleCollider(const CapsuleCollider2D& collider,
                                                        const TransformState& ownerTransform,
-                                                       sf::RenderWindow& window) const
+                                                       sf::RenderWindow& window,
+                                                       const RenderContext2D& context) const
     {
         constexpr std::size_t HalfSteps = 12u;
         const sf::Vector2f center = transformedPoint(collider.offset(), ownerTransform);
@@ -233,16 +299,18 @@ namespace l2d
         for (std::size_t index = 0; index <= HalfSteps; ++index)
         {
             const double angle = Pi + Pi * index / HalfSteps;
-            shape.setPoint(index, firstCenter +
-                                      axisX * static_cast<float>(std::cos(angle) * radius) +
-                                      axisY * static_cast<float>(std::sin(angle) * radius));
+            shape.setPoint(
+                index, context.worldToRender(firstCenter +
+                                             axisX * static_cast<float>(std::cos(angle) * radius) +
+                                             axisY * static_cast<float>(std::sin(angle) * radius)));
         }
         for (std::size_t index = 0; index <= HalfSteps; ++index)
         {
             const double angle = Pi * index / HalfSteps;
             shape.setPoint(HalfSteps + 1u + index,
-                           secondCenter + axisX * static_cast<float>(std::cos(angle) * radius) +
-                               axisY * static_cast<float>(std::sin(angle) * radius));
+                           context.worldToRender(
+                               secondCenter + axisX * static_cast<float>(std::cos(angle) * radius) +
+                               axisY * static_cast<float>(std::sin(angle) * radius)));
         }
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(m_outlineThickness);
@@ -253,7 +321,7 @@ namespace l2d
 
     void PhysicsDebugRenderer2D::renderConvexPolygonCollider(
         const ConvexPolygonCollider2D& collider, const TransformState& ownerTransform,
-        sf::RenderWindow& window) const
+        sf::RenderWindow& window, const RenderContext2D& context) const
     {
         sf::ConvexShape shape(collider.vertices().size());
         for (std::size_t index = 0; index < collider.vertices().size(); ++index)
@@ -261,7 +329,7 @@ namespace l2d
             const sf::Vector2f point =
                 transformedPoint(collider.offset() + collider.vertices()[index], ownerTransform);
             if (!finite(point)) return;
-            shape.setPoint(index, point);
+            shape.setPoint(index, context.worldToRender(point));
         }
         shape.setFillColor(sf::Color::Transparent);
         shape.setOutlineThickness(m_outlineThickness);

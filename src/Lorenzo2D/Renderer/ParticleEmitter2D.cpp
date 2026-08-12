@@ -1,5 +1,7 @@
 #include <Lorenzo2D/Renderer/ParticleEmitter2D.hpp>
 
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
+
 #include <Lorenzo2D/ECS/GameObject.hpp>
 
 #include <SFML/Graphics/RenderWindow.hpp>
@@ -154,7 +156,11 @@ namespace l2d
 
     void ParticleEmitter2D::onRender(sf::RenderWindow& window, float interpolationAlpha)
     {
-        (void)interpolationAlpha;
+        onRender(window, RenderContext2D{interpolationAlpha});
+    }
+
+    void ParticleEmitter2D::onRender(sf::RenderWindow& window, const RenderContext2D& context)
+    {
         sf::VertexArray vertices(sf::PrimitiveType::Triangles);
         vertices.resize(m_particles.size() * 6u);
         std::size_t vertex = 0;
@@ -162,10 +168,14 @@ namespace l2d
         for (const ParticleState2D& particle : m_particles)
         {
             const float half = particle.size * 0.5f;
-            const sf::Vector2f topLeft = particle.position - sf::Vector2f{half, half};
-            const sf::Vector2f topRight = particle.position + sf::Vector2f{half, -half};
-            const sf::Vector2f bottomLeft = particle.position + sf::Vector2f{-half, half};
-            const sf::Vector2f bottomRight = particle.position + sf::Vector2f{half, half};
+            const sf::Vector2f topLeft =
+                context.worldToRender(particle.position - sf::Vector2f{half, half});
+            const sf::Vector2f topRight =
+                context.worldToRender(particle.position + sf::Vector2f{half, -half});
+            const sf::Vector2f bottomLeft =
+                context.worldToRender(particle.position + sf::Vector2f{-half, half});
+            const sf::Vector2f bottomRight =
+                context.worldToRender(particle.position + sf::Vector2f{half, half});
             vertices[vertex++] = sf::Vertex{topLeft, particle.color};
             vertices[vertex++] = sf::Vertex{bottomLeft, particle.color};
             vertices[vertex++] = sf::Vertex{bottomRight, particle.color};

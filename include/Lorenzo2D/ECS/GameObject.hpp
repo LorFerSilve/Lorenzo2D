@@ -15,6 +15,7 @@
 namespace l2d
 {
     class Scene;
+    struct RenderContext2D;
 
     using GameObjectId = std::uint64_t;
 
@@ -142,6 +143,7 @@ namespace l2d
         void update(float deltaTime);
         void render(sf::RenderWindow& window);
         void render(sf::RenderWindow& window, float interpolationAlpha);
+        void render(sf::RenderWindow& window, const RenderContext2D& context);
 
         Transform transform;
 

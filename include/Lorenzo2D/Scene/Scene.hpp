@@ -15,6 +15,7 @@
 namespace l2d
 {
     class PhysicsWorld2D;
+    struct RenderContext2D;
     class SceneManager;
     class TileMap;
 
@@ -65,6 +66,7 @@ namespace l2d
         void update(float deltaTime);
         void render(sf::RenderWindow& window);
         void render(sf::RenderWindow& window, float interpolationAlpha);
+        void render(sf::RenderWindow& window, const RenderContext2D& context);
 
         void clear();
 

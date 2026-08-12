@@ -33,7 +33,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DAnimationTests` | Clip validation, atlas frames, animator timing, looping, pause, speed, and completion | `xvfb` | 60 s |
 | `Lorenzo2DResourceTests` | Ordered roots, absolute paths, executable-relative lookup, and asset-manager integration | `headless` | 30 s |
 | `Lorenzo2DSerializationTests` | Prefab validation, versioned level round trips, transactional rejection, files, and ECS instantiation | `headless` | 60 s |
-| `Lorenzo2DRendererTests` | Camera, transform, and renderer numeric contracts without GPU resources | `headless` | 60 s |
+| `Lorenzo2DRendererTests` | Camera/transform numeric safety, contexts, projections, pass filtering, deterministic depth, sprite origins/flips, and physics independence | `headless` | 60 s |
 
 The previous broad regression targets mixed unrelated core, scene, physics,
 and tilemap behavior. Their individual cases are now owned by focused suites;

@@ -1,6 +1,7 @@
 #include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 
 #include "RendererNumeric.hpp"
 
@@ -43,11 +44,17 @@ namespace l2d
 
     void RectangleRenderer::onRender(sf::RenderWindow& window, float interpolationAlpha)
     {
+        onRender(window, RenderContext2D{interpolationAlpha});
+    }
+
+    void RectangleRenderer::onRender(sf::RenderWindow& window, const RenderContext2D& context)
+    {
         GameObject* gameObject = owner();
 
         if (gameObject == nullptr) return;
 
-        const TransformState state = gameObject->transform.interpolated(interpolationAlpha);
+        TransformState state = gameObject->transform.interpolated(context.interpolationAlpha);
+        state.position = context.worldToRender(state.position);
 
         if (!renderer_detail::hasSafeTransformedBounds(m_shape.getLocalBounds(), state))
         {

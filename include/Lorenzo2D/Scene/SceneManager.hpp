@@ -14,6 +14,8 @@ namespace sf
 
 namespace l2d
 {
+    struct RenderContext2D;
+
     class SceneManager
     {
       public:
@@ -41,6 +43,7 @@ namespace l2d
         void update(float deltaTime);
         void render(sf::RenderWindow& window);
         void render(sf::RenderWindow& window, float interpolationAlpha);
+        void render(sf::RenderWindow& window, const RenderContext2D& context);
 
         void destroyQueuedGameObjects();
         std::size_t destroyQueuedGameObjectCount() const;

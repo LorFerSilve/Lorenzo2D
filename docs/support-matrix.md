@@ -11,15 +11,15 @@ Lorenzo2D uses three support levels:
 
 `Planned` is not a support level and must never be presented as an available feature.
 
-## Current matrix for 0.6.0
+## Current matrix for 0.7.0
 
 | Development path | Level | Evidence | Missing before supported |
 | --- | --- | --- | --- |
 | General engine foundation | Experimental | fixed-step application, scenes/ECS, rendering, assets, serialization, physics, tests, and CMake package | stable 1.0 compatibility policy, complete game-facing services, external usage evidence |
 | Orthogonal platformer | Experimental | sandbox movement, gravity, grounded state, tile collisions, coins, enemies, and camera follow | character motor, slopes, one-way/moving platforms, focused template and tutorial |
-| Orthogonal top-down | Planned | configurable 2D actions for keyboard/gamepad, orthogonal tilemap, sprites, animation, sensors, and camera primitives | top-down/grid controllers, tile triggers, layered content model and focused template |
+| Orthogonal top-down | Planned | configurable 2D actions, orthogonal tilemap, sprites, animation, sensors, render layers and automatic world-Y sorting | top-down/grid controllers, tile triggers, layered content model and focused template |
 | Point-and-click movement | Planned | unified pointer state, camera-aware world coordinates, deterministic ray/point/overlap/cast queries, and convex obstacles | navigation grid, A*, path following, avoidance and focused template |
-| Isometric | Planned | sprites, explicit z-order and orthographic camera primitives | projection, inverse picking, projected culling, depth policy, placement grid and focused template |
+| Isometric | Planned | projection/inverse-projection contract, projected-Y depth, sprite footpoints, projected tile submission, and orthographic camera primitives | production isometric projection, projected-bounds culling, navigation, placement grid and focused template |
 
 ## Platform matrix
 

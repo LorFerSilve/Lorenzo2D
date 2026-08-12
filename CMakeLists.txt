@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.6.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.7.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -193,7 +193,9 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Renderer/PostProcessStack2D.cpp
     src/Lorenzo2D/Renderer/RectangleRenderer.cpp
     src/Lorenzo2D/Renderer/RenderLayerStack2D.cpp
+    src/Lorenzo2D/Renderer/RenderOrder2D.cpp
     src/Lorenzo2D/Renderer/RenderQueue2D.cpp
+    src/Lorenzo2D/Renderer/RenderSortKey2D.cpp
     src/Lorenzo2D/Renderer/SpriteRenderer.cpp
     src/Lorenzo2D/Scene/GameObjectHandle.cpp
     src/Lorenzo2D/Scene/LevelSerializer.cpp

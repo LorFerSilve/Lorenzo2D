@@ -8,6 +8,8 @@
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
 #include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
+#include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
 
@@ -161,6 +163,36 @@ namespace
                        [&scene, &queue]()
                        {
                            queue.build(scene);
+
+                           if (queue.empty()) return std::size_t{0};
+
+                           return queue.size() + queue.entries().front().insertionOrder +
+                                  queue.entries().back().insertionOrder;
+                       });
+    }
+
+    BenchmarkResult benchmarkProjectedDepthSort(std::size_t iterations)
+    {
+        constexpr std::size_t objectCount = 4096u;
+        l2d::Scene scene;
+
+        for (std::size_t index = 0; index < objectCount; ++index)
+        {
+            l2d::GameObject& object = scene.createGameObject("ProjectedObject");
+            const float x = static_cast<float>((index * 37u) % 251u);
+            const float y = static_cast<float>((index * 83u) % 257u);
+            object.transform.setPosition({x, y});
+            object.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::ProjectedY);
+        }
+
+        const l2d::OrthogonalProjection2D projection;
+        const l2d::RenderContext2D context{1.f, &projection, l2d::RenderPass2D::World};
+        l2d::RenderQueue2D queue;
+
+        return measure(iterations,
+                       [&scene, &queue, &context]()
+                       {
+                           queue.build(scene, context);
 
                            if (queue.empty()) return std::size_t{0};
 
@@ -325,6 +357,8 @@ namespace
             {"scene fixed update", sceneIterations, benchmarkSceneUpdate(sceneIterations)});
         entries.push_back({"render queue build", renderQueueIterations,
                            benchmarkRenderQueueBuild(renderQueueIterations)});
+        entries.push_back({"projected depth full sort", renderQueueIterations,
+                           benchmarkProjectedDepthSort(renderQueueIterations)});
         entries.push_back(
             {"physics uniform grid", physicsIterations,
              benchmarkPhysics(l2d::PhysicsBroadPhaseMode2D::UniformGrid, physicsIterations)});

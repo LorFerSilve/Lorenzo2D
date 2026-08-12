@@ -1,5 +1,7 @@
 #include <Lorenzo2D/Scene/SceneManager.hpp>
 
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
+
 #include <stdexcept>
 
 namespace l2d
@@ -109,6 +111,11 @@ namespace l2d
 
     void SceneManager::render(sf::RenderWindow& window, float interpolationAlpha)
     {
+        render(window, RenderContext2D{interpolationAlpha});
+    }
+
+    void SceneManager::render(sf::RenderWindow& window, const RenderContext2D& context)
+    {
         Scene* activeScene = m_activeScene;
 
         if (activeScene == nullptr) return;
@@ -117,7 +124,7 @@ namespace l2d
 
         try
         {
-            activeScene->render(window, interpolationAlpha);
+            activeScene->render(window, context);
         }
         catch (...)
         {

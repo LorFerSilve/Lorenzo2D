@@ -1,5 +1,7 @@
 #include "Lorenzo2D/ECS/GameObject.hpp"
 
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
+
 #include <cstddef>
 #include <utility>
 
@@ -121,6 +123,11 @@ namespace l2d
 
     void GameObject::render(sf::RenderWindow& window, float interpolationAlpha)
     {
+        render(window, RenderContext2D{interpolationAlpha});
+    }
+
+    void GameObject::render(sf::RenderWindow& window, const RenderContext2D& context)
+    {
         if (!m_active || m_destroyQueued) return;
 
         const std::size_t componentCount = m_components.size();
@@ -131,7 +138,7 @@ namespace l2d
 
             Component* component = m_components[index].get();
 
-            if (component->isActive()) component->onRender(window, interpolationAlpha);
+            if (component->isActive()) component->onRender(window, context);
         }
     }
 }

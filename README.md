@@ -35,9 +35,9 @@ current support claims are documented separately:
 - Typed button/1D/2D actions, multiple bindings, analog deadzones, normalized
   diagonals, fixed-tick edge consumption, and blocking input contexts
 - Unified mouse/touch pointers with camera-aware world conversion and drag state
-- Game objects, transforms, polymorphic components, tags, stable z-order, and deferred deletion
+- Game objects, transforms, polymorphic components, tags, deterministic layered/depth ordering, and deferred deletion
 - Scenes, scene switching, object queries, and lifetime-aware object handles
-- Circle and rectangle rendering plus texture-backed sprites and sprite-sheet animation
+- Context-aware circle/rectangle/sprite rendering, sprite anchors/flips, coordinate projections, and sprite-sheet animation
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
 - Editable ASCII tilemaps with streamed chunks, animated atlas tiles, view culling, and merged collision geometry
 - Static, kinematic, and dynamic rigid bodies with linear and angular dynamics
@@ -227,7 +227,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.6 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.7 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -399,12 +399,22 @@ before view culling; render telemetry reports resident and non-resident counts.
 durations. Animation updates only texture coordinates, leaving chunk positions
 and physics geometry stable. Configuration remains snapshot-based per load.
 
-## Render queue and effects
+## Render contexts, ordering, and effects
 
-Every game object has an explicit signed z-order. The per-pass `RenderQueue2D`
-sorts lower values first and preserves scene insertion order for ties. Prefabs
-and level-format versions 2 and 3 persist z-order; version 1 files remain readable and
-default it to zero.
+`RenderContext2D` carries interpolation, an optional world-to-render projection,
+and the current `World`, `PhysicsDebug`, or `UI` pass. UI coordinates remain
+screen-space. `CoordinateProjection2D` keeps rendering independent from the
+Cartesian Transform/physics world and provides the inverse mapping needed by
+picking code.
+
+`RenderOrder2D` sorts by signed integer layer, depth, fine order, and insertion
+order. Fixed, explicit, world-Y, and projected-Y modes support side-view,
+top-down, and future isometric presentation. Spatial modes use interpolated
+bottom-centre sprite footpoints. Existing `setZOrder()` calls map to fine order
+with zero layer/depth, preserving their output and serialized level behavior.
+
+`SpriteRenderer` adds top-left, centre, and bottom-centre origins plus X/Y
+visual flips that do not mutate the gameplay Transform or collider.
 
 `ParticleEmitter2D` provides seeded, bounded bursts and continuous emission
 with lifetime, velocity, gravity, color, and size evolution.

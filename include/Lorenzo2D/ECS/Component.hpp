@@ -8,6 +8,7 @@ namespace sf
 namespace l2d
 {
     class GameObject;
+    struct RenderContext2D;
 
     class Component
     {
@@ -29,6 +30,7 @@ namespace l2d
         virtual void onUpdate(float deltaTime);
         virtual void onRender(sf::RenderWindow& window);
         virtual void onRender(sf::RenderWindow& window, float interpolationAlpha);
+        virtual void onRender(sf::RenderWindow& window, const RenderContext2D& context);
 
       private:
         void setOwner(GameObject* owner);

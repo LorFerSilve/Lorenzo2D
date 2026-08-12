@@ -20,7 +20,9 @@
 #include <Lorenzo2D/Renderer/DebugOverlay.hpp>
 #include <Lorenzo2D/Renderer/OrthographicCameraController2D.hpp>
 #include <Lorenzo2D/Renderer/RectangleRenderer.hpp>
+#include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Renderer/RenderLayerStack2D.hpp>
+#include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Renderer/SpriteRenderer.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Scene/SceneManager.hpp>
@@ -286,7 +288,9 @@ class SandboxApp : public l2d::Application
         {
             m_camera.applyTo(window);
 
-            m_sceneManager.render(window, interpolationAlpha);
+            const l2d::RenderContext2D worldContext{interpolationAlpha, &m_worldProjection,
+                                                    l2d::RenderPass2D::World};
+            m_sceneManager.render(window, worldContext);
         }
 
         if (m_renderLayers.isLayerEnabled(l2d::RenderLayer2D::PhysicsDebug))
@@ -295,7 +299,9 @@ class SandboxApp : public l2d::Application
 
             if (m_levelScene != nullptr)
             {
-                m_physicsDebugRenderer.render(*m_levelScene, window, interpolationAlpha);
+                const l2d::RenderContext2D debugContext{interpolationAlpha, &m_worldProjection,
+                                                        l2d::RenderPass2D::PhysicsDebug};
+                m_physicsDebugRenderer.render(*m_levelScene, window, debugContext);
             }
         }
 
@@ -366,6 +372,10 @@ class SandboxApp : public l2d::Application
         {
             player.addComponent<l2d::CircleRenderer>(playerRadius, sf::Color::Green);
         }
+
+        l2d::RenderOrder2D& renderOrder =
+            player.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::WorldY);
+        renderOrder.setLocalFootPoint({playerRadius, playerDiameter});
     }
 
     void createCoins()
@@ -411,6 +421,10 @@ class SandboxApp : public l2d::Application
                 coin.addComponent<l2d::CircleRenderer>(coinRadius, sf::Color::Yellow);
             }
 
+            l2d::RenderOrder2D& renderOrder =
+                coin.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::WorldY);
+            renderOrder.setLocalFootPoint({coinRadius, coinDiameter});
+
             coinIndex++;
         }
 
@@ -455,6 +469,10 @@ class SandboxApp : public l2d::Application
             enemyCollider.setFilter({PhysicsLayers::Enemy, PhysicsLayers::World});
 
             enemy.addComponent<l2d::CircleRenderer>(enemyRadius, sf::Color::Magenta);
+
+            l2d::RenderOrder2D& renderOrder =
+                enemy.addComponent<l2d::RenderOrder2D>(l2d::RenderDepthMode2D::WorldY);
+            renderOrder.setLocalFootPoint({enemyRadius, enemyDiameter});
 
             enemyIndex++;
         }
@@ -1015,6 +1033,7 @@ class SandboxApp : public l2d::Application
     l2d::PhysicsDebugRenderer2D m_physicsDebugRenderer;
 
     l2d::RenderLayerStack2D m_renderLayers;
+    l2d::OrthogonalProjection2D m_worldProjection;
 
     l2d::Camera2D m_camera;
     l2d::OrthographicCameraController2D m_cameraController;
