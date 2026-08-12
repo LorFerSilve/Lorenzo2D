@@ -1,10 +1,10 @@
 # Lorenzo2D level format
 
-`LevelSerializer::save` writes deterministic JSON version 4. The serializer validates the entire
+`LevelSerializer::save` writes deterministic JSON version 5. The serializer validates the entire
 `LevelDocument` before writing, and `load` replaces its destination only after the complete input
 has parsed and passed validation. The object limit is 100,000.
 
-## Version 4 schema
+## Version 5 schema
 
 The root record contains `format`, `version`, `name`, and `objects`. Each object contains its base
 state plus a component array:
@@ -12,7 +12,7 @@ state plus a component array:
 ```json
 {
   "format": "Lorenzo2DLevel",
-  "version": 4,
+  "version": 5,
   "name": "Village",
   "objects": [
     {
@@ -53,7 +53,7 @@ state plus a component array:
 ```
 
 Built-in version-1 component records cover rectangle/circle renderers, sprite renderers, animators,
-rigid bodies, and box/circle/capsule/convex-polygon colliders. Sprite textures and animation clips
+rigid bodies, the shared character motor, and box/circle/capsule/convex-polygon colliders. Sprite textures and animation clips
 are stable `AssetId` strings. Instantiate asset-backed documents with an `AssetManager`; a missing
 required asset rejects and rolls back the complete operation.
 
@@ -82,9 +82,10 @@ auto handles = l2d::LevelSerializer::instantiate(scene, level, assets, &codecs);
 ## Legacy migration
 
 `load` auto-detects the former line-oriented `LORENZO2D_LEVEL` format and continues to read
-versions 1, 2, and 3. Saving a loaded legacy document writes JSON version 4. The checked-in
+versions 1, 2, and 3. JSON version 4 is also readable. Saving an older document writes JSON version
+5. The checked-in
 `assets/levels/phase2-showcase.l2dlevel` remains a version-1 compatibility fixture.
 
 The old formats cannot encode sprite assets, animator state, repeated/custom components, angular
 body state, sleeping, or joints. Existing fields retain their former defaults during migration;
-unknown trailing data and a text header claiming version 4 are rejected.
+unknown trailing data and a text header claiming version 4 or 5 are rejected.

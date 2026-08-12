@@ -3,6 +3,7 @@
 #include <Lorenzo2D/Core/Version.hpp>
 #include <Lorenzo2D/Core/InputMap.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
+#include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
@@ -55,6 +56,7 @@ int main()
     l2d::CapsuleCollider2D capsule(2.f, 8.f);
     l2d::ConvexPolygonCollider2D polygon;
     l2d::PhysicsQueryFilter2D queryFilter;
+    l2d::CharacterMotorConfig2D motorConfig;
     l2d::DistanceJoint2D joint(42u, 3.f);
     const l2d::OrthogonalProjection2D projection;
     const l2d::RenderContext2D renderContext{1.f, &projection, l2d::RenderPass2D::World};
@@ -68,11 +70,12 @@ int main()
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::S));
 
-    return l2d::VersionString == "0.8.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
+    return l2d::VersionString == "0.9.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
                    tileAdded && tileDataImported && tileColliders.empty() && codecRegistered &&
                    levelSaved && resourceRootAdded && inputConfigured &&
                    collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
                    polygon.vertices().size() == 3u && queryFilter.categoryMask != 0u &&
+                   l2d::CharacterMotor2D::isValidConfig(motorConfig) &&
                    joint.id() != l2d::InvalidJointId &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY

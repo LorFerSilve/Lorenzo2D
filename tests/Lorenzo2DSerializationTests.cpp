@@ -2,6 +2,7 @@
 #include <Lorenzo2D/Animation/AnimationClip.hpp>
 #include <Lorenzo2D/Animation/Animator.hpp>
 #include <Lorenzo2D/Assets/AssetManager.hpp>
+#include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
@@ -49,6 +50,12 @@ namespace
             l2d::RectangleRendererPrefab{{32.f, 48.f}, sf::Color(20, 80, 220, 200)};
         prefab.rigidBody = l2d::RigidBodyPrefab{
             l2d::BodyType2D::Kinematic, {4.f, 5.f}, {1.f, 2.f}, 3.f, true, 0.5f};
+        l2d::CharacterMotorPrefab motor;
+        motor.config.skinWidth = 0.025f;
+        motor.config.maximumSlopeAngleDegrees = 42.f;
+        motor.config.maximumSlideIterations = 6u;
+        motor.config.queryFilter.categoryMask = 8u;
+        prefab.characterMotor = motor;
 
         l2d::BoxColliderPrefab collider;
         collider.size = {30.f, 44.f};
@@ -93,7 +100,7 @@ namespace
         std::stringstream serialized;
         L2D_REQUIRE(l2d::LevelSerializer::save(serialized, source));
         L2D_REQUIRE(serialized.str().find("\"format\": \"Lorenzo2DLevel\"") != std::string::npos);
-        L2D_REQUIRE(serialized.str().find("\"version\": 4") != std::string::npos);
+        L2D_REQUIRE(serialized.str().find("\"version\": 5") != std::string::npos);
 
         l2d::LevelDocument loaded;
         L2D_REQUIRE(l2d::LevelSerializer::load(serialized, loaded));
@@ -106,6 +113,9 @@ namespace
         L2D_REQUIRE(playerPrefab.zOrder == 12);
         L2D_REQUIRE(playerPrefab.rectangleRenderer.has_value());
         L2D_REQUIRE(playerPrefab.rigidBody.has_value());
+        L2D_REQUIRE(playerPrefab.characterMotor.has_value());
+        L2D_REQUIRE_APPROX(playerPrefab.characterMotor->config.skinWidth, 0.025f, 0.0001f);
+        L2D_REQUIRE_EQUAL(playerPrefab.characterMotor->config.maximumSlideIterations, 6u);
         L2D_REQUIRE(playerPrefab.boxCollider.has_value());
         L2D_REQUIRE(playerPrefab.circleCollider.has_value());
         L2D_REQUIRE(playerPrefab.capsuleCollider.has_value());
@@ -127,6 +137,7 @@ namespace
         L2D_REQUIRE(player->getComponent<l2d::RectangleRenderer>() != nullptr);
 
         const l2d::RigidBody2D* body = player->getComponent<l2d::RigidBody2D>();
+        const l2d::CharacterMotor2D* motor = player->getComponent<l2d::CharacterMotor2D>();
         const l2d::BoxCollider2D* collider = player->getComponent<l2d::BoxCollider2D>();
         const l2d::CircleCollider2D* circleCollider = player->getComponent<l2d::CircleCollider2D>();
         const l2d::CapsuleCollider2D* capsuleCollider =
@@ -134,6 +145,8 @@ namespace
         const l2d::ConvexPolygonCollider2D* polygonCollider =
             player->getComponent<l2d::ConvexPolygonCollider2D>();
         L2D_REQUIRE(body != nullptr);
+        L2D_REQUIRE(motor != nullptr);
+        L2D_REQUIRE_APPROX(motor->config().maximumSlopeAngleDegrees, 42.f, 0.0001f);
         L2D_REQUIRE(collider != nullptr);
         L2D_REQUIRE(circleCollider != nullptr);
         L2D_REQUIRE(capsuleCollider != nullptr);
@@ -190,6 +203,14 @@ namespace
         l2d::Prefab invalidCapsule = valid;
         invalidCapsule.capsuleCollider->height = invalidCapsule.capsuleCollider->radius;
         L2D_REQUIRE(!library.store("player", invalidCapsule));
+
+        l2d::Prefab invalidDynamicMotor = valid;
+        invalidDynamicMotor.rigidBody->bodyType = l2d::BodyType2D::Dynamic;
+        L2D_REQUIRE(!library.store("player", invalidDynamicMotor));
+
+        l2d::Prefab invalidStaticMotor = valid;
+        invalidStaticMotor.rigidBody->bodyType = l2d::BodyType2D::Static;
+        L2D_REQUIRE(!library.store("player", invalidStaticMotor));
 
         l2d::Scene scene;
         l2d::GameObject* instance = library.instantiate(scene, "player");
@@ -367,6 +388,21 @@ namespace
         L2D_REQUIRE(rejected);
         L2D_REQUIRE_EQUAL(missingAssetScene.gameObjectCount(), 0u);
     }
+
+    void testJsonVersionFourRemainsReadable()
+    {
+        std::stringstream versionFour(
+            R"({"format":"Lorenzo2DLevel","version":4,"name":"Phase 4","objects":[{"name":"Legacy JSON object","tag":"","active":true,"zOrder":0,"transform":{"position":[3,4],"rotation":0,"scale":[1,1]},"components":[{"type":"BoxCollider2D","version":1,"required":true,"data":{"size":[8,10],"properties":{"offset":[0,0],"restitution":0,"staticFriction":0.5,"dynamicFriction":0.3,"category":1,"mask":4294967295,"sensor":false}}}]}]})");
+        l2d::LevelDocument loaded;
+        L2D_REQUIRE(l2d::LevelSerializer::loadJson(versionFour, loaded));
+        L2D_REQUIRE_EQUAL(loaded.objects.size(), 1u);
+        L2D_REQUIRE(loaded.objects[0].boxCollider.has_value());
+        L2D_REQUIRE(!loaded.objects[0].characterMotor.has_value());
+
+        std::stringstream upgraded;
+        L2D_REQUIRE(l2d::LevelSerializer::saveJson(upgraded, loaded));
+        L2D_REQUIRE(upgraded.str().find("\"version\": 5") != std::string::npos);
+    }
 }
 
 int main()
@@ -384,6 +420,7 @@ int main()
             testInvalidDocumentsDoNotOverwriteFilesOrScenes, failures);
     runTest("sprite animator assets and custom codecs round-trip",
             testSpriteAnimatorAssetsAndCustomCodecsRoundTrip, failures);
+    runTest("JSON level version 4 remains readable", testJsonVersionFourRemainsReadable, failures);
 
     if (failures != 0)
     {

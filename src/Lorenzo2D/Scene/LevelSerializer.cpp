@@ -121,6 +121,24 @@ namespace l2d
                       {"mass", prefab.rigidBody->mass},
                       {"useGravity", prefab.rigidBody->useGravity},
                       {"gravityScale", prefab.rigidBody->gravityScale}});
+            if (prefab.characterMotor)
+            {
+                const CharacterMotorConfig2D& motor = prefab.characterMotor->config;
+                push("CharacterMotor2D", 1u,
+                     {{"skinWidth", motor.skinWidth},
+                      {"groundProbeDistance", motor.groundProbeDistance},
+                      {"maximumSlopeAngleDegrees", motor.maximumSlopeAngleDegrees},
+                      {"minimumMoveDistance", motor.minimumMoveDistance},
+                      {"maximumMoveDistance", motor.maximumMoveDistance},
+                      {"maximumPlatformDisplacement", motor.maximumPlatformDisplacement},
+                      {"maximumSlideIterations", motor.maximumSlideIterations},
+                      {"maximumRecoveryIterations", motor.maximumRecoveryIterations},
+                      {"upDirection", vectorJson(motor.upDirection)},
+                      {"categoryMask", motor.queryFilter.categoryMask},
+                      {"includeSensors", motor.queryFilter.includeSensors},
+                      {"snapToGround", motor.snapToGround},
+                      {"inheritPlatformTranslation", motor.inheritPlatformTranslation}});
+            }
 
             const auto colliderProperties = [](const ColliderPrefabProperties& properties)
             {
@@ -273,6 +291,39 @@ namespace l2d
                 value.useGravity = data.value("useGravity", false);
                 value.gravityScale = data.value("gravityScale", 1.f);
                 prefab.rigidBody = value;
+            }
+            else if (type == "CharacterMotor2D")
+            {
+                if (prefab.characterMotor) return false;
+                CharacterMotorPrefab value;
+                CharacterMotorConfig2D& motor = value.config;
+                motor.skinWidth = data.value("skinWidth", motor.skinWidth);
+                motor.groundProbeDistance =
+                    data.value("groundProbeDistance", motor.groundProbeDistance);
+                motor.maximumSlopeAngleDegrees =
+                    data.value("maximumSlopeAngleDegrees", motor.maximumSlopeAngleDegrees);
+                motor.minimumMoveDistance =
+                    data.value("minimumMoveDistance", motor.minimumMoveDistance);
+                motor.maximumMoveDistance =
+                    data.value("maximumMoveDistance", motor.maximumMoveDistance);
+                motor.maximumPlatformDisplacement =
+                    data.value("maximumPlatformDisplacement", motor.maximumPlatformDisplacement);
+                motor.maximumSlideIterations =
+                    data.value("maximumSlideIterations", motor.maximumSlideIterations);
+                motor.maximumRecoveryIterations =
+                    data.value("maximumRecoveryIterations", motor.maximumRecoveryIterations);
+                if (!data.contains("upDirection") ||
+                    !readVector(data.at("upDirection"), motor.upDirection))
+                    return false;
+                motor.queryFilter.categoryMask =
+                    data.value("categoryMask", motor.queryFilter.categoryMask);
+                motor.queryFilter.includeSensors =
+                    data.value("includeSensors", motor.queryFilter.includeSensors);
+                motor.snapToGround = data.value("snapToGround", motor.snapToGround);
+                motor.inheritPlatformTranslation =
+                    data.value("inheritPlatformTranslation", motor.inheritPlatformTranslation);
+                if (!CharacterMotor2D::isValidConfig(motor)) return false;
+                prefab.characterMotor = std::move(value);
             }
             else if (type == "BoxCollider2D")
             {
@@ -757,7 +808,8 @@ namespace l2d
             Json root = Json::parse(input, nullptr, false);
             if (root.is_discarded() || !root.is_object() ||
                 root.value("format", std::string{}) != "Lorenzo2DLevel" ||
-                root.value("version", std::uint32_t{0u}) != CurrentVersion ||
+                root.value("version", std::uint32_t{0u}) < 4u ||
+                root.value("version", std::uint32_t{0u}) > CurrentVersion ||
                 !root.contains("objects") || !root.at("objects").is_array() ||
                 root.at("objects").size() > MaximumObjectCount)
                 return false;

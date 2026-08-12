@@ -127,6 +127,9 @@ namespace
         L2D_REQUIRE_EQUAL(queries.pointQuery(slope.center()).size(), 1u);
         L2D_REQUIRE(!queries.overlapCircle({-30.f, 10.f}, 2.f).empty());
         L2D_REQUIRE(!queries.overlapBox({20.f, 0.f}, {8.f, 8.f}, 45.f).empty());
+        const auto capsuleOverlap = queries.overlapCapsule({-30.f, 10.f}, 3.f, 20.f, 30.f);
+        L2D_REQUIRE(!capsuleOverlap.empty());
+        L2D_REQUIRE(capsuleOverlap.front().penetration > 0.f);
         L2D_REQUIRE(queries.overlapBox({200.f, 200.f}, {8.f, 8.f}).empty());
     }
 
@@ -147,6 +150,13 @@ namespace
         L2D_REQUIRE_EQUAL(boxHit->colliderId, wall.id());
         L2D_REQUIRE(boxHit->fraction > 0.4f && boxHit->fraction < 0.5f);
         L2D_REQUIRE_APPROX(boxHit->normal, sf::Vector2f(-1.f, 0.f), 0.001f);
+
+        const auto capsuleHit =
+            world.castCapsule(scene, {-100.f, -30.f}, {100.f, -30.f}, 5.f, 20.f);
+        L2D_REQUIRE(capsuleHit.has_value());
+        L2D_REQUIRE_EQUAL(capsuleHit->colliderId, wall.id());
+        L2D_REQUIRE(capsuleHit->fraction > 0.4f && capsuleHit->fraction < 0.5f);
+        L2D_REQUIRE_APPROX(capsuleHit->normal, sf::Vector2f(-1.f, 0.f), 0.02f);
     }
 
     void testQuerySnapshotsAndContactStateStayIndependent()
@@ -234,6 +244,8 @@ namespace
         L2D_REQUIRE(queries.overlapBox({0.f, 0.f}, {0.f, 10.f}).empty());
         L2D_REQUIRE(!queries.castCircle({0.f, 0.f}, {10.f, 0.f}, invalid).has_value());
         L2D_REQUIRE(!queries.castBox({0.f, 0.f}, {10.f, 0.f}, {10.f, invalid}).has_value());
+        L2D_REQUIRE(queries.overlapCapsule({0.f, 0.f}, 5.f, 9.f).empty());
+        L2D_REQUIRE(!queries.castCapsule({0.f, 0.f}, {10.f, 0.f}, 5.f, 9.f).has_value());
     }
 }
 

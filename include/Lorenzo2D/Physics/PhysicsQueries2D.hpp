@@ -32,6 +32,7 @@ namespace l2d
         sf::Vector2f normal = {0.f, 0.f};
         float distance = 0.f;
         float fraction = 0.f;
+        float penetration = 0.f;
         bool sensor = false;
     };
 
@@ -55,12 +56,19 @@ namespace l2d
         std::vector<PhysicsQueryHit2D> overlapBox(sf::Vector2f center, sf::Vector2f size,
                                                   float rotationDegrees = 0.f,
                                                   const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> overlapCapsule(
+            sf::Vector2f center, float radius, float height, float rotationDegrees = 0.f,
+            const PhysicsQueryFilter2D& filter = {}) const;
         std::optional<PhysicsQueryHit2D> castCircle(sf::Vector2f start, sf::Vector2f end,
                                                     float radius,
                                                     const PhysicsQueryFilter2D& filter = {}) const;
         std::optional<PhysicsQueryHit2D> castBox(sf::Vector2f start, sf::Vector2f end,
                                                  sf::Vector2f size, float rotationDegrees = 0.f,
                                                  const PhysicsQueryFilter2D& filter = {}) const;
+        std::optional<PhysicsQueryHit2D> castCapsule(sf::Vector2f start, sf::Vector2f end,
+                                                     float radius, float height,
+                                                     float rotationDegrees = 0.f,
+                                                     const PhysicsQueryFilter2D& filter = {}) const;
 
       private:
         struct Impl;

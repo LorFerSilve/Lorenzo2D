@@ -43,14 +43,18 @@ context to observe structural or transform changes.
 | `pointQuery` | all colliders containing a point | mouse/touch picking |
 | `overlapCircle` | all intersecting colliders | radial trigger, clearance |
 | `overlapBox` | all intersecting colliders | placement preview, area selection |
+| `overlapCapsule` | all intersecting colliders plus penetration | character recovery |
 | `castCircle` | earliest optional swept hit | top-down character prediction |
 | `castBox` | earliest optional swept hit | platform or box movement prediction |
+| `castCapsule` | earliest optional swept hit | capsule character movement |
 
 Coordinates are world coordinates. Box sizes must be finite and positive. Circle radii must be
-finite and non-negative. Invalid input fails closed with no hits. A zero-length ray acts as a point
+finite and non-negative. Capsule height must be at least twice its positive radius. Invalid input
+fails closed with no hits. A zero-length ray acts as a point
 test: it reports fraction and distance zero when its point is inside a collider.
 
-`PhysicsQueryHit2D::normal` points out of the hit collider toward the query shape. A ray that starts
+`PhysicsQueryHit2D::normal` points out of the hit collider toward the query shape. Overlap hits also
+report `penetration`, while ray and cast hits leave it at zero. A ray that starts
 inside a collider has a zero normal because no unique entry surface exists. Hits are sorted by
 distance and then stable `ColliderId`, including equal-distance compound colliders.
 
@@ -89,9 +93,13 @@ polygonal envelope: they can report a hit slightly early, by at most the cap env
 not skip a thin collider because of time stepping. With the fixed subdivision that radial envelope
 error is below 0.9% of the capsule radius.
 
+Capsule casts use the same fixed conservative envelope for the moving capsule. Overlap capsules use
+the exact capsule manifold. See [`character-motor.md`](character-motor.md) for the fixed-step
+movement workflow built on these contracts.
+
 ## Level format
 
 Legacy level format version 3 added optional `capsule_collider` and
-`convex_polygon_collider` records. Text versions 1 through 3 remain readable; JSON version 4 is
-the current save format. Prefab validation and loading reject malformed capsule dimensions and
+`convex_polygon_collider` records. Text versions 1 through 3 and JSON version 4 remain readable;
+JSON version 5 is the current save format. Prefab validation and loading reject malformed capsule dimensions and
 invalid polygon vertex sets before mutating a destination scene or document.

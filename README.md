@@ -28,7 +28,9 @@ current support claims are documented separately:
   world queries, shape casts, filtering, capsules, and convex slope polygons.
 - [`docs/tile-content.md`](docs/tile-content.md) documents layered tile data,
   ASCII/Tiled import, runtime generation, and tile asset resolution.
-- [`docs/level-format.md`](docs/level-format.md) documents JSON level version 4,
+- [`docs/character-motor.md`](docs/character-motor.md) documents fixed-tick
+  sweep-and-slide movement, contacts, slopes, and moving platforms.
+- [`docs/level-format.md`](docs/level-format.md) documents JSON level version 5,
   asset-backed prefabs, component codecs, and legacy migration.
 
 ## Current features
@@ -49,14 +51,16 @@ current support claims are documented separately:
 - Compound circle, oriented-box, capsule, and convex-polygon colliders with scale-aware transforms
 - CCD, sleeping, persistent warm-started contacts, and distance joints
 - All-pair collider manifolds, impulse response, friction, and restitution
-- Ray, point, overlap, and swept circle/box queries with reusable fixed-tick snapshots
+- Ray, point, overlap, and swept circle/box/capsule queries with reusable fixed-tick snapshots
+- Shared box/circle/capsule character motor with bounded sweep-and-slide, depenetration,
+  slope-aware contacts, ground snap, and moving-platform translation
 - Collision layers, sensors, contact events, and physics debug drawing
 - Snapshot and live font/texture handles, background loading, hot reload,
   dependency tracking, and ordered runtime resource lookup
 - Deterministic particles, screen-space color passes, asset-backed prefabs, custom
   component codecs, JSON level saving, and legacy level loading
 - Debug overlay and independently switchable world, physics, and UI layers
-- Focused minimal, animation, physics, and phase-4 examples plus regression tests for timing,
+- Focused minimal, animation, physics, phase-4, and phase-5 examples plus regression tests for timing,
   scenes, rendering, resources, serialization, animation, physics, and tilemaps
 
 ## Requirements
@@ -104,7 +108,7 @@ specialized build trees isolated under `build/<preset>`.
 
 The sandbox and the focused `Lorenzo2DMinimalExample`,
 `Lorenzo2DAnimationExample`, `Lorenzo2DPhysicsExample`, and
-`Lorenzo2DPhase4Example` executables are
+`Lorenzo2DPhase4Example` and `Lorenzo2DPhase5Example` executables are
 written to `build/bin`. Disable them independently with
 `-DL2D_BUILD_SANDBOX=OFF` and `-DL2D_BUILD_EXAMPLES=OFF`.
 
@@ -123,7 +127,7 @@ Useful configuration options:
 | Option | Top-level default | Dependency-mode default | Purpose |
 | --- | --- | --- | --- |
 | `L2D_BUILD_SANDBOX` | `ON` | `OFF` | Build the interactive sandbox |
-| `L2D_BUILD_EXAMPLES` | `ON` | `OFF` | Build the focused minimal, animation, and physics examples |
+| `L2D_BUILD_EXAMPLES` | `ON` | `OFF` | Build the focused engine examples |
 | `L2D_BUILD_TESTS` | `ON` | `OFF` | Build and register regression tests |
 | `L2D_BUILD_BENCHMARKS` | `OFF` | `OFF` | Build the standalone performance benchmarks |
 | `L2D_USE_SYSTEM_SFML` | `OFF` | `OFF` | Use an installed SFML package |
@@ -235,7 +239,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.8 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.9 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -339,7 +343,7 @@ snapshots and instantiates asset-free prefabs into any `Scene`.
 `LevelDocument` contains an ordered list of those prefabs. `LevelSerializer`
 round-trips it through streams or `.l2dlevel` files and can instantiate the
 complete document while returning lifetime-aware object handles. New saves use
-deterministic JSON version 4; legacy text versions 1 through 3 remain readable while
+deterministic JSON version 5; JSON version 4 and legacy text versions 1 through 3 remain readable while
 unsupported versions, unresolved required assets/codecs, non-finite values,
 invalid component data, excessive object counts, malformed records, and
 trailing input are rejected without changing the destination document.
@@ -493,7 +497,7 @@ time.
 include/Lorenzo2D/  Public engine headers
 src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
-examples/           Focused minimal, animation, physics, and phase-4 applications
+examples/           Focused minimal, animation, physics, phase-4, and phase-5 applications
 assets/             Text levels and optional runtime assets
 tests/              Regression and consumer integration tests
 benchmarks/         Standalone physics and tile-map performance probes

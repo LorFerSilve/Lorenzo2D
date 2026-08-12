@@ -63,6 +63,8 @@ namespace l2d
         bool makeCircleGeometry(sf::Vector2f center, float radius, ColliderGeometry2D& geometry);
         bool makeBoxGeometry(sf::Vector2f center, sf::Vector2f size, float rotationDegrees,
                              ColliderGeometry2D& geometry);
+        bool makeCapsuleGeometry(sf::Vector2f center, float radius, float height,
+                                 float rotationDegrees, ColliderGeometry2D& geometry);
         void translateGeometry(ColliderGeometry2D& geometry, sf::Vector2f offset);
 
         bool aabbOverlaps(const Aabb2D& first, const Aabb2D& second);
@@ -78,6 +80,8 @@ namespace l2d
         bool castCircleAgainstGeometry(sf::Vector2f start, sf::Vector2f end, float radius,
                                        const ColliderGeometry2D& target, GeometryRayHit2D& hit);
         bool castPolygonAgainstGeometry(const ColliderGeometry2D& polygon, sf::Vector2f movement,
+                                        const ColliderGeometry2D& target, GeometryRayHit2D& hit);
+        bool castCapsuleAgainstGeometry(const ColliderGeometry2D& capsule, sf::Vector2f movement,
                                         const ColliderGeometry2D& target, GeometryRayHit2D& hit);
     }
 }

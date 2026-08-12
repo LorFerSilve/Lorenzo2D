@@ -816,6 +816,26 @@ namespace l2d::detail
         return true;
     }
 
+    bool makeCapsuleGeometry(sf::Vector2f center, float radius, float height, float rotationDegrees,
+                             ColliderGeometry2D& geometry)
+    {
+        if (!finite(center) || !std::isfinite(radius) || !std::isfinite(height) ||
+            !std::isfinite(rotationDegrees) || radius <= 0.f || height < 2.f * radius)
+            return false;
+
+        const double radians = static_cast<double>(rotationDegrees) * Pi / 180.0;
+        const sf::Vector2f axis = {-static_cast<float>(std::sin(radians)),
+                                   static_cast<float>(std::cos(radians))};
+        const sf::Vector2f halfSegment = multiply(axis, height * 0.5 - radius);
+
+        ColliderGeometry2D result;
+        result.type = GeometryType2D::Capsule;
+        result.capsule = {center - halfSegment, center + halfSegment, radius};
+        if (!computeBounds(result)) return false;
+        geometry = result;
+        return true;
+    }
+
     void translateGeometry(ColliderGeometry2D& geometry, sf::Vector2f offset)
     {
         if (!finite(offset)) return;
@@ -1012,5 +1032,18 @@ namespace l2d::detail
         if (!sweptPolygons(polygon.polygon, movement, approximation, hit)) return false;
         hit.point = supportPoint(target, hit.normal);
         return true;
+    }
+
+    bool castCapsuleAgainstGeometry(const ColliderGeometry2D& capsule, sf::Vector2f movement,
+                                    const ColliderGeometry2D& target, GeometryRayHit2D& hit)
+    {
+        hit = {};
+        if (capsule.type != GeometryType2D::Capsule || !finite(movement)) return false;
+
+        ColliderGeometry2D approximation;
+        approximation.type = GeometryType2D::Polygon;
+        approximation.polygon = circumscribedCapsule(capsule.capsule);
+        if (!computeBounds(approximation)) return false;
+        return castPolygonAgainstGeometry(approximation, movement, target, hit);
     }
 }

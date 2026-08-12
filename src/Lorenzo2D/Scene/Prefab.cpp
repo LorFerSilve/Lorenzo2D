@@ -3,6 +3,7 @@
 #include <Lorenzo2D/Animation/Animator.hpp>
 #include <Lorenzo2D/Assets/AssetManager.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
+#include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
@@ -149,6 +150,14 @@ namespace l2d
             return false;
         }
 
+        if (prefab.characterMotor &&
+            (!CharacterMotor2D::isValidConfig(prefab.characterMotor->config) ||
+             (prefab.rigidBody && prefab.rigidBody->bodyType != BodyType2D::Kinematic) ||
+             (!prefab.boxCollider && !prefab.circleCollider && !prefab.capsuleCollider)))
+        {
+            return false;
+        }
+
         if (prefab.boxCollider &&
             (!isFinite(prefab.boxCollider->size) || prefab.boxCollider->size.x < 0.f ||
              prefab.boxCollider->size.y < 0.f ||
@@ -253,6 +262,9 @@ namespace l2d
             applyColliderProperties(collider, prefab.convexPolygonCollider->properties);
         }
 
+        if (prefab.characterMotor)
+            object.addComponent<CharacterMotor2D>(prefab.characterMotor->config);
+
         object.setActive(prefab.active);
         return object;
     }
@@ -312,6 +324,8 @@ namespace l2d
                     prefab.convexPolygonCollider->vertices);
                 applyColliderProperties(collider, prefab.convexPolygonCollider->properties);
             }
+            if (prefab.characterMotor)
+                object.addComponent<CharacterMotor2D>(prefab.characterMotor->config);
 
             if (prefab.spriteRenderer)
             {

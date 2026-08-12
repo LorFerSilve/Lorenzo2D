@@ -27,7 +27,7 @@ namespace l2d
     {
       public:
         static constexpr std::uint32_t MinimumSupportedVersion = 1u;
-        static constexpr std::uint32_t CurrentVersion = 4u;
+        static constexpr std::uint32_t CurrentVersion = 5u;
         static constexpr std::size_t MaximumObjectCount = 100000u;
 
         static bool save(std::ostream& output, const LevelDocument& level);

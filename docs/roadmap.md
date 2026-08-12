@@ -20,7 +20,7 @@ available feature.
 | 2 | physics/world queries plus character-oriented collider foundations | Implemented |
 | 3 | render context, coordinate projections, and depth sorting | Implemented |
 | 4 | layered tile/content model and extensible level serialization | Implemented |
-| 5 | shared collision-aware character motor | Planned |
+| 5 | shared collision-aware character motor | Implemented |
 | 6 | top-down and grid-step controllers with a focused template | Planned |
 | 7 | platformer motor, slopes, one-way platforms, and moving platforms | Planned |
 | 8 | navigation grid, deterministic A*, path following, and local avoidance | Planned |

@@ -30,6 +30,7 @@ foreach(unexpected_target
     Lorenzo2DAnimationExample
     Lorenzo2DPhysicsExample
     Lorenzo2DPhase4Example
+    Lorenzo2DPhase5Example
     Lorenzo2DTests
     Lorenzo2DTimingAccountingTests
     Lorenzo2DPhysicsTests

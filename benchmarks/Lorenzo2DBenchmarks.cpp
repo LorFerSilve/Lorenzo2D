@@ -2,6 +2,7 @@
 #include <Lorenzo2D/Core/InputMap.hpp>
 #include <Lorenzo2D/ECS/Component.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
+#include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
@@ -291,6 +292,37 @@ namespace
                        });
     }
 
+    BenchmarkResult benchmarkCharacterMotorCorridor(std::size_t iterations)
+    {
+        l2d::Scene scene;
+        const auto addObstacle = [&scene](sf::Vector2f position, sf::Vector2f size)
+        {
+            l2d::GameObject& obstacle = scene.createGameObject("Motor obstacle");
+            obstacle.transform.setPosition(position);
+            obstacle.addComponent<l2d::BoxCollider2D>(size);
+        };
+        addObstacle({-100.f, 0.f}, {2.f, 100.f});
+        addObstacle({100.f, 0.f}, {2.f, 100.f});
+        addObstacle({0.f, 40.f}, {202.f, 2.f});
+
+        l2d::GameObject& character = scene.createGameObject("Benchmark character");
+        character.addComponent<l2d::BoxCollider2D>(sf::Vector2f{12.f, 20.f});
+        l2d::CharacterMotor2D& motor = character.addComponent<l2d::CharacterMotor2D>();
+        const l2d::PhysicsQueryContext2D queries(scene);
+        bool moveRight = true;
+
+        return measure(iterations,
+                       [&motor, &queries, &moveRight]()
+                       {
+                           const l2d::CharacterMoveResult2D result =
+                               motor.move(queries, {moveRight ? 250.f : -250.f, 8.f});
+                           moveRight = !moveRight;
+                           return result.contacts.size() +
+                                  (result.state.touchingWall ? std::size_t{1u} : 0u) +
+                                  (result.state.grounded ? std::size_t{1u} : 0u);
+                       });
+    }
+
     l2d::TileMap::Layout makeTileLayout()
     {
         constexpr std::size_t width = 256u;
@@ -373,6 +405,7 @@ namespace
         constexpr std::size_t physicsIterations = 30u;
         constexpr std::size_t physicsQuerySnapshotIterations = 50u;
         constexpr std::size_t physicsQueryBatchIterations = 100u;
+        constexpr std::size_t characterMotorIterations = 1000u;
         constexpr std::size_t tileMapBuildIterations = 5u;
         constexpr std::size_t tileMapCullingIterations = 1000u;
 
@@ -395,6 +428,8 @@ namespace
                            benchmarkPhysicsQuerySnapshot(physicsQuerySnapshotIterations)});
         entries.push_back({"physics query ray batch", physicsQueryBatchIterations,
                            benchmarkPhysicsQueryBatch(physicsQueryBatchIterations)});
+        entries.push_back({"character motor corridor", characterMotorIterations,
+                           benchmarkCharacterMotorCorridor(characterMotorIterations)});
         entries.push_back({"tile-map full build", tileMapBuildIterations,
                            benchmarkTileMapBuild(tileMapBuildIterations)});
         entries.push_back({"layered tile-map build", tileMapBuildIterations,

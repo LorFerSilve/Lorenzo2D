@@ -11,14 +11,14 @@ Lorenzo2D uses three support levels:
 
 `Planned` is not a support level and must never be presented as an available feature.
 
-## Current matrix for 0.8.0
+## Current matrix for 0.9.0
 
 | Development path | Level | Evidence | Missing before supported |
 | --- | --- | --- | --- |
 | General engine foundation | Experimental | fixed-step application, scenes/ECS, rendering, assets, serialization, physics, tests, and CMake package | stable 1.0 compatibility policy, complete game-facing services, external usage evidence |
-| Orthogonal platformer | Experimental | sandbox movement, gravity, grounded state, tile collisions, coins, enemies, and camera follow | character motor, slopes, one-way/moving platforms, focused template and tutorial |
-| Orthogonal top-down | Planned | configurable 2D actions, layered orthogonal tile data, tile/object properties, collision/trigger/navigation roles, Tiled import, sprites, animation, sensors, render layers and automatic world-Y sorting | top-down/grid controllers, runtime trigger dispatcher and focused template |
-| Point-and-click movement | Planned | unified pointer state, camera-aware world coordinates, deterministic ray/point/overlap/cast queries, and convex obstacles | navigation grid, A*, path following, avoidance and focused template |
+| Orthogonal platformer | Experimental | sandbox movement plus shared sweep-and-slide motor with slopes, grounded/wall/ceiling state, ground snap, overlap recovery, and moving-platform translation | platformer controller, gravity/jump policy, one-way platforms, step handling, focused template and tutorial |
+| Orthogonal top-down | Planned | configurable 2D actions, shared collision-aware motor, layered orthogonal tile data, tile/object properties, collision/trigger/navigation roles, Tiled import, sprites, animation, sensors, render layers and automatic world-Y sorting | top-down/grid controllers, runtime trigger dispatcher and focused template |
+| Point-and-click movement | Planned | unified pointer state, camera-aware world coordinates, deterministic queries, convex obstacles, and shared collision-aware motor | navigation grid, A*, path following, avoidance and focused template |
 | Isometric | Planned | projection/inverse-projection contract, projected-Y depth, sprite footpoints, isometric Tiled data import, projected tile submission, and orthographic camera primitives | production isometric projection, projected-bounds culling, navigation, placement grid and focused template |
 
 ## Platform matrix

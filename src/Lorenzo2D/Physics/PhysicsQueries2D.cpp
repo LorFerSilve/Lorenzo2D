@@ -200,6 +200,7 @@ namespace l2d
             hit.normal = {-manifold.normal.x, -manifold.normal.y};
             hit.point = detail::supportPoint(proxy.geometry, hit.normal);
             hit.distance = distance(center, hit.point);
+            hit.penetration = manifold.penetration;
             hit.sensor = proxy.sensor;
             hits.push_back(std::move(hit));
         }
@@ -227,6 +228,36 @@ namespace l2d
             hit.normal = {-manifold.normal.x, -manifold.normal.y};
             hit.point = detail::supportPoint(proxy.geometry, hit.normal);
             hit.distance = distance(center, hit.point);
+            hit.penetration = manifold.penetration;
+            hit.sensor = proxy.sensor;
+            hits.push_back(std::move(hit));
+        }
+        std::sort(hits.begin(), hits.end(), hitLess);
+        return hits;
+    }
+
+    std::vector<PhysicsQueryHit2D> PhysicsQueryContext2D::overlapCapsule(
+        sf::Vector2f center, float radius, float height, float rotationDegrees,
+        const PhysicsQueryFilter2D& filter) const
+    {
+        std::vector<PhysicsQueryHit2D> hits;
+        detail::ColliderGeometry2D query;
+        if (!detail::makeCapsuleGeometry(center, radius, height, rotationDegrees, query))
+            return hits;
+        for (const Impl::Proxy& proxy : m_impl->proxies)
+        {
+            if (!Impl::accepts(proxy, filter) ||
+                !detail::aabbOverlaps(query.bounds, proxy.geometry.bounds))
+                continue;
+            CollisionManifold2D manifold;
+            if (!detail::computeGeometryManifold(query, proxy.geometry, manifold)) continue;
+            PhysicsQueryHit2D hit;
+            hit.object = proxy.object;
+            hit.colliderId = proxy.colliderId;
+            hit.normal = {-manifold.normal.x, -manifold.normal.y};
+            hit.point = detail::supportPoint(proxy.geometry, hit.normal);
+            hit.distance = distance(center, hit.point);
+            hit.penetration = manifold.penetration;
             hit.sensor = proxy.sensor;
             hits.push_back(std::move(hit));
         }
@@ -258,6 +289,21 @@ namespace l2d
             start, end, filter,
             [&](const detail::ColliderGeometry2D& target, detail::GeometryRayHit2D& hit)
             { return detail::castPolygonAgainstGeometry(query, movement, target, hit); });
+    }
+
+    std::optional<PhysicsQueryHit2D> PhysicsQueryContext2D::castCapsule(
+        sf::Vector2f start, sf::Vector2f end, float radius, float height, float rotationDegrees,
+        const PhysicsQueryFilter2D& filter) const
+    {
+        detail::ColliderGeometry2D query;
+        if (!finite(start) || !finite(end) ||
+            !detail::makeCapsuleGeometry(start, radius, height, rotationDegrees, query))
+            return {};
+        const sf::Vector2f movement = end - start;
+        return m_impl->earliestCast(
+            start, end, filter,
+            [&](const detail::ColliderGeometry2D& target, detail::GeometryRayHit2D& hit)
+            { return detail::castCapsuleAgainstGeometry(query, movement, target, hit); });
     }
 
     PhysicsQueryContext2D PhysicsWorld2D::createQueryContext(Scene& scene) const
@@ -298,6 +344,14 @@ namespace l2d
         return PhysicsQueryContext2D(scene).overlapBox(center, size, rotationDegrees, filter);
     }
 
+    std::vector<PhysicsQueryHit2D> PhysicsWorld2D::overlapCapsule(
+        Scene& scene, sf::Vector2f center, float radius, float height, float rotationDegrees,
+        const PhysicsQueryFilter2D& filter) const
+    {
+        return PhysicsQueryContext2D(scene).overlapCapsule(center, radius, height, rotationDegrees,
+                                                           filter);
+    }
+
     std::optional<PhysicsQueryHit2D> PhysicsWorld2D::castCircle(
         Scene& scene, sf::Vector2f start, sf::Vector2f end, float radius,
         const PhysicsQueryFilter2D& filter) const
@@ -310,5 +364,13 @@ namespace l2d
         float rotationDegrees, const PhysicsQueryFilter2D& filter) const
     {
         return PhysicsQueryContext2D(scene).castBox(start, end, size, rotationDegrees, filter);
+    }
+
+    std::optional<PhysicsQueryHit2D> PhysicsWorld2D::castCapsule(
+        Scene& scene, sf::Vector2f start, sf::Vector2f end, float radius, float height,
+        float rotationDegrees, const PhysicsQueryFilter2D& filter) const
+    {
+        return PhysicsQueryContext2D(scene).castCapsule(start, end, radius, height, rotationDegrees,
+                                                        filter);
     }
 }

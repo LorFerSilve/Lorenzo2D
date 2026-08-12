@@ -2,6 +2,7 @@
 
 #include <Lorenzo2D/ECS/Transform.hpp>
 #include <Lorenzo2D/Assets/AssetId.hpp>
+#include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsMaterial2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
@@ -81,6 +82,11 @@ namespace l2d
         float gravityScale = 1.f;
     };
 
+    struct CharacterMotorPrefab
+    {
+        CharacterMotorConfig2D config;
+    };
+
     struct ColliderPrefabProperties
     {
         sf::Vector2f offset = {0.f, 0.f};
@@ -129,6 +135,7 @@ namespace l2d
         std::optional<SpriteRendererPrefab> spriteRenderer;
         std::optional<AnimatorPrefab> animator;
         std::optional<RigidBodyPrefab> rigidBody;
+        std::optional<CharacterMotorPrefab> characterMotor;
         std::optional<BoxColliderPrefab> boxCollider;
         std::optional<CircleColliderPrefab> circleCollider;
         std::optional<CapsuleColliderPrefab> capsuleCollider;

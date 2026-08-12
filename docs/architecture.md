@@ -13,6 +13,8 @@ current runtime first and the allowed dependency direction for upcoming modules.
   does not own scene objects.
 - `PhysicsQueryContext2D` owns an immutable collider snapshot and lifetime-aware object handles; it
   does not mutate or borrow the world's contact state.
+- `CharacterMotor2D` owns one character's collision-aware translation and transient contact/support
+  state. Gameplay controllers own intent and pass fixed-tick displacement into the motor.
 - Asset handles own immutable published resource generations independently from the registry that
   issued them.
 - `TileMapData` owns imported tile definitions, layers, objects, and properties without depending
@@ -39,6 +41,10 @@ One complete fixed tick uses:
 1. `onFixedPreSimulation`: controllers, AI, scene component updates, and command consumption;
 2. `onFixedSimulation`: physics integration and collision solving;
 3. `onFixedPostSimulation`: contact-driven gameplay, destruction, and cleanup.
+
+Moving platforms must be positioned before constructing a shared `PhysicsQueryContext2D` and
+calling character motors in pre-simulation. Query-driven characters may have no rigid body or a
+kinematic one; static and dynamic rigid bodies conflict with motor-owned translation.
 
 A close request can stop later frames but does not leave a partially completed fixed tick. New
 genre systems must document which fixed phase owns their mutation.
