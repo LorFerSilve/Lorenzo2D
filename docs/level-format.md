@@ -1,10 +1,10 @@
 # Lorenzo2D level format
 
-`LevelSerializer::save` writes deterministic JSON version 6. The serializer validates the entire
+`LevelSerializer::save` writes deterministic JSON version 7. The serializer validates the entire
 `LevelDocument` before writing, and `load` replaces its destination only after the complete input
 has parsed and passed validation. The object limit is 100,000.
 
-## Version 6 schema
+## Version 7 schema
 
 The root record contains `format`, `version`, `name`, and `objects`. Each object contains its base
 state plus a component array:
@@ -12,7 +12,7 @@ state plus a component array:
 ```json
 {
   "format": "Lorenzo2DLevel",
-  "version": 6,
+  "version": 7,
   "name": "Village",
   "objects": [
     {
@@ -53,7 +53,7 @@ state plus a component array:
 ```
 
 Built-in version-1 component records cover rectangle/circle renderers, sprite renderers, animators,
-rigid bodies, the shared character motor, top-down/grid-step controllers, and
+rigid bodies, the shared character motor, top-down/grid-step/platformer controllers, and
 box/circle/capsule/convex-polygon colliders. Sprite textures and animation clips
 are stable `AssetId` strings. Instantiate asset-backed documents with an `AssetManager`; a missing
 required asset rejects and rolls back the complete operation.
@@ -83,8 +83,8 @@ auto handles = l2d::LevelSerializer::instantiate(scene, level, assets, &codecs);
 ## Legacy migration
 
 `load` auto-detects the former line-oriented `LORENZO2D_LEVEL` format and continues to read
-versions 1, 2, and 3. JSON versions 4 and 5 are also readable. Saving an older document writes JSON
-version 6. The checked-in
+versions 1, 2, and 3. JSON versions 4 through 6 are also readable. Saving an older document writes JSON
+version 7. The checked-in
 `assets/levels/phase2-showcase.l2dlevel` remains a version-1 compatibility fixture.
 
 The old formats cannot encode sprite assets, animator state, repeated/custom components, angular

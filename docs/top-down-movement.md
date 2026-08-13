@@ -1,6 +1,6 @@
 # Top-down movement
 
-Lorenzo2D 0.10 adds two device-independent fixed-step controllers on top of
+Lorenzo2D 0.10 added two device-independent fixed-step controllers on top of
 `CharacterMotor2D`:
 
 - `TopDownController2D` for free eight-direction movement with analog magnitude, normalized
@@ -77,7 +77,7 @@ interpolation, so there is no second presentation position to synchronize.
 
 ## Prefabs, examples, and exclusions
 
-`TopDownControllerPrefab` and `GridStepControllerPrefab` round-trip through JSON level version 6.
+`TopDownControllerPrefab` and `GridStepControllerPrefab` round-trip through JSON level version 7.
 Prefab validation requires a `CharacterMotorPrefab` and rejects invalid controller fields before
 instantiation. JSON versions 4 and 5 remain readable.
 

@@ -33,6 +33,7 @@ namespace l2d
         float distance = 0.f;
         float fraction = 0.f;
         float penetration = 0.f;
+        std::uint32_t categoryBits = 0u;
         bool sensor = false;
     };
 
@@ -62,13 +63,22 @@ namespace l2d
         std::optional<PhysicsQueryHit2D> castCircle(sf::Vector2f start, sf::Vector2f end,
                                                     float radius,
                                                     const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> castCircleAll(sf::Vector2f start, sf::Vector2f end,
+                                                     float radius,
+                                                     const PhysicsQueryFilter2D& filter = {}) const;
         std::optional<PhysicsQueryHit2D> castBox(sf::Vector2f start, sf::Vector2f end,
                                                  sf::Vector2f size, float rotationDegrees = 0.f,
                                                  const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> castBoxAll(sf::Vector2f start, sf::Vector2f end,
+                                                  sf::Vector2f size, float rotationDegrees = 0.f,
+                                                  const PhysicsQueryFilter2D& filter = {}) const;
         std::optional<PhysicsQueryHit2D> castCapsule(sf::Vector2f start, sf::Vector2f end,
                                                      float radius, float height,
                                                      float rotationDegrees = 0.f,
                                                      const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> castCapsuleAll(
+            sf::Vector2f start, sf::Vector2f end, float radius, float height,
+            float rotationDegrees = 0.f, const PhysicsQueryFilter2D& filter = {}) const;
 
       private:
         struct Impl;

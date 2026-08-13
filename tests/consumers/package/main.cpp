@@ -5,6 +5,7 @@
 #include <Lorenzo2D/ECS/Transform.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
+#include <Lorenzo2D/Movement/PlatformerController2D.hpp>
 #include <Lorenzo2D/Movement/TopDownController2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
@@ -62,6 +63,9 @@ int main()
     const l2d::CharacterMotorConfig2D topDownMotorConfig = l2d::topDownCharacterMotorConfig2D();
     l2d::TopDownControllerConfig2D topDownConfig;
     l2d::GridStepControllerConfig2D gridConfig;
+    const l2d::CharacterMotorConfig2D platformerMotorConfig =
+        l2d::platformerCharacterMotorConfig2D(2u);
+    l2d::PlatformerControllerConfig2D platformerConfig;
     l2d::DistanceJoint2D joint(42u, 3.f);
     const l2d::OrthogonalProjection2D projection;
     const l2d::RenderContext2D renderContext{1.f, &projection, l2d::RenderPass2D::World};
@@ -75,7 +79,7 @@ int main()
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::S));
 
-    return l2d::VersionString == "0.10.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
+    return l2d::VersionString == "0.11.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
                    tileAdded && tileDataImported && tileColliders.empty() && codecRegistered &&
                    levelSaved && resourceRootAdded && inputConfigured &&
                    collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
@@ -84,6 +88,8 @@ int main()
                    l2d::CharacterMotor2D::isValidConfig(topDownMotorConfig) &&
                    l2d::TopDownController2D::isValidConfig(topDownConfig) &&
                    l2d::GridStepController2D::isValidConfig(gridConfig) &&
+                   l2d::CharacterMotor2D::isValidConfig(platformerMotorConfig) &&
+                   l2d::PlatformerController2D::isValidConfig(platformerConfig) &&
                    l2d::gridDirectionFromInput({1.f, 0.f}) == l2d::GridDirection2D::Right &&
                    joint.id() != l2d::InvalidJointId &&
                    renderContext.worldToRender(position) == position &&

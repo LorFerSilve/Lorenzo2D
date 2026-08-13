@@ -145,23 +145,23 @@ namespace l2d
             return {};
         }
 
-        std::optional<PhysicsQueryHit2D> cast(const PhysicsQueryContext2D& queries,
-                                              const MotorShape& shape, sf::Vector2f displacement,
-                                              const PhysicsQueryFilter2D& filter)
+        std::vector<PhysicsQueryHit2D> casts(const PhysicsQueryContext2D& queries,
+                                             const MotorShape& shape, sf::Vector2f displacement,
+                                             const PhysicsQueryFilter2D& filter)
         {
             const sf::Vector2f end = shape.center + displacement;
             switch (shape.kind)
             {
             case MotorShapeKind::Circle:
-                return queries.castCircle(shape.center, end, shape.radius, filter);
+                return queries.castCircleAll(shape.center, end, shape.radius, filter);
             case MotorShapeKind::Box:
-                return queries.castBox(shape.center, end, shape.size, shape.rotationDegrees,
-                                       filter);
+                return queries.castBoxAll(shape.center, end, shape.size, shape.rotationDegrees,
+                                          filter);
             case MotorShapeKind::Capsule:
-                return queries.castCapsule(shape.center, end, shape.radius, shape.height,
-                                           shape.rotationDegrees, filter);
+                return queries.castCapsuleAll(shape.center, end, shape.radius, shape.height,
+                                              shape.rotationDegrees, filter);
             }
-            return std::nullopt;
+            return {};
         }
 
         CharacterContactKind2D contactKind(sf::Vector2f normal, sf::Vector2f up,
@@ -175,7 +175,7 @@ namespace l2d
 
         void recordContact(CharacterMoveResult2D& result, const PhysicsQueryHit2D& hit,
                            sf::Vector2f normal, CharacterContactKind2D kind, bool recovery,
-                           bool probe)
+                           bool probe, bool oneWayPlatform)
         {
             CharacterMotorContact2D contact;
             contact.object = hit.object;
@@ -187,11 +187,13 @@ namespace l2d
             contact.kind = kind;
             contact.recoveredOverlap = recovery;
             contact.groundProbe = probe;
+            contact.oneWayPlatform = oneWayPlatform;
             result.contacts.push_back(std::move(contact));
         }
 
         void applyContactState(CharacterMotorState2D& state, CharacterContactKind2D kind,
-                               sf::Vector2f normal, const PhysicsQueryHit2D& hit, sf::Vector2f up)
+                               sf::Vector2f normal, const PhysicsQueryHit2D& hit, sf::Vector2f up,
+                               bool oneWayPlatform)
         {
             if (kind == CharacterContactKind2D::Ground)
             {
@@ -202,6 +204,7 @@ namespace l2d
                     state.groundNormal = normal;
                     state.support = hit.object;
                     state.supportColliderId = hit.colliderId;
+                    state.onOneWayPlatform = oneWayPlatform;
                 }
                 state.grounded = true;
             }
@@ -282,6 +285,13 @@ namespace l2d
     CharacterMoveResult2D CharacterMotor2D::move(const PhysicsQueryContext2D& queries,
                                                  sf::Vector2f displacement)
     {
+        return move(queries, displacement, false);
+    }
+
+    CharacterMoveResult2D CharacterMotor2D::move(const PhysicsQueryContext2D& queries,
+                                                 sf::Vector2f displacement,
+                                                 bool ignoreOneWayPlatforms)
+    {
         CharacterMoveResult2D result;
         result.requestedDisplacement = displacement;
 
@@ -305,6 +315,7 @@ namespace l2d
         filter.ignoredObject = character->id();
 
         const GameObjectHandle previousSupport = m_state.support;
+        const bool previousSupportWasOneWay = m_state.onOneWayPlatform;
         const bool hadSupportPosition = m_hasSupportPosition;
         const sf::Vector2f previousSupportPosition = m_supportPosition;
         m_state = {};
@@ -325,8 +336,22 @@ namespace l2d
                     remainingLength <= m_config.minimumMoveDistance)
                     break;
 
-                const std::optional<PhysicsQueryHit2D> hit =
-                    cast(queries, *shape, remaining, filter);
+                const std::vector<PhysicsQueryHit2D> castHits =
+                    casts(queries, *shape, remaining, filter);
+                const PhysicsQueryHit2D* hit = nullptr;
+                for (const PhysicsQueryHit2D& candidate : castHits)
+                {
+                    const bool oneWay =
+                        (candidate.categoryBits & m_config.oneWayPlatformCategoryMask) != 0u;
+                    const std::optional<sf::Vector2f> candidateNormal =
+                        normalized(candidate.normal);
+                    if (oneWay && (ignoreOneWayPlatforms || !candidateNormal ||
+                                   dot(remaining, m_config.upDirection) >= 0.0 ||
+                                   dot(*candidateNormal, m_config.upDirection) < groundedThreshold))
+                        continue;
+                    hit = &candidate;
+                    break;
+                }
                 if (!hit)
                 {
                     const sf::Vector2f applied = moveOwner(*character, remaining);
@@ -356,8 +381,9 @@ namespace l2d
 
                 const CharacterContactKind2D kind =
                     contactKind(*hitNormal, m_config.upDirection, groundedThreshold);
-                recordContact(result, *hit, *hitNormal, kind, false, false);
-                applyContactState(m_state, kind, *hitNormal, *hit, m_config.upDirection);
+                const bool oneWay = (hit->categoryBits & m_config.oneWayPlatformCategoryMask) != 0u;
+                recordContact(result, *hit, *hitNormal, kind, false, false, oneWay);
+                applyContactState(m_state, kind, *hitNormal, *hit, m_config.upDirection, oneWay);
 
                 const double inward = dot(remaining, *hitNormal);
                 if (inward < 0.0) remaining -= *hitNormal * static_cast<float>(inward);
@@ -369,7 +395,8 @@ namespace l2d
             return remaining;
         };
 
-        if (m_config.inheritPlatformTranslation && hadSupportPosition)
+        if (m_config.inheritPlatformTranslation && hadSupportPosition &&
+            !(ignoreOneWayPlatforms && previousSupportWasOneWay))
         {
             if (GameObject* support = previousSupport.get())
             {
@@ -390,6 +417,7 @@ namespace l2d
             const PhysicsQueryHit2D* deepest = nullptr;
             for (const PhysicsQueryHit2D& hit : hits)
             {
+                if ((hit.categoryBits & m_config.oneWayPlatformCategoryMask) != 0u) continue;
                 if (!std::isfinite(hit.penetration) || hit.penetration <= 0.f ||
                     !normalized(hit.normal))
                     continue;
@@ -409,8 +437,8 @@ namespace l2d
 
             const CharacterContactKind2D kind =
                 contactKind(normal, m_config.upDirection, groundedThreshold);
-            recordContact(result, *deepest, normal, kind, true, false);
-            applyContactState(m_state, kind, normal, *deepest, m_config.upDirection);
+            recordContact(result, *deepest, normal, kind, true, false, false);
+            applyContactState(m_state, kind, normal, *deepest, m_config.upDirection, false);
         }
 
         const sf::Vector2f remaining = moveAndSlide(displacement, result.movementDisplacement);
@@ -420,8 +448,22 @@ namespace l2d
         {
             const sf::Vector2f down = -m_config.upDirection;
             const float probeDistance = m_config.skinWidth + m_config.groundProbeDistance;
-            const std::optional<PhysicsQueryHit2D> groundHit =
-                cast(queries, *shape, down * probeDistance, filter);
+            const std::vector<PhysicsQueryHit2D> probeHits =
+                casts(queries, *shape, down * probeDistance, filter);
+            const PhysicsQueryHit2D* groundHit = nullptr;
+            for (const PhysicsQueryHit2D& candidate : probeHits)
+            {
+                const bool oneWay =
+                    (candidate.categoryBits & m_config.oneWayPlatformCategoryMask) != 0u;
+                if (oneWay && ignoreOneWayPlatforms) continue;
+                const std::optional<sf::Vector2f> candidateNormal = normalized(candidate.normal);
+                if (candidateNormal &&
+                    dot(*candidateNormal, m_config.upDirection) >= groundedThreshold)
+                {
+                    groundHit = &candidate;
+                    break;
+                }
+            }
             if (groundHit)
             {
                 const std::optional<sf::Vector2f> normal = normalized(groundHit->normal);
@@ -436,8 +478,11 @@ namespace l2d
                         result.snapDisplacement += applied;
                     }
                     const CharacterContactKind2D kind = CharacterContactKind2D::Ground;
-                    recordContact(result, *groundHit, *normal, kind, false, true);
-                    applyContactState(m_state, kind, *normal, *groundHit, m_config.upDirection);
+                    const bool oneWay =
+                        (groundHit->categoryBits & m_config.oneWayPlatformCategoryMask) != 0u;
+                    recordContact(result, *groundHit, *normal, kind, false, true, oneWay);
+                    applyContactState(m_state, kind, *normal, *groundHit, m_config.upDirection,
+                                      oneWay);
                 }
             }
         }
@@ -460,6 +505,13 @@ namespace l2d
     CharacterMoveResult2D CharacterMotor2D::testMove(const PhysicsQueryContext2D& queries,
                                                      sf::Vector2f displacement)
     {
+        return testMove(queries, displacement, false);
+    }
+
+    CharacterMoveResult2D CharacterMotor2D::testMove(const PhysicsQueryContext2D& queries,
+                                                     sf::Vector2f displacement,
+                                                     bool ignoreOneWayPlatforms)
+    {
         GameObject* character = owner();
         if (character == nullptr) return {};
 
@@ -468,11 +520,70 @@ namespace l2d
         const sf::Vector2f supportPosition = m_supportPosition;
         const bool hasSupportPosition = m_hasSupportPosition;
 
-        CharacterMoveResult2D result = move(queries, displacement);
+        CharacterMoveResult2D result = move(queries, displacement, ignoreOneWayPlatforms);
         character->transform.setPosition(position);
         m_state = state;
         m_supportPosition = supportPosition;
         m_hasSupportPosition = hasSupportPosition;
+        return result;
+    }
+
+    CharacterStepResult2D CharacterMotor2D::tryStep(const PhysicsQueryContext2D& queries,
+                                                    sf::Vector2f lateralDisplacement,
+                                                    float stepHeight, float stepDownDistance,
+                                                    bool ignoreOneWayPlatforms)
+    {
+        CharacterStepResult2D result;
+        result.requestedLateralDisplacement = lateralDisplacement;
+
+        GameObject* character = owner();
+        if (character == nullptr || !finite(lateralDisplacement) || !std::isfinite(stepHeight) ||
+            stepHeight <= 0.f || !std::isfinite(stepDownDistance) || stepDownDistance < 0.f ||
+            length(lateralDisplacement) <= m_config.minimumMoveDistance)
+            return result;
+
+        const sf::Vector2f position = character->transform.position();
+        const CharacterMotorState2D state = m_state;
+        const sf::Vector2f supportPosition = m_supportPosition;
+        const bool hasSupportPosition = m_hasSupportPosition;
+
+        const auto restore = [&]
+        {
+            character->transform.setPosition(position);
+            m_state = state;
+            m_supportPosition = supportPosition;
+            m_hasSupportPosition = hasSupportPosition;
+        };
+
+        result.rise = move(queries, m_config.upDirection * stepHeight, true);
+        const float movementTolerance = std::max(m_config.skinWidth, m_config.minimumMoveDistance);
+        if (!result.rise.succeeded || length(result.rise.movementDisplacement -
+                                             m_config.upDirection * stepHeight) > movementTolerance)
+        {
+            restore();
+            return result;
+        }
+
+        result.traverse = move(queries, lateralDisplacement, ignoreOneWayPlatforms);
+        if (!result.traverse.succeeded ||
+            length(result.traverse.movementDisplacement - lateralDisplacement) > movementTolerance)
+        {
+            restore();
+            return result;
+        }
+
+        const sf::Vector2f down = -m_config.upDirection;
+        result.settle =
+            move(queries, down * (stepHeight + stepDownDistance), ignoreOneWayPlatforms);
+        if (!result.settle.succeeded || !result.settle.state.grounded)
+        {
+            restore();
+            return result;
+        }
+
+        result.succeeded = true;
+        result.displacement = character->transform.position() - position;
+        result.state = m_state;
         return result;
     }
 

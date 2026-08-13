@@ -205,6 +205,7 @@ jobs:
           test -f install/include/Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp
           test -f install/include/Lorenzo2D/Physics/PhysicsQueries2D.hpp
           test -f install/include/Lorenzo2D/Movement/CharacterMotor2D.hpp
+          test -f install/include/Lorenzo2D/Movement/PlatformerController2D.hpp
           test -f install/include/Lorenzo2D/Animation/Animator.hpp
           test -f install/include/Lorenzo2D/Scene/LevelSerializer.hpp
           test -f install/include/Lorenzo2D/Scene/ComponentCodecRegistry.hpp
@@ -235,6 +236,15 @@ jobs:
           ctest --test-dir build-package-consumer \
             --output-on-failure \
             --no-tests=error
+
+      - name: Configure and build platformer starter
+        run: |
+          cmake \
+            -S templates/platformer \
+            -B build-platformer-template \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
+          cmake --build build-platformer-template --parallel
 
   quality:
     name: Clang formatting and static analysis

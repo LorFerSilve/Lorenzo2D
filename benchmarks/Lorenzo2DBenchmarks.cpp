@@ -4,6 +4,7 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
+#include <Lorenzo2D/Movement/PlatformerController2D.hpp>
 #include <Lorenzo2D/Movement/TopDownController2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
@@ -359,6 +360,46 @@ namespace
                        });
     }
 
+    BenchmarkResult benchmarkPlatformerControllers(std::size_t iterations)
+    {
+        constexpr std::size_t characterCount = 128u;
+        l2d::Scene scene;
+        l2d::GameObject& floor = scene.createGameObject("Platformer benchmark floor");
+        floor.transform.setPosition({1536.f, 100.f});
+        floor.addComponent<l2d::BoxCollider2D>(sf::Vector2f{4096.f, 8.f});
+
+        std::vector<l2d::PlatformerController2D*> controllers;
+        controllers.reserve(characterCount);
+        for (std::size_t index = 0u; index < characterCount; ++index)
+        {
+            l2d::GameObject& character = scene.createGameObject("Platformer benchmark character");
+            character.transform.setPosition({static_cast<float>(index) * 24.f, 70.f});
+            character.addComponent<l2d::BoxCollider2D>(sf::Vector2f{12.f, 20.f});
+            character.addComponent<l2d::CharacterMotor2D>(l2d::platformerCharacterMotorConfig2D());
+            controllers.push_back(&character.addComponent<l2d::PlatformerController2D>());
+        }
+        const l2d::PhysicsQueryContext2D queries(scene);
+        std::size_t tick = 0u;
+
+        return measure(iterations,
+                       [&controllers, &queries, &tick]()
+                       {
+                           std::size_t checksum = 0u;
+                           for (std::size_t index = 0u; index < controllers.size(); ++index)
+                           {
+                               l2d::PlatformerInput2D input;
+                               input.horizontal = index % 2u == 0u ? 1.f : -1.f;
+                               input.jumpPressed = tick % 120u == 0u;
+                               const l2d::PlatformerMoveResult2D result =
+                                   controllers[index]->move(queries, input, 1.f / 60.f);
+                               checksum += result.succeeded ? 1u : 0u;
+                               checksum += result.motorResult.contacts.size();
+                           }
+                           ++tick;
+                           return checksum;
+                       });
+    }
+
     l2d::TileMap::Layout makeTileLayout()
     {
         constexpr std::size_t width = 256u;
@@ -443,6 +484,7 @@ namespace
         constexpr std::size_t physicsQueryBatchIterations = 100u;
         constexpr std::size_t characterMotorIterations = 1000u;
         constexpr std::size_t topDownControllerIterations = 200u;
+        constexpr std::size_t platformerControllerIterations = 200u;
         constexpr std::size_t tileMapBuildIterations = 5u;
         constexpr std::size_t tileMapCullingIterations = 1000u;
 
@@ -469,6 +511,8 @@ namespace
                            benchmarkCharacterMotorCorridor(characterMotorIterations)});
         entries.push_back({"top-down controller batch", topDownControllerIterations,
                            benchmarkTopDownControllers(topDownControllerIterations)});
+        entries.push_back({"platformer controller batch", platformerControllerIterations,
+                           benchmarkPlatformerControllers(platformerControllerIterations)});
         entries.push_back({"tile-map full build", tileMapBuildIterations,
                            benchmarkTileMapBuild(tileMapBuildIterations)});
         entries.push_back({"layered tile-map build", tileMapBuildIterations,

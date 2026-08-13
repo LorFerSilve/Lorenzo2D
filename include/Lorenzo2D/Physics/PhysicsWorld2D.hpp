@@ -116,13 +116,23 @@ namespace l2d
         std::optional<PhysicsQueryHit2D> castCircle(Scene& scene, sf::Vector2f start,
                                                     sf::Vector2f end, float radius,
                                                     const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> castCircleAll(Scene& scene, sf::Vector2f start,
+                                                     sf::Vector2f end, float radius,
+                                                     const PhysicsQueryFilter2D& filter = {}) const;
         std::optional<PhysicsQueryHit2D> castBox(Scene& scene, sf::Vector2f start, sf::Vector2f end,
                                                  sf::Vector2f size, float rotationDegrees = 0.f,
                                                  const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> castBoxAll(Scene& scene, sf::Vector2f start,
+                                                  sf::Vector2f end, sf::Vector2f size,
+                                                  float rotationDegrees = 0.f,
+                                                  const PhysicsQueryFilter2D& filter = {}) const;
         std::optional<PhysicsQueryHit2D> castCapsule(Scene& scene, sf::Vector2f start,
                                                      sf::Vector2f end, float radius, float height,
                                                      float rotationDegrees = 0.f,
                                                      const PhysicsQueryFilter2D& filter = {}) const;
+        std::vector<PhysicsQueryHit2D> castCapsuleAll(
+            Scene& scene, sf::Vector2f start, sf::Vector2f end, float radius, float height,
+            float rotationDegrees = 0.f, const PhysicsQueryFilter2D& filter = {}) const;
 
         void reset();
         void reset(Scene& scene);

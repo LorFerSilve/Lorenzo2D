@@ -136,6 +136,7 @@ namespace l2d
                       {"upDirection", vectorJson(motor.upDirection)},
                       {"categoryMask", motor.queryFilter.categoryMask},
                       {"includeSensors", motor.queryFilter.includeSensors},
+                      {"oneWayPlatformCategoryMask", motor.oneWayPlatformCategoryMask},
                       {"snapToGround", motor.snapToGround},
                       {"inheritPlatformTranslation", motor.inheritPlatformTranslation}});
             }
@@ -162,6 +163,28 @@ namespace l2d
                       {"maximumDeltaTime", controller.maximumDeltaTime},
                       {"axisPriority", static_cast<std::uint8_t>(controller.axisPriority)},
                       {"bufferTurns", controller.bufferTurns}});
+            }
+            if (prefab.platformerController)
+            {
+                const PlatformerControllerConfig2D& controller =
+                    prefab.platformerController->config;
+                push("PlatformerController2D", 1u,
+                     {{"maximumRunSpeed", controller.maximumRunSpeed},
+                      {"groundAcceleration", controller.groundAcceleration},
+                      {"groundDeceleration", controller.groundDeceleration},
+                      {"airAcceleration", controller.airAcceleration},
+                      {"airDeceleration", controller.airDeceleration},
+                      {"gravity", controller.gravity},
+                      {"maximumFallSpeed", controller.maximumFallSpeed},
+                      {"jumpSpeed", controller.jumpSpeed},
+                      {"jumpCutMultiplier", controller.jumpCutMultiplier},
+                      {"coyoteTime", controller.coyoteTime},
+                      {"jumpBufferTime", controller.jumpBufferTime},
+                      {"dropThroughTime", controller.dropThroughTime},
+                      {"stepHeight", controller.stepHeight},
+                      {"stepDownDistance", controller.stepDownDistance},
+                      {"inputDeadzone", controller.inputDeadzone},
+                      {"maximumDeltaTime", controller.maximumDeltaTime}});
             }
 
             const auto colliderProperties = [](const ColliderPrefabProperties& properties)
@@ -343,6 +366,8 @@ namespace l2d
                     data.value("categoryMask", motor.queryFilter.categoryMask);
                 motor.queryFilter.includeSensors =
                     data.value("includeSensors", motor.queryFilter.includeSensors);
+                motor.oneWayPlatformCategoryMask =
+                    data.value("oneWayPlatformCategoryMask", motor.oneWayPlatformCategoryMask);
                 motor.snapToGround = data.value("snapToGround", motor.snapToGround);
                 motor.inheritPlatformTranslation =
                     data.value("inheritPlatformTranslation", motor.inheritPlatformTranslation);
@@ -389,6 +414,40 @@ namespace l2d
                 controller.bufferTurns = data.value("bufferTurns", controller.bufferTurns);
                 if (!GridStepController2D::isValidConfig(controller)) return false;
                 prefab.gridStepController = std::move(value);
+            }
+            else if (type == "PlatformerController2D")
+            {
+                if (prefab.platformerController) return false;
+                PlatformerControllerPrefab value;
+                PlatformerControllerConfig2D& controller = value.config;
+                controller.maximumRunSpeed =
+                    data.value("maximumRunSpeed", controller.maximumRunSpeed);
+                controller.groundAcceleration =
+                    data.value("groundAcceleration", controller.groundAcceleration);
+                controller.groundDeceleration =
+                    data.value("groundDeceleration", controller.groundDeceleration);
+                controller.airAcceleration =
+                    data.value("airAcceleration", controller.airAcceleration);
+                controller.airDeceleration =
+                    data.value("airDeceleration", controller.airDeceleration);
+                controller.gravity = data.value("gravity", controller.gravity);
+                controller.maximumFallSpeed =
+                    data.value("maximumFallSpeed", controller.maximumFallSpeed);
+                controller.jumpSpeed = data.value("jumpSpeed", controller.jumpSpeed);
+                controller.jumpCutMultiplier =
+                    data.value("jumpCutMultiplier", controller.jumpCutMultiplier);
+                controller.coyoteTime = data.value("coyoteTime", controller.coyoteTime);
+                controller.jumpBufferTime = data.value("jumpBufferTime", controller.jumpBufferTime);
+                controller.dropThroughTime =
+                    data.value("dropThroughTime", controller.dropThroughTime);
+                controller.stepHeight = data.value("stepHeight", controller.stepHeight);
+                controller.stepDownDistance =
+                    data.value("stepDownDistance", controller.stepDownDistance);
+                controller.inputDeadzone = data.value("inputDeadzone", controller.inputDeadzone);
+                controller.maximumDeltaTime =
+                    data.value("maximumDeltaTime", controller.maximumDeltaTime);
+                if (!PlatformerController2D::isValidConfig(controller)) return false;
+                prefab.platformerController = std::move(value);
             }
             else if (type == "BoxCollider2D")
             {

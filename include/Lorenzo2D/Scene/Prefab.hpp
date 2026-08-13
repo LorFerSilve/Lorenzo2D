@@ -4,6 +4,7 @@
 #include <Lorenzo2D/Assets/AssetId.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
+#include <Lorenzo2D/Movement/PlatformerController2D.hpp>
 #include <Lorenzo2D/Movement/TopDownController2D.hpp>
 #include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsMaterial2D.hpp>
@@ -99,6 +100,11 @@ namespace l2d
         GridStepControllerConfig2D config;
     };
 
+    struct PlatformerControllerPrefab
+    {
+        PlatformerControllerConfig2D config;
+    };
+
     struct ColliderPrefabProperties
     {
         sf::Vector2f offset = {0.f, 0.f};
@@ -150,6 +156,7 @@ namespace l2d
         std::optional<CharacterMotorPrefab> characterMotor;
         std::optional<TopDownControllerPrefab> topDownController;
         std::optional<GridStepControllerPrefab> gridStepController;
+        std::optional<PlatformerControllerPrefab> platformerController;
         std::optional<BoxColliderPrefab> boxCollider;
         std::optional<CircleColliderPrefab> circleCollider;
         std::optional<CapsuleColliderPrefab> capsuleCollider;

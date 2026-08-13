@@ -1,6 +1,6 @@
 # Shared character motor
 
-Lorenzo2D 0.9 introduces `CharacterMotor2D`, a fixed-step, query-driven movement component shared
+Lorenzo2D 0.11 provides `CharacterMotor2D`, a fixed-step, query-driven movement component shared
 by later top-down, grid, platformer, and path-following controllers. It owns collision-aware
 translation, not player intent, gravity, jump rules, pathfinding, or animation.
 
@@ -53,9 +53,15 @@ moving the character.
 
 `upDirection` defaults to world up `(0, -1)`. A contact is ground when its normal lies within
 `maximumSlopeAngleDegrees` of up, ceiling when it lies within that angle of down, and wall
-otherwise. Natural sweep-and-slide follows walkable slope tangents. Phase 5 does not add jump,
-gravity, step climbing, drop-through/one-way platforms, or platform rotation; genre controllers
-and the platformer-specific extensions remain later roadmap work.
+otherwise. Natural sweep-and-slide follows walkable slope tangents. Jump and gravity policy live in
+`PlatformerController2D`. `tryStep()` performs a transactional rise/traverse/settle sequence and
+restores the transform and transient support state when any stage fails.
+
+One-way platforms use an ordinary reserved collider category bit. Configure that bit through
+`oneWayPlatformCategoryMask`; the motor ignores matching colliders while travelling up or sideways,
+but accepts their walkable top face while descending. The explicit `ignoreOneWayPlatforms` overloads
+of `move()` and `testMove()` support timed drop-through. Contacts and motor state report whether the
+selected ground support is one-way.
 
 Ground probing runs only when the requested displacement is not upward. With `snapToGround`, a
 walkable surface within `groundProbeDistance` is approached until `skinWidth` remains. The state
@@ -72,6 +78,6 @@ tunnelling. Circle and box motor sweeps use their native query shapes.
 
 ## Prefabs and levels
 
-`CharacterMotorPrefab` stores the full configuration. JSON level version 6 writes a built-in
-`CharacterMotor2D` component record; versions 4 and 5 JSON and legacy text versions 1 through 3 remain
+`CharacterMotorPrefab` stores the full configuration. JSON level version 7 writes a built-in
+`CharacterMotor2D` component record; versions 4 through 6 JSON and legacy text versions 1 through 3 remain
 readable. Runtime contact state and the selected runtime collider ID are deliberately not saved.

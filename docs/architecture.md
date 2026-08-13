@@ -18,6 +18,8 @@ current runtime first and the allowed dependency direction for upcoming modules.
 - `TopDownController2D` owns free-movement velocity and facing; `GridStepController2D` owns logical
   cell/step state. Both consume device-independent intent and delegate collision translation to the
   motor.
+- `PlatformerController2D` owns side-view velocity, jump/drop timers, facing, and movement events;
+  slopes, step attempts, one-way filtering, and platform translation remain motor/query work.
 - Asset handles own immutable published resource generations independently from the registry that
   issued them.
 - `TileMapData` owns imported tile definitions, layers, objects, and properties without depending

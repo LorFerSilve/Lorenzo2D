@@ -5,6 +5,7 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
+#include <Lorenzo2D/Movement/PlatformerController2D.hpp>
 #include <Lorenzo2D/Movement/TopDownController2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
@@ -160,13 +161,18 @@ namespace l2d
             return false;
         }
 
-        if ((prefab.topDownController || prefab.gridStepController) && !prefab.characterMotor)
+        if ((prefab.topDownController || prefab.gridStepController ||
+             prefab.platformerController) &&
+            !prefab.characterMotor)
             return false;
         if (prefab.topDownController &&
             !TopDownController2D::isValidConfig(prefab.topDownController->config))
             return false;
         if (prefab.gridStepController &&
             !GridStepController2D::isValidConfig(prefab.gridStepController->config))
+            return false;
+        if (prefab.platformerController &&
+            !PlatformerController2D::isValidConfig(prefab.platformerController->config))
             return false;
 
         if (prefab.boxCollider &&
@@ -279,6 +285,8 @@ namespace l2d
             object.addComponent<TopDownController2D>(prefab.topDownController->config);
         if (prefab.gridStepController)
             object.addComponent<GridStepController2D>(prefab.gridStepController->config);
+        if (prefab.platformerController)
+            object.addComponent<PlatformerController2D>(prefab.platformerController->config);
 
         object.setActive(prefab.active);
         return object;
@@ -345,6 +353,8 @@ namespace l2d
                 object.addComponent<TopDownController2D>(prefab.topDownController->config);
             if (prefab.gridStepController)
                 object.addComponent<GridStepController2D>(prefab.gridStepController->config);
+            if (prefab.platformerController)
+                object.addComponent<PlatformerController2D>(prefab.platformerController->config);
 
             if (prefab.spriteRenderer)
             {

@@ -159,6 +159,34 @@ namespace
         L2D_REQUIRE_APPROX(capsuleHit->normal, sf::Vector2f(-1.f, 0.f), 0.02f);
     }
 
+    void testAllShapeCastsAreSortedAndExposeCategories()
+    {
+        l2d::Scene scene;
+        l2d::BoxCollider2D& near = addBox(scene, "near", {0.f, 0.f}, {2.f, 40.f});
+        near.setFilter({4u, 0xffffffffu});
+        l2d::BoxCollider2D& far = addBox(scene, "far", {20.f, 0.f}, {2.f, 40.f});
+        far.setFilter({8u, 0xffffffffu});
+        const l2d::PhysicsQueryContext2D queries(scene);
+
+        const auto circleHits = queries.castCircleAll({-20.f, 0.f}, {40.f, 0.f}, 2.f);
+        const auto boxHits = queries.castBoxAll({-20.f, 0.f}, {40.f, 0.f}, {4.f, 4.f});
+        const auto capsuleHits = queries.castCapsuleAll({-20.f, 0.f}, {40.f, 0.f}, 2.f, 8.f);
+        L2D_REQUIRE_EQUAL(circleHits.size(), 2u);
+        L2D_REQUIRE_EQUAL(boxHits.size(), 2u);
+        L2D_REQUIRE_EQUAL(capsuleHits.size(), 2u);
+        L2D_REQUIRE_EQUAL(circleHits[0].colliderId, near.id());
+        L2D_REQUIRE_EQUAL(circleHits[1].colliderId, far.id());
+        L2D_REQUIRE_EQUAL(circleHits[0].categoryBits, 4u);
+        L2D_REQUIRE_EQUAL(circleHits[1].categoryBits, 8u);
+        L2D_REQUIRE(boxHits[0].distance < boxHits[1].distance);
+        L2D_REQUIRE(capsuleHits[0].distance < capsuleHits[1].distance);
+
+        const auto worldHits = l2d::PhysicsWorld2D(zeroGravityConfig())
+                                   .castCircleAll(scene, {-20.f, 0.f}, {40.f, 0.f}, 2.f);
+        L2D_REQUIRE_EQUAL(worldHits.size(), circleHits.size());
+        L2D_REQUIRE_EQUAL(worldHits.front().categoryBits, 4u);
+    }
+
     void testQuerySnapshotsAndContactStateStayIndependent()
     {
         l2d::Scene scene;
@@ -262,6 +290,8 @@ int main()
             testPointAndOverlapQueriesSupportAllShapes, failures);
     runTest("shape casts cannot tunnel through thin geometry",
             testShapeCastsCannotTunnelThroughThinGeometry, failures);
+    runTest("all shape casts are sorted and expose categories",
+            testAllShapeCastsAreSortedAndExposeCategories, failures);
     runTest("query snapshots do not mutate contact state",
             testQuerySnapshotsAndContactStateStayIndependent, failures);
     runTest("new collider manifolds and polygon validation",

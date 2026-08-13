@@ -193,6 +193,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DPlatformerControllerTests
+    SOURCE Lorenzo2DPlatformerControllerTests.cpp
+    LABELS headless movement platformer physics queries determinism
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
     Lorenzo2DPhysicsTilemapTests
     SOURCE physics/Lorenzo2DPhysicsTilemapTests.cpp
     LABELS headless physics tilemap

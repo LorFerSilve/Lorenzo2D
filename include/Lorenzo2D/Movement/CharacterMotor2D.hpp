@@ -31,6 +31,7 @@ namespace l2d
         std::size_t maximumRecoveryIterations = 4u;
         sf::Vector2f upDirection = {0.f, -1.f};
         PhysicsQueryFilter2D queryFilter;
+        std::uint32_t oneWayPlatformCategoryMask = 0u;
         bool snapToGround = true;
         bool inheritPlatformTranslation = true;
     };
@@ -46,6 +47,7 @@ namespace l2d
         CharacterContactKind2D kind = CharacterContactKind2D::Wall;
         bool recoveredOverlap = false;
         bool groundProbe = false;
+        bool oneWayPlatform = false;
     };
 
     struct CharacterMotorState2D
@@ -53,6 +55,7 @@ namespace l2d
         bool grounded = false;
         bool touchingWall = false;
         bool touchingCeiling = false;
+        bool onOneWayPlatform = false;
         sf::Vector2f groundNormal = {0.f, 0.f};
         GameObjectHandle support;
         ColliderId supportColliderId = InvalidColliderId;
@@ -71,6 +74,17 @@ namespace l2d
         std::vector<CharacterMotorContact2D> contacts;
 
         sf::Vector2f totalDisplacement() const;
+    };
+
+    struct CharacterStepResult2D
+    {
+        bool succeeded = false;
+        sf::Vector2f requestedLateralDisplacement = {0.f, 0.f};
+        sf::Vector2f displacement = {0.f, 0.f};
+        CharacterMoveResult2D rise;
+        CharacterMoveResult2D traverse;
+        CharacterMoveResult2D settle;
+        CharacterMotorState2D state;
     };
 
     // A fixed-step, query-driven kinematic motor shared by gameplay controllers.
@@ -93,12 +107,24 @@ namespace l2d
         ColliderId colliderId() const;
 
         CharacterMoveResult2D move(const PhysicsQueryContext2D& queries, sf::Vector2f displacement);
+        CharacterMoveResult2D move(const PhysicsQueryContext2D& queries, sf::Vector2f displacement,
+                                   bool ignoreOneWayPlatforms);
 
         // Evaluates the same collision-aware move while restoring the owner's
         // transform and all transient motor state before returning. This is
         // useful for transactional movement such as an all-or-nothing grid step.
         CharacterMoveResult2D testMove(const PhysicsQueryContext2D& queries,
                                        sf::Vector2f displacement);
+        CharacterMoveResult2D testMove(const PhysicsQueryContext2D& queries,
+                                       sf::Vector2f displacement, bool ignoreOneWayPlatforms);
+
+        // Attempts a transactional rise/traverse/settle sequence from the
+        // current position. A failed step restores both transform and motor
+        // state, so callers can safely use it after a wall contact.
+        CharacterStepResult2D tryStep(const PhysicsQueryContext2D& queries,
+                                      sf::Vector2f lateralDisplacement, float stepHeight,
+                                      float stepDownDistance = 0.f,
+                                      bool ignoreOneWayPlatforms = false);
 
         const CharacterMotorState2D& state() const;
         void clearState();

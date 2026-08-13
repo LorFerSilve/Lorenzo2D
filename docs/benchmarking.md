@@ -13,6 +13,7 @@ The current executable measures:
 - a complete 4,096-object projected-depth sort, including footpoint evaluation;
 - uniform-grid and brute-force physics steps;
 - a batch of free top-down controllers sharing an immutable physics-query snapshot;
+- a batch of platformer controllers sharing an immutable physics-query snapshot;
 - physics-query snapshot construction over 1,024 colliders;
 - reusable-context ray batches across the same 1,024 colliders;
 - repeated shared-character sweeps and slides through a bounded corridor;

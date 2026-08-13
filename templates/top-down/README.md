@@ -1,6 +1,6 @@
 # Top-down game template
 
-This is a minimal standalone Lorenzo2D 0.10 project. It uses only installed public headers and the
+This is a minimal standalone Lorenzo2D 0.11 project. It uses only installed public headers and the
 exported `Lorenzo2D::Lorenzo2D` CMake target.
 
 ```powershell

@@ -67,6 +67,7 @@ namespace l2d
             hit.normal = geometryHit.normal;
             hit.fraction = geometryHit.fraction;
             hit.distance = pathLength * geometryHit.fraction;
+            hit.categoryBits = proxy.categoryBits;
             hit.sensor = proxy.sensor;
             return hit;
         }
@@ -87,6 +88,24 @@ namespace l2d
                 if (!result || hitLess(candidate, *result)) result = std::move(candidate);
             }
             return result;
+        }
+
+        std::vector<PhysicsQueryHit2D> allCasts(
+            sf::Vector2f start, sf::Vector2f end, const PhysicsQueryFilter2D& filter,
+            const std::function<bool(const detail::ColliderGeometry2D&, detail::GeometryRayHit2D&)>&
+                cast) const
+        {
+            const float pathLength = distance(start, end);
+            std::vector<PhysicsQueryHit2D> hits;
+            for (const Proxy& proxy : proxies)
+            {
+                if (!accepts(proxy, filter)) continue;
+                detail::GeometryRayHit2D geometryHit;
+                if (cast(proxy.geometry, geometryHit))
+                    hits.push_back(makeHit(proxy, geometryHit, pathLength));
+            }
+            std::sort(hits.begin(), hits.end(), hitLess);
+            return hits;
         }
     };
 
@@ -174,6 +193,7 @@ namespace l2d
             hit.object = proxy.object;
             hit.colliderId = proxy.colliderId;
             hit.point = point;
+            hit.categoryBits = proxy.categoryBits;
             hit.sensor = proxy.sensor;
             hits.push_back(std::move(hit));
         }
@@ -201,6 +221,7 @@ namespace l2d
             hit.point = detail::supportPoint(proxy.geometry, hit.normal);
             hit.distance = distance(center, hit.point);
             hit.penetration = manifold.penetration;
+            hit.categoryBits = proxy.categoryBits;
             hit.sensor = proxy.sensor;
             hits.push_back(std::move(hit));
         }
@@ -229,6 +250,7 @@ namespace l2d
             hit.point = detail::supportPoint(proxy.geometry, hit.normal);
             hit.distance = distance(center, hit.point);
             hit.penetration = manifold.penetration;
+            hit.categoryBits = proxy.categoryBits;
             hit.sensor = proxy.sensor;
             hits.push_back(std::move(hit));
         }
@@ -258,6 +280,7 @@ namespace l2d
             hit.point = detail::supportPoint(proxy.geometry, hit.normal);
             hit.distance = distance(center, hit.point);
             hit.penetration = manifold.penetration;
+            hit.categoryBits = proxy.categoryBits;
             hit.sensor = proxy.sensor;
             hits.push_back(std::move(hit));
         }
@@ -271,6 +294,17 @@ namespace l2d
     {
         if (!finite(start) || !finite(end) || !std::isfinite(radius) || radius < 0.f) return {};
         return m_impl->earliestCast(
+            start, end, filter,
+            [&](const detail::ColliderGeometry2D& target, detail::GeometryRayHit2D& hit)
+            { return detail::castCircleAgainstGeometry(start, end, radius, target, hit); });
+    }
+
+    std::vector<PhysicsQueryHit2D> PhysicsQueryContext2D::castCircleAll(
+        sf::Vector2f start, sf::Vector2f end, float radius,
+        const PhysicsQueryFilter2D& filter) const
+    {
+        if (!finite(start) || !finite(end) || !std::isfinite(radius) || radius < 0.f) return {};
+        return m_impl->allCasts(
             start, end, filter,
             [&](const detail::ColliderGeometry2D& target, detail::GeometryRayHit2D& hit)
             { return detail::castCircleAgainstGeometry(start, end, radius, target, hit); });
@@ -291,6 +325,21 @@ namespace l2d
             { return detail::castPolygonAgainstGeometry(query, movement, target, hit); });
     }
 
+    std::vector<PhysicsQueryHit2D> PhysicsQueryContext2D::castBoxAll(
+        sf::Vector2f start, sf::Vector2f end, sf::Vector2f size, float rotationDegrees,
+        const PhysicsQueryFilter2D& filter) const
+    {
+        detail::ColliderGeometry2D query;
+        if (!finite(start) || !finite(end) ||
+            !detail::makeBoxGeometry(start, size, rotationDegrees, query))
+            return {};
+        const sf::Vector2f movement = end - start;
+        return m_impl->allCasts(
+            start, end, filter,
+            [&](const detail::ColliderGeometry2D& target, detail::GeometryRayHit2D& hit)
+            { return detail::castPolygonAgainstGeometry(query, movement, target, hit); });
+    }
+
     std::optional<PhysicsQueryHit2D> PhysicsQueryContext2D::castCapsule(
         sf::Vector2f start, sf::Vector2f end, float radius, float height, float rotationDegrees,
         const PhysicsQueryFilter2D& filter) const
@@ -301,6 +350,21 @@ namespace l2d
             return {};
         const sf::Vector2f movement = end - start;
         return m_impl->earliestCast(
+            start, end, filter,
+            [&](const detail::ColliderGeometry2D& target, detail::GeometryRayHit2D& hit)
+            { return detail::castCapsuleAgainstGeometry(query, movement, target, hit); });
+    }
+
+    std::vector<PhysicsQueryHit2D> PhysicsQueryContext2D::castCapsuleAll(
+        sf::Vector2f start, sf::Vector2f end, float radius, float height, float rotationDegrees,
+        const PhysicsQueryFilter2D& filter) const
+    {
+        detail::ColliderGeometry2D query;
+        if (!finite(start) || !finite(end) ||
+            !detail::makeCapsuleGeometry(start, radius, height, rotationDegrees, query))
+            return {};
+        const sf::Vector2f movement = end - start;
+        return m_impl->allCasts(
             start, end, filter,
             [&](const detail::ColliderGeometry2D& target, detail::GeometryRayHit2D& hit)
             { return detail::castCapsuleAgainstGeometry(query, movement, target, hit); });
@@ -359,11 +423,25 @@ namespace l2d
         return PhysicsQueryContext2D(scene).castCircle(start, end, radius, filter);
     }
 
+    std::vector<PhysicsQueryHit2D> PhysicsWorld2D::castCircleAll(
+        Scene& scene, sf::Vector2f start, sf::Vector2f end, float radius,
+        const PhysicsQueryFilter2D& filter) const
+    {
+        return PhysicsQueryContext2D(scene).castCircleAll(start, end, radius, filter);
+    }
+
     std::optional<PhysicsQueryHit2D> PhysicsWorld2D::castBox(
         Scene& scene, sf::Vector2f start, sf::Vector2f end, sf::Vector2f size,
         float rotationDegrees, const PhysicsQueryFilter2D& filter) const
     {
         return PhysicsQueryContext2D(scene).castBox(start, end, size, rotationDegrees, filter);
+    }
+
+    std::vector<PhysicsQueryHit2D> PhysicsWorld2D::castBoxAll(
+        Scene& scene, sf::Vector2f start, sf::Vector2f end, sf::Vector2f size,
+        float rotationDegrees, const PhysicsQueryFilter2D& filter) const
+    {
+        return PhysicsQueryContext2D(scene).castBoxAll(start, end, size, rotationDegrees, filter);
     }
 
     std::optional<PhysicsQueryHit2D> PhysicsWorld2D::castCapsule(
@@ -372,5 +450,13 @@ namespace l2d
     {
         return PhysicsQueryContext2D(scene).castCapsule(start, end, radius, height, rotationDegrees,
                                                         filter);
+    }
+
+    std::vector<PhysicsQueryHit2D> PhysicsWorld2D::castCapsuleAll(
+        Scene& scene, sf::Vector2f start, sf::Vector2f end, float radius, float height,
+        float rotationDegrees, const PhysicsQueryFilter2D& filter) const
+    {
+        return PhysicsQueryContext2D(scene).castCapsuleAll(start, end, radius, height,
+                                                           rotationDegrees, filter);
     }
 }
