@@ -1,6 +1,6 @@
 # Side-view platformer movement
 
-Lorenzo2D 0.11 adds `PlatformerController2D`, an input-independent fixed-step controller built on
+Lorenzo2D 0.12 includes `PlatformerController2D`, an input-independent fixed-step controller built on
 `CharacterMotor2D`. It supplies the common side-view policies that do not belong in the collision
 motor: run acceleration, air control, gravity, fall-speed limiting, jumping, and gameplay events.
 
@@ -74,11 +74,11 @@ Moving platforms should be static geometry moved by game code or kinematic bodie
 are finalized before constructing the query context. When grounded, the motor inherits the support
 object's translation on the next call. Translation is collision-aware, so a platform cannot carry
 the character through a solid wall. Platform rotation and velocity inheritance on jump are not
-part of the 0.11 contract.
+part of the 0.12 contract.
 
 ## Assets, template, and persistence
 
 The focused `Lorenzo2DPhase7Example` and `templates/platformer` demonstrate the whole flow through
 public API. `CharacterMotorPrefab` persists the one-way mask and `PlatformerControllerPrefab`
-persists all controller tuning in JSON level version 7. Runtime velocity, timers, events, contacts,
+persists all controller tuning in JSON level version 8. Runtime velocity, timers, events, contacts,
 and support handles are transient.

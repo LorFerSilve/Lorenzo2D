@@ -206,6 +206,9 @@ jobs:
           test -f install/include/Lorenzo2D/Physics/PhysicsQueries2D.hpp
           test -f install/include/Lorenzo2D/Movement/CharacterMotor2D.hpp
           test -f install/include/Lorenzo2D/Movement/PlatformerController2D.hpp
+          test -f install/include/Lorenzo2D/Navigation/NavigationGrid2D.hpp
+          test -f install/include/Lorenzo2D/Navigation/AStarPathfinder2D.hpp
+          test -f install/include/Lorenzo2D/Navigation/PathFollower2D.hpp
           test -f install/include/Lorenzo2D/Animation/Animator.hpp
           test -f install/include/Lorenzo2D/Scene/LevelSerializer.hpp
           test -f install/include/Lorenzo2D/Scene/ComponentCodecRegistry.hpp
@@ -245,6 +248,15 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
           cmake --build build-platformer-template --parallel
+
+      - name: Configure and build point-and-click starter
+        run: |
+          cmake \
+            -S templates/point-and-click \
+            -B build-point-and-click-template \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
+          cmake --build build-point-and-click-template --parallel
 
   quality:
     name: Clang formatting and static analysis

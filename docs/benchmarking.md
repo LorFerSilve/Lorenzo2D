@@ -14,14 +14,14 @@ The current executable measures:
 - uniform-grid and brute-force physics steps;
 - a batch of free top-down controllers sharing an immutable physics-query snapshot;
 - a batch of platformer controllers sharing an immutable physics-query snapshot;
+- 32 deterministic A* requests across a weighted 128-by-128 obstacle grid;
 - physics-query snapshot construction over 1,024 colliders;
 - reusable-context ray batches across the same 1,024 colliders;
 - repeated shared-character sweeps and slides through a bounded corridor;
 - full legacy and layered tile-map construction;
 - tile-map view-culling telemetry.
 
-Navigation and complete isometric scene scenarios must be
-added alongside the systems that implement them. The report schema accepts
+Complete isometric scene scenarios must be added alongside that system. The report schema accepts
 those scenarios without a format change.
 
 ## Building and running

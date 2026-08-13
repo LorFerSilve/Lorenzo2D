@@ -6,6 +6,7 @@
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
 #include <Lorenzo2D/Movement/PlatformerController2D.hpp>
 #include <Lorenzo2D/Movement/TopDownController2D.hpp>
+#include <Lorenzo2D/Navigation/PathFollower2D.hpp>
 #include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsMaterial2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
@@ -105,6 +106,11 @@ namespace l2d
         PlatformerControllerConfig2D config;
     };
 
+    struct PathFollowerPrefab
+    {
+        PathFollowerConfig2D config;
+    };
+
     struct ColliderPrefabProperties
     {
         sf::Vector2f offset = {0.f, 0.f};
@@ -157,6 +163,7 @@ namespace l2d
         std::optional<TopDownControllerPrefab> topDownController;
         std::optional<GridStepControllerPrefab> gridStepController;
         std::optional<PlatformerControllerPrefab> platformerController;
+        std::optional<PathFollowerPrefab> pathFollower;
         std::optional<BoxColliderPrefab> boxCollider;
         std::optional<CircleColliderPrefab> circleCollider;
         std::optional<CapsuleColliderPrefab> capsuleCollider;

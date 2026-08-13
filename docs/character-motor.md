@@ -1,6 +1,6 @@
 # Shared character motor
 
-Lorenzo2D 0.11 provides `CharacterMotor2D`, a fixed-step, query-driven movement component shared
+Lorenzo2D 0.12 provides `CharacterMotor2D`, a fixed-step, query-driven movement component shared
 by later top-down, grid, platformer, and path-following controllers. It owns collision-aware
 translation, not player intent, gravity, jump rules, pathfinding, or animation.
 
@@ -78,6 +78,6 @@ tunnelling. Circle and box motor sweeps use their native query shapes.
 
 ## Prefabs and levels
 
-`CharacterMotorPrefab` stores the full configuration. JSON level version 7 writes a built-in
+`CharacterMotorPrefab` stores the full configuration. JSON level version 8 writes a built-in
 `CharacterMotor2D` component record; versions 4 through 6 JSON and legacy text versions 1 through 3 remain
 readable. Runtime contact state and the selected runtime collider ID are deliberately not saved.

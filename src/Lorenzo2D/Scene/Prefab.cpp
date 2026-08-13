@@ -7,6 +7,7 @@
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
 #include <Lorenzo2D/Movement/PlatformerController2D.hpp>
 #include <Lorenzo2D/Movement/TopDownController2D.hpp>
+#include <Lorenzo2D/Navigation/PathFollower2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
@@ -174,6 +175,9 @@ namespace l2d
         if (prefab.platformerController &&
             !PlatformerController2D::isValidConfig(prefab.platformerController->config))
             return false;
+        if (prefab.pathFollower && (!prefab.topDownController ||
+                                    !PathFollower2D::isValidConfig(prefab.pathFollower->config)))
+            return false;
 
         if (prefab.boxCollider &&
             (!isFinite(prefab.boxCollider->size) || prefab.boxCollider->size.x < 0.f ||
@@ -287,6 +291,7 @@ namespace l2d
             object.addComponent<GridStepController2D>(prefab.gridStepController->config);
         if (prefab.platformerController)
             object.addComponent<PlatformerController2D>(prefab.platformerController->config);
+        if (prefab.pathFollower) object.addComponent<PathFollower2D>(prefab.pathFollower->config);
 
         object.setActive(prefab.active);
         return object;
@@ -355,6 +360,8 @@ namespace l2d
                 object.addComponent<GridStepController2D>(prefab.gridStepController->config);
             if (prefab.platformerController)
                 object.addComponent<PlatformerController2D>(prefab.platformerController->config);
+            if (prefab.pathFollower)
+                object.addComponent<PathFollower2D>(prefab.pathFollower->config);
 
             if (prefab.spriteRenderer)
             {

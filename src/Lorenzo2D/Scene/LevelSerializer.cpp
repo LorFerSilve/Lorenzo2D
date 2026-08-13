@@ -186,6 +186,27 @@ namespace l2d
                       {"inputDeadzone", controller.inputDeadzone},
                       {"maximumDeltaTime", controller.maximumDeltaTime}});
             }
+            if (prefab.pathFollower)
+            {
+                const PathFollowerConfig2D& follower = prefab.pathFollower->config;
+                const LocalAvoidanceConfig2D& avoidance = follower.avoidance;
+                push("PathFollower2D", 1u,
+                     {{"waypointTolerance", follower.waypointTolerance},
+                      {"goalTolerance", follower.goalTolerance},
+                      {"slowdownDistance", follower.slowdownDistance},
+                      {"agentRadius", follower.agentRadius},
+                      {"positionOffset", vectorJson(follower.positionOffset)},
+                      {"stuckTimeout", follower.stuckTimeout},
+                      {"minimumProgressDistance", follower.minimumProgressDistance},
+                      {"maximumDeltaTime", follower.maximumDeltaTime},
+                      {"localAvoidance", follower.localAvoidance},
+                      {"avoidance",
+                       {{"neighborDistance", avoidance.neighborDistance},
+                        {"timeHorizon", avoidance.timeHorizon},
+                        {"personalSpace", avoidance.personalSpace},
+                        {"avoidanceStrength", avoidance.avoidanceStrength},
+                        {"maximumNeighbors", avoidance.maximumNeighbors}}}});
+            }
 
             const auto colliderProperties = [](const ColliderPrefabProperties& properties)
             {
@@ -448,6 +469,45 @@ namespace l2d
                     data.value("maximumDeltaTime", controller.maximumDeltaTime);
                 if (!PlatformerController2D::isValidConfig(controller)) return false;
                 prefab.platformerController = std::move(value);
+            }
+            else if (type == "PathFollower2D")
+            {
+                if (prefab.pathFollower) return false;
+                PathFollowerPrefab value;
+                PathFollowerConfig2D& follower = value.config;
+                follower.waypointTolerance =
+                    data.value("waypointTolerance", follower.waypointTolerance);
+                follower.goalTolerance = data.value("goalTolerance", follower.goalTolerance);
+                follower.slowdownDistance =
+                    data.value("slowdownDistance", follower.slowdownDistance);
+                follower.agentRadius = data.value("agentRadius", follower.agentRadius);
+                if (data.contains("positionOffset") &&
+                    !readVector(data.at("positionOffset"), follower.positionOffset))
+                    return false;
+                follower.stuckTimeout = data.value("stuckTimeout", follower.stuckTimeout);
+                follower.minimumProgressDistance =
+                    data.value("minimumProgressDistance", follower.minimumProgressDistance);
+                follower.maximumDeltaTime =
+                    data.value("maximumDeltaTime", follower.maximumDeltaTime);
+                follower.localAvoidance = data.value("localAvoidance", follower.localAvoidance);
+                if (data.contains("avoidance"))
+                {
+                    const Json& avoidanceData = data.at("avoidance");
+                    if (!avoidanceData.is_object()) return false;
+                    LocalAvoidanceConfig2D& avoidance = follower.avoidance;
+                    avoidance.neighborDistance =
+                        avoidanceData.value("neighborDistance", avoidance.neighborDistance);
+                    avoidance.timeHorizon =
+                        avoidanceData.value("timeHorizon", avoidance.timeHorizon);
+                    avoidance.personalSpace =
+                        avoidanceData.value("personalSpace", avoidance.personalSpace);
+                    avoidance.avoidanceStrength =
+                        avoidanceData.value("avoidanceStrength", avoidance.avoidanceStrength);
+                    avoidance.maximumNeighbors =
+                        avoidanceData.value("maximumNeighbors", avoidance.maximumNeighbors);
+                }
+                if (!PathFollower2D::isValidConfig(follower)) return false;
+                prefab.pathFollower = std::move(value);
             }
             else if (type == "BoxCollider2D")
             {

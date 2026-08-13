@@ -77,7 +77,7 @@ interpolation, so there is no second presentation position to synchronize.
 
 ## Prefabs, examples, and exclusions
 
-`TopDownControllerPrefab` and `GridStepControllerPrefab` round-trip through JSON level version 7.
+`TopDownControllerPrefab` and `GridStepControllerPrefab` round-trip through JSON level version 8.
 Prefab validation requires a `CharacterMotorPrefab` and rejects invalid controller fields before
 instantiation. JSON versions 4 and 5 remain readable.
 

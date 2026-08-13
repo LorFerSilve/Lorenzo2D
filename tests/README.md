@@ -19,6 +19,8 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DTopDownControllerTests` | Validation, analog acceleration/deceleration, diagonal normalization, wall sliding, facing, failures, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DGridStepControllerTests` | Direction ties, alignment, smooth steps, transactional blocking, turn buffering, rollback, failures, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DPlatformerControllerTests` | Run/jump policy, one-way drop-through, transactional steps, moving platforms, failures, and replay determinism | `headless` | 120 s |
+| `Lorenzo2DNavigationGridTests` | Grid/tile/physics baking, coordinates, costs, deterministic A*, diagonal policy, limits, and failures | `headless` | 120 s |
+| `Lorenzo2DNavigationAgentTests` | Path following, arrival, stale paths, stuck/repath signaling, local avoidance, failures, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DCoreTimingTests` | Identity contracts, fixed-step scheduling, and transform interpolation | `headless` | 60 s |
 | `Lorenzo2DInputTests` | Device codes, typed actions, layouts, deadzones, contexts, fixed-tick edges, reconnects, and pointer projection | `headless` | 30 s |
 | `Lorenzo2DEcsSceneTests` | Component mutation, activation, scene dispatch, handles, indexing, and deferred destruction | `headless` | 90 s |

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.11.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.12.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -191,6 +191,10 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Movement/GridStepController2D.cpp
     src/Lorenzo2D/Movement/PlatformerController2D.cpp
     src/Lorenzo2D/Movement/TopDownController2D.cpp
+    src/Lorenzo2D/Navigation/AStarPathfinder2D.cpp
+    src/Lorenzo2D/Navigation/LocalAvoidance2D.cpp
+    src/Lorenzo2D/Navigation/NavigationGrid2D.cpp
+    src/Lorenzo2D/Navigation/PathFollower2D.cpp
     src/Lorenzo2D/Physics/BoxCollider2D.cpp
     src/Lorenzo2D/Physics/CapsuleCollider2D.cpp
     src/Lorenzo2D/Physics/CircleCollider2D.cpp

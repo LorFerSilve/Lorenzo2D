@@ -200,6 +200,20 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DNavigationGridTests
+    SOURCE Lorenzo2DNavigationGridTests.cpp
+    LABELS headless navigation grid tilemap physics queries determinism
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
+    Lorenzo2DNavigationAgentTests
+    SOURCE Lorenzo2DNavigationAgentTests.cpp
+    LABELS headless navigation movement physics queries determinism
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
     Lorenzo2DPhysicsTilemapTests
     SOURCE physics/Lorenzo2DPhysicsTilemapTests.cpp
     LABELS headless physics tilemap

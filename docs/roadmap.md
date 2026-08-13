@@ -23,7 +23,7 @@ available feature.
 | 5 | shared collision-aware character motor | Implemented |
 | 6 | top-down and grid-step controllers with a focused template | Implemented |
 | 7 | platformer motor, slopes, one-way platforms, and moving platforms | Implemented |
-| 8 | navigation grid, deterministic A*, path following, and local avoidance | Planned |
+| 8 | navigation grid, deterministic A*, path following, and local avoidance | Implemented |
 | 9 | isometric projection, picking, culling, depth, and placement | Planned |
 | 10 | four project templates, UI, audio, saves, documentation, and 1.0 hardening | Planned |
 

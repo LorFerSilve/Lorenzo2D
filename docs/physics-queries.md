@@ -105,5 +105,5 @@ movement workflow built on these contracts.
 
 Legacy level format version 3 added optional `capsule_collider` and
 `convex_polygon_collider` records. Text versions 1 through 3 and JSON version 4 remain readable;
-JSON version 7 is the current save format. Prefab validation and loading reject malformed capsule dimensions and
+JSON version 8 is the current save format. Prefab validation and loading reject malformed capsule dimensions and
 invalid polygon vertex sets before mutating a destination scene or document.

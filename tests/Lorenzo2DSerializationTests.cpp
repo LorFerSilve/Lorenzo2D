@@ -6,6 +6,7 @@
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
 #include <Lorenzo2D/Movement/PlatformerController2D.hpp>
 #include <Lorenzo2D/Movement/TopDownController2D.hpp>
+#include <Lorenzo2D/Navigation/PathFollower2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
@@ -75,6 +76,12 @@ namespace
         platformer.config.jumpSpeed = 700.f;
         platformer.config.coyoteTime = 0.14f;
         prefab.platformerController = platformer;
+        l2d::PathFollowerPrefab follower;
+        follower.config.waypointTolerance = 3.f;
+        follower.config.agentRadius = 12.f;
+        follower.config.positionOffset = {1.f, 2.f};
+        follower.config.avoidance.maximumNeighbors = 6u;
+        prefab.pathFollower = follower;
 
         l2d::BoxColliderPrefab collider;
         collider.size = {30.f, 44.f};
@@ -119,7 +126,7 @@ namespace
         std::stringstream serialized;
         L2D_REQUIRE(l2d::LevelSerializer::save(serialized, source));
         L2D_REQUIRE(serialized.str().find("\"format\": \"Lorenzo2DLevel\"") != std::string::npos);
-        L2D_REQUIRE(serialized.str().find("\"version\": 7") != std::string::npos);
+        L2D_REQUIRE(serialized.str().find("\"version\": 8") != std::string::npos);
 
         l2d::LevelDocument loaded;
         L2D_REQUIRE(l2d::LevelSerializer::load(serialized, loaded));
@@ -145,6 +152,11 @@ namespace
                     l2d::GridAxisPriority2D::Horizontal);
         L2D_REQUIRE(playerPrefab.platformerController.has_value());
         L2D_REQUIRE_APPROX(playerPrefab.platformerController->config.jumpSpeed, 700.f, 0.0001f);
+        L2D_REQUIRE(playerPrefab.pathFollower.has_value());
+        L2D_REQUIRE_APPROX(playerPrefab.pathFollower->config.agentRadius, 12.f, 0.0001f);
+        L2D_REQUIRE_APPROX_2D(playerPrefab.pathFollower->config.positionOffset,
+                              sf::Vector2f(1.f, 2.f), 0.0001f);
+        L2D_REQUIRE_EQUAL(playerPrefab.pathFollower->config.avoidance.maximumNeighbors, 6u);
         L2D_REQUIRE(playerPrefab.boxCollider.has_value());
         L2D_REQUIRE(playerPrefab.circleCollider.has_value());
         L2D_REQUIRE(playerPrefab.capsuleCollider.has_value());
@@ -171,6 +183,7 @@ namespace
         const l2d::GridStepController2D* grid = player->getComponent<l2d::GridStepController2D>();
         const l2d::PlatformerController2D* platformer =
             player->getComponent<l2d::PlatformerController2D>();
+        const l2d::PathFollower2D* follower = player->getComponent<l2d::PathFollower2D>();
         const l2d::BoxCollider2D* collider = player->getComponent<l2d::BoxCollider2D>();
         const l2d::CircleCollider2D* circleCollider = player->getComponent<l2d::CircleCollider2D>();
         const l2d::CapsuleCollider2D* capsuleCollider =
@@ -182,9 +195,11 @@ namespace
         L2D_REQUIRE(topDown != nullptr);
         L2D_REQUIRE(grid != nullptr);
         L2D_REQUIRE(platformer != nullptr);
+        L2D_REQUIRE(follower != nullptr);
         L2D_REQUIRE_APPROX(topDown->config().maximumSpeed, 240.f, 0.0001f);
         L2D_REQUIRE_APPROX_2D(grid->config().gridOrigin, sf::Vector2f(4.f, 8.f), 0.0001f);
         L2D_REQUIRE_APPROX(platformer->config().maximumRunSpeed, 280.f, 0.0001f);
+        L2D_REQUIRE_APPROX(follower->config().waypointTolerance, 3.f, 0.0001f);
         L2D_REQUIRE_APPROX(motor->config().maximumSlopeAngleDegrees, 42.f, 0.0001f);
         L2D_REQUIRE(collider != nullptr);
         L2D_REQUIRE(circleCollider != nullptr);
@@ -456,7 +471,7 @@ namespace
 
         std::stringstream upgraded;
         L2D_REQUIRE(l2d::LevelSerializer::saveJson(upgraded, loaded));
-        L2D_REQUIRE(upgraded.str().find("\"version\": 7") != std::string::npos);
+        L2D_REQUIRE(upgraded.str().find("\"version\": 8") != std::string::npos);
     }
 
     void testJsonVersionFiveRemainsReadable()
@@ -473,7 +488,7 @@ namespace
 
         std::stringstream upgraded;
         L2D_REQUIRE(l2d::LevelSerializer::saveJson(upgraded, loaded));
-        L2D_REQUIRE(upgraded.str().find("\"version\": 7") != std::string::npos);
+        L2D_REQUIRE(upgraded.str().find("\"version\": 8") != std::string::npos);
     }
 
     void testJsonVersionSixRemainsReadable()
@@ -485,7 +500,19 @@ namespace
         L2D_REQUIRE_EQUAL(loaded.objects.size(), 0u);
         std::stringstream upgraded;
         L2D_REQUIRE(l2d::LevelSerializer::saveJson(upgraded, loaded));
-        L2D_REQUIRE(upgraded.str().find("\"version\": 7") != std::string::npos);
+        L2D_REQUIRE(upgraded.str().find("\"version\": 8") != std::string::npos);
+    }
+
+    void testJsonVersionSevenRemainsReadable()
+    {
+        std::stringstream versionSeven(
+            R"({"format":"Lorenzo2DLevel","version":7,"name":"Phase 7","objects":[]})");
+        l2d::LevelDocument loaded;
+        L2D_REQUIRE(l2d::LevelSerializer::loadJson(versionSeven, loaded));
+        L2D_REQUIRE_EQUAL(loaded.objects.size(), 0u);
+        std::stringstream upgraded;
+        L2D_REQUIRE(l2d::LevelSerializer::saveJson(upgraded, loaded));
+        L2D_REQUIRE(upgraded.str().find("\"version\": 8") != std::string::npos);
     }
 
     void testInvalidControllerEnumIsRejectedTransactionally()
@@ -517,6 +544,7 @@ int main()
     runTest("JSON level version 4 remains readable", testJsonVersionFourRemainsReadable, failures);
     runTest("JSON level version 5 remains readable", testJsonVersionFiveRemainsReadable, failures);
     runTest("JSON level version 6 remains readable", testJsonVersionSixRemainsReadable, failures);
+    runTest("JSON level version 7 remains readable", testJsonVersionSevenRemainsReadable, failures);
     runTest("invalid controller enum is rejected transactionally",
             testInvalidControllerEnumIsRejectedTransactionally, failures);
 

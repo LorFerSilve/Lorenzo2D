@@ -6,6 +6,7 @@
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
 #include <Lorenzo2D/Movement/PlatformerController2D.hpp>
 #include <Lorenzo2D/Movement/TopDownController2D.hpp>
+#include <Lorenzo2D/Navigation/AStarPathfinder2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
@@ -400,6 +401,34 @@ namespace
                        });
     }
 
+    BenchmarkResult benchmarkNavigationPathBatch(std::size_t iterations)
+    {
+        l2d::NavigationGridConfig2D config;
+        config.size = {128u, 128u};
+        config.cellSize = {16.f, 16.f};
+        config.connectivity = l2d::NavigationConnectivity2D::EightWay;
+        l2d::NavigationGrid2D grid(config);
+        for (int y = 4; y < 124; y += 8)
+            for (int x = 1; x < 127; ++x)
+                if (x % 17 != 0) (void)grid.setWalkable({x, y}, false);
+        const l2d::AStarPathfinder2D pathfinder;
+
+        return measure(iterations,
+                       [&grid, &pathfinder]()
+                       {
+                           std::size_t checksum = 0u;
+                           for (int query = 0; query < 32; ++query)
+                           {
+                               const sf::Vector2i start{query % 8, (query * 7) % 120};
+                               const sf::Vector2i goal{127 - query % 9, 127 - (query * 11) % 120};
+                               const l2d::NavigationPath2D path =
+                                   pathfinder.findPath(grid, start, goal);
+                               checksum += path.cells.size() + path.visitedNodes;
+                           }
+                           return checksum;
+                       });
+    }
+
     l2d::TileMap::Layout makeTileLayout()
     {
         constexpr std::size_t width = 256u;
@@ -485,6 +514,7 @@ namespace
         constexpr std::size_t characterMotorIterations = 1000u;
         constexpr std::size_t topDownControllerIterations = 200u;
         constexpr std::size_t platformerControllerIterations = 200u;
+        constexpr std::size_t navigationPathIterations = 10u;
         constexpr std::size_t tileMapBuildIterations = 5u;
         constexpr std::size_t tileMapCullingIterations = 1000u;
 
@@ -513,6 +543,8 @@ namespace
                            benchmarkTopDownControllers(topDownControllerIterations)});
         entries.push_back({"platformer controller batch", platformerControllerIterations,
                            benchmarkPlatformerControllers(platformerControllerIterations)});
+        entries.push_back({"navigation A-star batch", navigationPathIterations,
+                           benchmarkNavigationPathBatch(navigationPathIterations)});
         entries.push_back({"tile-map full build", tileMapBuildIterations,
                            benchmarkTileMapBuild(tileMapBuildIterations)});
         entries.push_back({"layered tile-map build", tileMapBuildIterations,
