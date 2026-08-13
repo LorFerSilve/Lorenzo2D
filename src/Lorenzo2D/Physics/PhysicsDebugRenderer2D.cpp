@@ -298,7 +298,8 @@ namespace l2d
         const sf::Vector2f secondCenter = center + axisY * halfSegment;
         for (std::size_t index = 0; index <= HalfSteps; ++index)
         {
-            const double angle = Pi + Pi * index / HalfSteps;
+            const double angle =
+                Pi + Pi * static_cast<double>(index) / static_cast<double>(HalfSteps);
             shape.setPoint(
                 index, context.worldToRender(firstCenter +
                                              axisX * static_cast<float>(std::cos(angle) * radius) +
@@ -306,7 +307,7 @@ namespace l2d
         }
         for (std::size_t index = 0; index <= HalfSteps; ++index)
         {
-            const double angle = Pi * index / HalfSteps;
+            const double angle = Pi * static_cast<double>(index) / static_cast<double>(HalfSteps);
             shape.setPoint(HalfSteps + 1u + index,
                            context.worldToRender(
                                secondCenter + axisX * static_cast<float>(std::cos(angle) * radius) +

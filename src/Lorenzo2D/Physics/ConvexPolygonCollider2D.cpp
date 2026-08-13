@@ -106,8 +106,8 @@ namespace l2d
             x += vertex.x;
             y += vertex.y;
         }
-        return {static_cast<float>(x / transformed.size()),
-                static_cast<float>(y / transformed.size())};
+        const double vertexCount = static_cast<double>(transformed.size());
+        return {static_cast<float>(x / vertexCount), static_cast<float>(y / vertexCount)};
     }
 
     sf::Vector2f ConvexPolygonCollider2D::min() const
