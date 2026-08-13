@@ -457,6 +457,25 @@ namespace l2d
         return result;
     }
 
+    CharacterMoveResult2D CharacterMotor2D::testMove(const PhysicsQueryContext2D& queries,
+                                                     sf::Vector2f displacement)
+    {
+        GameObject* character = owner();
+        if (character == nullptr) return {};
+
+        const sf::Vector2f position = character->transform.position();
+        const CharacterMotorState2D state = m_state;
+        const sf::Vector2f supportPosition = m_supportPosition;
+        const bool hasSupportPosition = m_hasSupportPosition;
+
+        CharacterMoveResult2D result = move(queries, displacement);
+        character->transform.setPosition(position);
+        m_state = state;
+        m_supportPosition = supportPosition;
+        m_hasSupportPosition = hasSupportPosition;
+        return result;
+    }
+
     const CharacterMotorState2D& CharacterMotor2D::state() const
     {
         return m_state;

@@ -218,6 +218,29 @@ namespace
         L2D_REQUIRE_APPROX(character.object.transform.position().x, 2.99f, 0.02f);
     }
 
+    void testMoveProbeRestoresTransformAndState()
+    {
+        l2d::Scene scene;
+        l2d::GameObject& platform = addBox(scene, "Platform", {0.f, 5.f}, {40.f, 2.f});
+        BoxCharacter character = addBoxCharacter(scene);
+        const auto landing = character.motor.move(l2d::PhysicsQueryContext2D(scene), {0.f, 10.f});
+        L2D_REQUIRE(landing.state.grounded);
+        const sf::Vector2f position = character.object.transform.position();
+        const l2d::CharacterMotorState2D state = character.motor.state();
+
+        const auto probe =
+            character.motor.testMove(l2d::PhysicsQueryContext2D(scene), {100.f, -25.f});
+        L2D_REQUIRE(probe.succeeded);
+        L2D_REQUIRE_APPROX_2D(character.object.transform.position(), position, 0.0001f);
+        L2D_REQUIRE_EQUAL(character.motor.state().grounded, state.grounded);
+        L2D_REQUIRE_EQUAL(character.motor.state().support.id(), platform.id());
+        L2D_REQUIRE_EQUAL(character.motor.state().supportColliderId, state.supportColliderId);
+
+        platform.transform.move({2.f, 0.f});
+        const auto carried = character.motor.move(l2d::PhysicsQueryContext2D(scene), {});
+        L2D_REQUIRE_APPROX_2D(carried.inheritedDisplacement, sf::Vector2f(2.f, 0.f), 0.001f);
+    }
+
     sf::Vector2f replayMovement()
     {
         l2d::Scene scene;
@@ -257,6 +280,8 @@ int main()
                        testCapsuleMotorAndMovingPlatformTranslation, failures);
     l2d::test::runTest("moving platform cannot carry a character through a wall",
                        testMovingPlatformCannotCarryCharacterThroughWall, failures);
+    l2d::test::runTest("character move probe restores transform and state",
+                       testMoveProbeRestoresTransformAndState, failures);
     l2d::test::runTest("character motor deterministic replay", testMotorReplayIsDeterministic,
                        failures);
 

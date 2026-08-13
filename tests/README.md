@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The regression executables use a small first-party harness. All twenty-one suites
+The regression executables use a small first-party harness. All twenty-four suites
 share assertion and named-test execution support through `TestSupport.hpp`.
 Physics and renderer assertions use the same value-rich diagnostics while
 keeping their subsystem comparison tolerances explicit in the owning source.
@@ -16,6 +16,8 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DTestSupportTests` | Harness diagnostics, explicit tolerances, 2D comparison, and temporary-file cleanup | `headless` | 30 s |
 | `Lorenzo2DVersionTests` | Generated build/install version constants and macros | `headless` | 30 s |
 | `Lorenzo2DCharacterMotorTests` | Sweep/slide, overlap recovery, slopes, contacts, capsule movement, moving platforms, and replay determinism | `headless` | 120 s |
+| `Lorenzo2DTopDownControllerTests` | Validation, analog acceleration/deceleration, diagonal normalization, wall sliding, facing, failures, and replay determinism | `headless` | 120 s |
+| `Lorenzo2DGridStepControllerTests` | Direction ties, alignment, smooth steps, transactional blocking, turn buffering, rollback, failures, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DCoreTimingTests` | Identity contracts, fixed-step scheduling, and transform interpolation | `headless` | 60 s |
 | `Lorenzo2DInputTests` | Device codes, typed actions, layouts, deadzones, contexts, fixed-tick edges, reconnects, and pointer projection | `headless` | 30 s |
 | `Lorenzo2DEcsSceneTests` | Component mutation, activation, scene dispatch, handles, indexing, and deferred destruction | `headless` | 90 s |

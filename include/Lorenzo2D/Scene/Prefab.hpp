@@ -3,6 +3,8 @@
 #include <Lorenzo2D/ECS/Transform.hpp>
 #include <Lorenzo2D/Assets/AssetId.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
+#include <Lorenzo2D/Movement/GridStepController2D.hpp>
+#include <Lorenzo2D/Movement/TopDownController2D.hpp>
 #include <Lorenzo2D/Physics/Collider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsMaterial2D.hpp>
 #include <Lorenzo2D/Physics/RigidBody2D.hpp>
@@ -87,6 +89,16 @@ namespace l2d
         CharacterMotorConfig2D config;
     };
 
+    struct TopDownControllerPrefab
+    {
+        TopDownControllerConfig2D config;
+    };
+
+    struct GridStepControllerPrefab
+    {
+        GridStepControllerConfig2D config;
+    };
+
     struct ColliderPrefabProperties
     {
         sf::Vector2f offset = {0.f, 0.f};
@@ -136,6 +148,8 @@ namespace l2d
         std::optional<AnimatorPrefab> animator;
         std::optional<RigidBodyPrefab> rigidBody;
         std::optional<CharacterMotorPrefab> characterMotor;
+        std::optional<TopDownControllerPrefab> topDownController;
+        std::optional<GridStepControllerPrefab> gridStepController;
         std::optional<BoxColliderPrefab> boxCollider;
         std::optional<CircleColliderPrefab> circleCollider;
         std::optional<CapsuleColliderPrefab> capsuleCollider;

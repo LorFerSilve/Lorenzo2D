@@ -3,6 +3,8 @@
 #include <Lorenzo2D/Animation/Animator.hpp>
 #include <Lorenzo2D/Assets/AssetManager.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
+#include <Lorenzo2D/Movement/GridStepController2D.hpp>
+#include <Lorenzo2D/Movement/TopDownController2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
@@ -56,6 +58,16 @@ namespace
         motor.config.maximumSlideIterations = 6u;
         motor.config.queryFilter.categoryMask = 8u;
         prefab.characterMotor = motor;
+        l2d::TopDownControllerPrefab topDown;
+        topDown.config.maximumSpeed = 240.f;
+        topDown.config.acceleration = 1200.f;
+        prefab.topDownController = topDown;
+        l2d::GridStepControllerPrefab grid;
+        grid.config.cellSize = {16.f, 24.f};
+        grid.config.gridOrigin = {4.f, 8.f};
+        grid.config.stepDuration = 0.2f;
+        grid.config.axisPriority = l2d::GridAxisPriority2D::Horizontal;
+        prefab.gridStepController = grid;
 
         l2d::BoxColliderPrefab collider;
         collider.size = {30.f, 44.f};
@@ -100,7 +112,7 @@ namespace
         std::stringstream serialized;
         L2D_REQUIRE(l2d::LevelSerializer::save(serialized, source));
         L2D_REQUIRE(serialized.str().find("\"format\": \"Lorenzo2DLevel\"") != std::string::npos);
-        L2D_REQUIRE(serialized.str().find("\"version\": 5") != std::string::npos);
+        L2D_REQUIRE(serialized.str().find("\"version\": 6") != std::string::npos);
 
         l2d::LevelDocument loaded;
         L2D_REQUIRE(l2d::LevelSerializer::load(serialized, loaded));
@@ -116,6 +128,13 @@ namespace
         L2D_REQUIRE(playerPrefab.characterMotor.has_value());
         L2D_REQUIRE_APPROX(playerPrefab.characterMotor->config.skinWidth, 0.025f, 0.0001f);
         L2D_REQUIRE_EQUAL(playerPrefab.characterMotor->config.maximumSlideIterations, 6u);
+        L2D_REQUIRE(playerPrefab.topDownController.has_value());
+        L2D_REQUIRE_APPROX(playerPrefab.topDownController->config.maximumSpeed, 240.f, 0.0001f);
+        L2D_REQUIRE(playerPrefab.gridStepController.has_value());
+        L2D_REQUIRE_APPROX_2D(playerPrefab.gridStepController->config.cellSize,
+                              sf::Vector2f(16.f, 24.f), 0.0001f);
+        L2D_REQUIRE(playerPrefab.gridStepController->config.axisPriority ==
+                    l2d::GridAxisPriority2D::Horizontal);
         L2D_REQUIRE(playerPrefab.boxCollider.has_value());
         L2D_REQUIRE(playerPrefab.circleCollider.has_value());
         L2D_REQUIRE(playerPrefab.capsuleCollider.has_value());
@@ -138,6 +157,8 @@ namespace
 
         const l2d::RigidBody2D* body = player->getComponent<l2d::RigidBody2D>();
         const l2d::CharacterMotor2D* motor = player->getComponent<l2d::CharacterMotor2D>();
+        const l2d::TopDownController2D* topDown = player->getComponent<l2d::TopDownController2D>();
+        const l2d::GridStepController2D* grid = player->getComponent<l2d::GridStepController2D>();
         const l2d::BoxCollider2D* collider = player->getComponent<l2d::BoxCollider2D>();
         const l2d::CircleCollider2D* circleCollider = player->getComponent<l2d::CircleCollider2D>();
         const l2d::CapsuleCollider2D* capsuleCollider =
@@ -146,6 +167,10 @@ namespace
             player->getComponent<l2d::ConvexPolygonCollider2D>();
         L2D_REQUIRE(body != nullptr);
         L2D_REQUIRE(motor != nullptr);
+        L2D_REQUIRE(topDown != nullptr);
+        L2D_REQUIRE(grid != nullptr);
+        L2D_REQUIRE_APPROX(topDown->config().maximumSpeed, 240.f, 0.0001f);
+        L2D_REQUIRE_APPROX_2D(grid->config().gridOrigin, sf::Vector2f(4.f, 8.f), 0.0001f);
         L2D_REQUIRE_APPROX(motor->config().maximumSlopeAngleDegrees, 42.f, 0.0001f);
         L2D_REQUIRE(collider != nullptr);
         L2D_REQUIRE(circleCollider != nullptr);
@@ -211,6 +236,18 @@ namespace
         l2d::Prefab invalidStaticMotor = valid;
         invalidStaticMotor.rigidBody->bodyType = l2d::BodyType2D::Static;
         L2D_REQUIRE(!library.store("player", invalidStaticMotor));
+
+        l2d::Prefab missingControllerMotor = valid;
+        missingControllerMotor.characterMotor.reset();
+        L2D_REQUIRE(!library.store("player", missingControllerMotor));
+
+        l2d::Prefab invalidTopDown = valid;
+        invalidTopDown.topDownController->config.maximumSpeed = 0.f;
+        L2D_REQUIRE(!library.store("player", invalidTopDown));
+
+        l2d::Prefab invalidGrid = valid;
+        invalidGrid.gridStepController->config.cellSize.y = 0.f;
+        L2D_REQUIRE(!library.store("player", invalidGrid));
 
         l2d::Scene scene;
         l2d::GameObject* instance = library.instantiate(scene, "player");
@@ -401,7 +438,33 @@ namespace
 
         std::stringstream upgraded;
         L2D_REQUIRE(l2d::LevelSerializer::saveJson(upgraded, loaded));
-        L2D_REQUIRE(upgraded.str().find("\"version\": 5") != std::string::npos);
+        L2D_REQUIRE(upgraded.str().find("\"version\": 6") != std::string::npos);
+    }
+
+    void testJsonVersionFiveRemainsReadable()
+    {
+        std::stringstream versionFive(
+            R"({"format":"Lorenzo2DLevel","version":5,"name":"Phase 5","objects":[{"name":"Legacy motor","tag":"","active":true,"zOrder":0,"transform":{"position":[0,0],"rotation":0,"scale":[1,1]},"components":[{"type":"CharacterMotor2D","version":1,"required":true,"data":{"skinWidth":0.01,"groundProbeDistance":0.1,"maximumSlopeAngleDegrees":50,"minimumMoveDistance":0.00001,"maximumMoveDistance":100000,"maximumPlatformDisplacement":10000,"maximumSlideIterations":4,"maximumRecoveryIterations":4,"upDirection":[0,-1],"categoryMask":4294967295,"includeSensors":false,"snapToGround":true,"inheritPlatformTranslation":true}},{"type":"BoxCollider2D","version":1,"required":true,"data":{"size":[8,10],"properties":{"offset":[0,0],"restitution":0,"staticFriction":0.5,"dynamicFriction":0.3,"category":1,"mask":4294967295,"sensor":false}}}]}]})");
+        l2d::LevelDocument loaded;
+        L2D_REQUIRE(l2d::LevelSerializer::loadJson(versionFive, loaded));
+        L2D_REQUIRE_EQUAL(loaded.objects.size(), 1u);
+        L2D_REQUIRE(loaded.objects[0].characterMotor.has_value());
+        L2D_REQUIRE(!loaded.objects[0].topDownController.has_value());
+        L2D_REQUIRE(!loaded.objects[0].gridStepController.has_value());
+
+        std::stringstream upgraded;
+        L2D_REQUIRE(l2d::LevelSerializer::saveJson(upgraded, loaded));
+        L2D_REQUIRE(upgraded.str().find("\"version\": 6") != std::string::npos);
+    }
+
+    void testInvalidControllerEnumIsRejectedTransactionally()
+    {
+        l2d::LevelDocument destination;
+        destination.name = "unchanged";
+        std::stringstream invalid(
+            R"({"format":"Lorenzo2DLevel","version":6,"name":"bad","objects":[{"name":"Grid","tag":"","active":true,"zOrder":0,"transform":{"position":[0,0],"rotation":0,"scale":[1,1]},"components":[{"type":"CharacterMotor2D","version":1,"required":true,"data":{"upDirection":[0,-1]}},{"type":"GridStepController2D","version":1,"required":true,"data":{"cellSize":[32,32],"gridOrigin":[0,0],"axisPriority":256}},{"type":"BoxCollider2D","version":1,"required":true,"data":{"size":[8,10],"properties":{"offset":[0,0],"sensor":false}}}]}]})");
+        L2D_REQUIRE(!l2d::LevelSerializer::loadJson(invalid, destination));
+        L2D_REQUIRE(destination.name == "unchanged");
     }
 }
 
@@ -421,6 +484,9 @@ int main()
     runTest("sprite animator assets and custom codecs round-trip",
             testSpriteAnimatorAssetsAndCustomCodecsRoundTrip, failures);
     runTest("JSON level version 4 remains readable", testJsonVersionFourRemainsReadable, failures);
+    runTest("JSON level version 5 remains readable", testJsonVersionFiveRemainsReadable, failures);
+    runTest("invalid controller enum is rejected transactionally",
+            testInvalidControllerEnumIsRejectedTransactionally, failures);
 
     if (failures != 0)
     {

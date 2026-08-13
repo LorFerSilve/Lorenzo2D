@@ -15,6 +15,9 @@ current runtime first and the allowed dependency direction for upcoming modules.
   does not mutate or borrow the world's contact state.
 - `CharacterMotor2D` owns one character's collision-aware translation and transient contact/support
   state. Gameplay controllers own intent and pass fixed-tick displacement into the motor.
+- `TopDownController2D` owns free-movement velocity and facing; `GridStepController2D` owns logical
+  cell/step state. Both consume device-independent intent and delegate collision translation to the
+  motor.
 - Asset handles own immutable published resource generations independently from the registry that
   issued them.
 - `TileMapData` owns imported tile definitions, layers, objects, and properties without depending

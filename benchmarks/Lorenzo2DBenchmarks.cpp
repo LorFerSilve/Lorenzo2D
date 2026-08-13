@@ -3,6 +3,8 @@
 #include <Lorenzo2D/ECS/Component.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
+#include <Lorenzo2D/Movement/GridStepController2D.hpp>
+#include <Lorenzo2D/Movement/TopDownController2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
@@ -323,6 +325,40 @@ namespace
                        });
     }
 
+    BenchmarkResult benchmarkTopDownControllers(std::size_t iterations)
+    {
+        constexpr std::size_t characterCount = 256u;
+        l2d::Scene scene;
+        std::vector<l2d::TopDownController2D*> controllers;
+        controllers.reserve(characterCount);
+        for (std::size_t index = 0u; index < characterCount; ++index)
+        {
+            l2d::GameObject& character = scene.createGameObject("Top-down benchmark character");
+            character.transform.setPosition(
+                {static_cast<float>(index % 16u) * 24.f, static_cast<float>(index / 16u) * 24.f});
+            character.addComponent<l2d::BoxCollider2D>(sf::Vector2f{8.f, 8.f});
+            character.addComponent<l2d::CharacterMotor2D>(l2d::topDownCharacterMotorConfig2D());
+            controllers.push_back(&character.addComponent<l2d::TopDownController2D>());
+        }
+        const l2d::PhysicsQueryContext2D queries(scene);
+
+        return measure(iterations,
+                       [&controllers, &queries]()
+                       {
+                           std::size_t checksum = 0u;
+                           for (std::size_t index = 0u; index < controllers.size(); ++index)
+                           {
+                               const sf::Vector2f input = index % 2u == 0u ? sf::Vector2f{1.f, 0.f}
+                                                                           : sf::Vector2f{0.f, 1.f};
+                               const l2d::TopDownMoveResult2D result =
+                                   controllers[index]->move(queries, input, 1.f / 60.f);
+                               checksum += result.succeeded ? 1u : 0u;
+                               checksum += result.motorResult.contacts.size();
+                           }
+                           return checksum;
+                       });
+    }
+
     l2d::TileMap::Layout makeTileLayout()
     {
         constexpr std::size_t width = 256u;
@@ -406,6 +442,7 @@ namespace
         constexpr std::size_t physicsQuerySnapshotIterations = 50u;
         constexpr std::size_t physicsQueryBatchIterations = 100u;
         constexpr std::size_t characterMotorIterations = 1000u;
+        constexpr std::size_t topDownControllerIterations = 200u;
         constexpr std::size_t tileMapBuildIterations = 5u;
         constexpr std::size_t tileMapCullingIterations = 1000u;
 
@@ -430,6 +467,8 @@ namespace
                            benchmarkPhysicsQueryBatch(physicsQueryBatchIterations)});
         entries.push_back({"character motor corridor", characterMotorIterations,
                            benchmarkCharacterMotorCorridor(characterMotorIterations)});
+        entries.push_back({"top-down controller batch", topDownControllerIterations,
+                           benchmarkTopDownControllers(topDownControllerIterations)});
         entries.push_back({"tile-map full build", tileMapBuildIterations,
                            benchmarkTileMapBuild(tileMapBuildIterations)});
         entries.push_back({"layered tile-map build", tileMapBuildIterations,

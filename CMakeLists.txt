@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.9.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.10.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -188,6 +188,8 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/ECS/GameObject.cpp
     src/Lorenzo2D/ECS/Transform.cpp
     src/Lorenzo2D/Movement/CharacterMotor2D.cpp
+    src/Lorenzo2D/Movement/GridStepController2D.cpp
+    src/Lorenzo2D/Movement/TopDownController2D.cpp
     src/Lorenzo2D/Physics/BoxCollider2D.cpp
     src/Lorenzo2D/Physics/CapsuleCollider2D.cpp
     src/Lorenzo2D/Physics/CircleCollider2D.cpp

@@ -72,6 +72,6 @@ tunnelling. Circle and box motor sweeps use their native query shapes.
 
 ## Prefabs and levels
 
-`CharacterMotorPrefab` stores the full configuration. JSON level version 5 writes a built-in
-`CharacterMotor2D` component record; version 4 JSON and legacy text versions 1 through 3 remain
+`CharacterMotorPrefab` stores the full configuration. JSON level version 6 writes a built-in
+`CharacterMotor2D` component record; versions 4 and 5 JSON and legacy text versions 1 through 3 remain
 readable. Runtime contact state and the selected runtime collider ID are deliberately not saved.

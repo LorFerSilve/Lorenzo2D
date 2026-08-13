@@ -30,7 +30,9 @@ current support claims are documented separately:
   ASCII/Tiled import, runtime generation, and tile asset resolution.
 - [`docs/character-motor.md`](docs/character-motor.md) documents fixed-tick
   sweep-and-slide movement, contacts, slopes, and moving platforms.
-- [`docs/level-format.md`](docs/level-format.md) documents JSON level version 5,
+- [`docs/top-down-movement.md`](docs/top-down-movement.md) documents free analog and
+  transactional grid-step controllers.
+- [`docs/level-format.md`](docs/level-format.md) documents JSON level version 6,
   asset-backed prefabs, component codecs, and legacy migration.
 
 ## Current features
@@ -54,13 +56,15 @@ current support claims are documented separately:
 - Ray, point, overlap, and swept circle/box/capsule queries with reusable fixed-tick snapshots
 - Shared box/circle/capsule character motor with bounded sweep-and-slide, depenetration,
   slope-aware contacts, ground snap, and moving-platform translation
+- Device-independent free top-down and four-direction grid-step controllers with acceleration,
+  facing, deterministic input resolution, turn buffering, and atomic blocked steps
 - Collision layers, sensors, contact events, and physics debug drawing
 - Snapshot and live font/texture handles, background loading, hot reload,
   dependency tracking, and ordered runtime resource lookup
 - Deterministic particles, screen-space color passes, asset-backed prefabs, custom
   component codecs, JSON level saving, and legacy level loading
 - Debug overlay and independently switchable world, physics, and UI layers
-- Focused minimal, animation, physics, phase-4, and phase-5 examples plus regression tests for timing,
+- Focused minimal, animation, physics, phase-4, phase-5, and phase-6 examples plus regression tests for timing,
   scenes, rendering, resources, serialization, animation, physics, and tilemaps
 
 ## Requirements
@@ -108,7 +112,7 @@ specialized build trees isolated under `build/<preset>`.
 
 The sandbox and the focused `Lorenzo2DMinimalExample`,
 `Lorenzo2DAnimationExample`, `Lorenzo2DPhysicsExample`, and
-`Lorenzo2DPhase4Example` and `Lorenzo2DPhase5Example` executables are
+`Lorenzo2DPhase4Example`, `Lorenzo2DPhase5Example`, and `Lorenzo2DPhase6Example` executables are
 written to `build/bin`. Disable them independently with
 `-DL2D_BUILD_SANDBOX=OFF` and `-DL2D_BUILD_EXAMPLES=OFF`.
 
@@ -184,9 +188,9 @@ This establishes a measurable baseline without rewarding superficial tests.
 ### Performance benchmarks
 
 The standalone benchmark executable measures uniform-grid and brute-force
-physics steps, scene updates, render-queue construction, full tile-map
-construction, and tile-map view culling. Results are diagnostic rather than
-pass/fail gates:
+physics steps, scene updates, render-queue construction, a batch of top-down
+controllers, full tile-map construction, and tile-map view culling. Results are
+diagnostic rather than pass/fail gates:
 
 ```sh
 cmake --preset benchmarks
@@ -239,7 +243,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.9 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.10 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -343,7 +347,7 @@ snapshots and instantiates asset-free prefabs into any `Scene`.
 `LevelDocument` contains an ordered list of those prefabs. `LevelSerializer`
 round-trips it through streams or `.l2dlevel` files and can instantiate the
 complete document while returning lifetime-aware object handles. New saves use
-deterministic JSON version 5; JSON version 4 and legacy text versions 1 through 3 remain readable while
+deterministic JSON version 6; JSON versions 4 and 5 and legacy text versions 1 through 3 remain readable while
 unsupported versions, unresolved required assets/codecs, non-finite values,
 invalid component data, excessive object counts, malformed records, and
 trailing input are rejected without changing the destination document.

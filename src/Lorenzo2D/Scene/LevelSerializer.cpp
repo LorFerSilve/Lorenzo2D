@@ -139,6 +139,30 @@ namespace l2d
                       {"snapToGround", motor.snapToGround},
                       {"inheritPlatformTranslation", motor.inheritPlatformTranslation}});
             }
+            if (prefab.topDownController)
+            {
+                const TopDownControllerConfig2D& controller = prefab.topDownController->config;
+                push("TopDownController2D", 1u,
+                     {{"maximumSpeed", controller.maximumSpeed},
+                      {"acceleration", controller.acceleration},
+                      {"deceleration", controller.deceleration},
+                      {"inputDeadzone", controller.inputDeadzone},
+                      {"maximumDeltaTime", controller.maximumDeltaTime}});
+            }
+            if (prefab.gridStepController)
+            {
+                const GridStepControllerConfig2D& controller = prefab.gridStepController->config;
+                push("GridStepController2D", 1u,
+                     {{"cellSize", vectorJson(controller.cellSize)},
+                      {"gridOrigin", vectorJson(controller.gridOrigin)},
+                      {"stepDuration", controller.stepDuration},
+                      {"inputThreshold", controller.inputThreshold},
+                      {"alignmentTolerance", controller.alignmentTolerance},
+                      {"collisionTolerance", controller.collisionTolerance},
+                      {"maximumDeltaTime", controller.maximumDeltaTime},
+                      {"axisPriority", static_cast<std::uint8_t>(controller.axisPriority)},
+                      {"bufferTurns", controller.bufferTurns}});
+            }
 
             const auto colliderProperties = [](const ColliderPrefabProperties& properties)
             {
@@ -324,6 +348,47 @@ namespace l2d
                     data.value("inheritPlatformTranslation", motor.inheritPlatformTranslation);
                 if (!CharacterMotor2D::isValidConfig(motor)) return false;
                 prefab.characterMotor = std::move(value);
+            }
+            else if (type == "TopDownController2D")
+            {
+                if (prefab.topDownController) return false;
+                TopDownControllerPrefab value;
+                TopDownControllerConfig2D& controller = value.config;
+                controller.maximumSpeed = data.value("maximumSpeed", controller.maximumSpeed);
+                controller.acceleration = data.value("acceleration", controller.acceleration);
+                controller.deceleration = data.value("deceleration", controller.deceleration);
+                controller.inputDeadzone = data.value("inputDeadzone", controller.inputDeadzone);
+                controller.maximumDeltaTime =
+                    data.value("maximumDeltaTime", controller.maximumDeltaTime);
+                if (!TopDownController2D::isValidConfig(controller)) return false;
+                prefab.topDownController = std::move(value);
+            }
+            else if (type == "GridStepController2D")
+            {
+                if (prefab.gridStepController) return false;
+                GridStepControllerPrefab value;
+                GridStepControllerConfig2D& controller = value.config;
+                if (!data.contains("cellSize") ||
+                    !readVector(data.at("cellSize"), controller.cellSize) ||
+                    !data.contains("gridOrigin") ||
+                    !readVector(data.at("gridOrigin"), controller.gridOrigin))
+                    return false;
+                controller.stepDuration = data.value("stepDuration", controller.stepDuration);
+                controller.inputThreshold = data.value("inputThreshold", controller.inputThreshold);
+                controller.alignmentTolerance =
+                    data.value("alignmentTolerance", controller.alignmentTolerance);
+                controller.collisionTolerance =
+                    data.value("collisionTolerance", controller.collisionTolerance);
+                controller.maximumDeltaTime =
+                    data.value("maximumDeltaTime", controller.maximumDeltaTime);
+                const unsigned int axisPriority =
+                    data.value("axisPriority", static_cast<unsigned int>(controller.axisPriority));
+                if (axisPriority > static_cast<unsigned int>(GridAxisPriority2D::Vertical))
+                    return false;
+                controller.axisPriority = static_cast<GridAxisPriority2D>(axisPriority);
+                controller.bufferTurns = data.value("bufferTurns", controller.bufferTurns);
+                if (!GridStepController2D::isValidConfig(controller)) return false;
+                prefab.gridStepController = std::move(value);
             }
             else if (type == "BoxCollider2D")
             {

@@ -4,6 +4,8 @@
 #include <Lorenzo2D/Assets/AssetManager.hpp>
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
+#include <Lorenzo2D/Movement/GridStepController2D.hpp>
+#include <Lorenzo2D/Movement/TopDownController2D.hpp>
 #include <Lorenzo2D/Physics/BoxCollider2D.hpp>
 #include <Lorenzo2D/Physics/CapsuleCollider2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
@@ -158,6 +160,15 @@ namespace l2d
             return false;
         }
 
+        if ((prefab.topDownController || prefab.gridStepController) && !prefab.characterMotor)
+            return false;
+        if (prefab.topDownController &&
+            !TopDownController2D::isValidConfig(prefab.topDownController->config))
+            return false;
+        if (prefab.gridStepController &&
+            !GridStepController2D::isValidConfig(prefab.gridStepController->config))
+            return false;
+
         if (prefab.boxCollider &&
             (!isFinite(prefab.boxCollider->size) || prefab.boxCollider->size.x < 0.f ||
              prefab.boxCollider->size.y < 0.f ||
@@ -264,6 +275,10 @@ namespace l2d
 
         if (prefab.characterMotor)
             object.addComponent<CharacterMotor2D>(prefab.characterMotor->config);
+        if (prefab.topDownController)
+            object.addComponent<TopDownController2D>(prefab.topDownController->config);
+        if (prefab.gridStepController)
+            object.addComponent<GridStepController2D>(prefab.gridStepController->config);
 
         object.setActive(prefab.active);
         return object;
@@ -326,6 +341,10 @@ namespace l2d
             }
             if (prefab.characterMotor)
                 object.addComponent<CharacterMotor2D>(prefab.characterMotor->config);
+            if (prefab.topDownController)
+                object.addComponent<TopDownController2D>(prefab.topDownController->config);
+            if (prefab.gridStepController)
+                object.addComponent<GridStepController2D>(prefab.gridStepController->config);
 
             if (prefab.spriteRenderer)
             {

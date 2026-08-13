@@ -179,6 +179,20 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DTopDownControllerTests
+    SOURCE Lorenzo2DTopDownControllerTests.cpp
+    LABELS headless movement top-down physics queries determinism
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
+    Lorenzo2DGridStepControllerTests
+    SOURCE Lorenzo2DGridStepControllerTests.cpp
+    LABELS headless movement top-down grid physics queries determinism
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
     Lorenzo2DPhysicsTilemapTests
     SOURCE physics/Lorenzo2DPhysicsTilemapTests.cpp
     LABELS headless physics tilemap

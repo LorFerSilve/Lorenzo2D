@@ -94,6 +94,12 @@ namespace l2d
 
         CharacterMoveResult2D move(const PhysicsQueryContext2D& queries, sf::Vector2f displacement);
 
+        // Evaluates the same collision-aware move while restoring the owner's
+        // transform and all transient motor state before returning. This is
+        // useful for transactional movement such as an all-or-nothing grid step.
+        CharacterMoveResult2D testMove(const PhysicsQueryContext2D& queries,
+                                       sf::Vector2f displacement);
+
         const CharacterMotorState2D& state() const;
         void clearState();
 
