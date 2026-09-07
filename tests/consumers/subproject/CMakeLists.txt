@@ -34,6 +34,8 @@ foreach(unexpected_target
     Lorenzo2DPhase6Example
     Lorenzo2DPhase7Example
     Lorenzo2DPhase8Example
+    Lorenzo2DPhase9Example
+    Lorenzo2DIsometricTests
     Lorenzo2DTests
     Lorenzo2DTimingAccountingTests
     Lorenzo2DPhysicsTests
