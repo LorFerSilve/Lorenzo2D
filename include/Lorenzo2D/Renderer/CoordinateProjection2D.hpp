@@ -18,8 +18,7 @@ namespace l2d
         // projection cannot provide a safe bound; callers must then avoid
         // projected culling rather than risk dropping visible geometry.
         virtual bool projectBounds(sf::Vector2f worldMinimum, sf::Vector2f worldMaximum,
-                                   sf::Vector2f& renderMinimum,
-                                   sf::Vector2f& renderMaximum) const
+                                   sf::Vector2f& renderMinimum, sf::Vector2f& renderMaximum) const
         {
             (void)worldMinimum;
             (void)worldMaximum;
@@ -54,8 +53,7 @@ namespace l2d
         }
 
         bool projectBounds(sf::Vector2f worldMinimum, sf::Vector2f worldMaximum,
-                           sf::Vector2f& renderMinimum,
-                           sf::Vector2f& renderMaximum) const override
+                           sf::Vector2f& renderMinimum, sf::Vector2f& renderMaximum) const override
         {
             renderMinimum = worldMinimum;
             renderMaximum = worldMaximum;
