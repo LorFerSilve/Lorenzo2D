@@ -66,8 +66,8 @@ jobs:
             libfreetype-dev \
             libgl1-mesa-dev \
             libegl1-mesa-dev \
-            libudev-dev
-            libflac-dev
+            libudev-dev \
+            libflac-dev \
             libvorbis-dev
 
       - name: Configure (Windows)
@@ -148,8 +148,8 @@ jobs:
             libfreetype-dev \
             libgl1-mesa-dev \
             libegl1-mesa-dev \
-            libudev-dev
-            libflac-dev
+            libudev-dev \
+            libflac-dev \
             libvorbis-dev
 
       - name: Configure as an add_subdirectory dependency
@@ -308,8 +308,8 @@ jobs:
             libfreetype-dev \
             libgl1-mesa-dev \
             libegl1-mesa-dev \
-            libudev-dev
-            libflac-dev
+            libudev-dev \
+            libflac-dev \
             libvorbis-dev
           python3 -m pip install --break-system-packages clang-format==22.1.3
 
@@ -343,8 +343,8 @@ jobs:
             libfreetype-dev \
             libgl1-mesa-dev \
             libegl1-mesa-dev \
-            libudev-dev
-            libflac-dev
+            libudev-dev \
+            libflac-dev \
             libvorbis-dev
 
       - name: Configure coverage build
