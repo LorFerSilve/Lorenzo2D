@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.12.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.13.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -102,7 +102,6 @@ function(l2d_enable_sanitizers target)
     if(L2D_ENABLE_ASAN)
         list(APPEND l2d_sanitizers address)
     endif()
-
     if(L2D_ENABLE_UBSAN)
         list(APPEND l2d_sanitizers undefined)
     endif()
