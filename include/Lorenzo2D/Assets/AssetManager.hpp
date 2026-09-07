@@ -3,6 +3,7 @@
 #include <Lorenzo2D/Assets/AssetHandle.hpp>
 #include <Lorenzo2D/Animation/AnimationClip.hpp>
 
+#include <SFML/Audio/SoundBuffer.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
@@ -51,6 +52,18 @@ namespace l2d
         bool unloadTexture(const std::string& name);
         std::size_t textureCount() const;
 
+        bool loadSoundBuffer(const std::string& name, const std::string& filepath);
+        bool loadSoundBuffer(const std::string& name, const ResourceLocator& locator,
+                             const std::string& resource);
+        bool storeSoundBuffer(const std::string& name, SoundBufferHandle buffer);
+
+        SoundBufferHandle getSoundBuffer(const std::string& name) const;
+        LiveSoundBufferHandle liveSoundBuffer(const std::string& name);
+
+        bool hasSoundBuffer(const std::string& name) const;
+        bool unloadSoundBuffer(const std::string& name);
+        std::size_t soundBufferCount() const;
+
         bool storeAnimationClip(const std::string& name, AnimationClipHandle clip);
         AnimationClipHandle getAnimationClip(const std::string& name) const;
         bool hasAnimationClip(const std::string& name) const;
@@ -61,16 +74,20 @@ namespace l2d
         // Existing handles keep their asset generations alive.
         void clearFonts();
         void clearTextures();
+        void clearSoundBuffers();
         void clearAnimationClips();
         void clearAll();
 
       private:
         std::unordered_map<std::string, FontHandle> m_fonts;
         std::unordered_map<std::string, TextureHandle> m_textures;
+        std::unordered_map<std::string, SoundBufferHandle> m_soundBuffers;
         std::unordered_map<std::string, AnimationClipHandle> m_animationClips;
         std::unordered_map<std::string, std::shared_ptr<detail::LiveAssetState<sf::Font>>>
             m_liveFonts;
         std::unordered_map<std::string, std::shared_ptr<detail::LiveAssetState<sf::Texture>>>
             m_liveTextures;
+        std::unordered_map<std::string, std::shared_ptr<detail::LiveAssetState<sf::SoundBuffer>>>
+            m_liveSoundBuffers;
     };
 }
