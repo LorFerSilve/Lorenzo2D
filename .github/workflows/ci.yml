@@ -76,6 +76,7 @@ jobs:
           -DL2D_BUILD_SANDBOX=ON
           -DL2D_BUILD_EXAMPLES=ON
           -DL2D_BUILD_TESTS=ON
+          -DL2D_BUILD_BENCHMARKS=ON
           -DL2D_WARNINGS_AS_ERRORS=ON
           -DL2D_ENABLE_ASAN=${{ matrix.asan }}
           -DL2D_ENABLE_UBSAN=${{ matrix.ubsan }}
@@ -91,6 +92,7 @@ jobs:
           -DL2D_BUILD_SANDBOX=ON
           -DL2D_BUILD_EXAMPLES=ON
           -DL2D_BUILD_TESTS=ON
+          -DL2D_BUILD_BENCHMARKS=ON
           -DL2D_WARNINGS_AS_ERRORS=ON
           -DL2D_ENABLE_ASAN=${{ matrix.asan }}
           -DL2D_ENABLE_UBSAN=${{ matrix.ubsan }}
