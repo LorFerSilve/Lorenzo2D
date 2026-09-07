@@ -421,7 +421,8 @@ namespace l2d::detail
             sf::Vector2f polygonCenter = {0.f, 0.f};
             for (const sf::Vector2f vertex : polygon.vertices)
                 polygonCenter += vertex;
-            polygonCenter = multiply(polygonCenter, 1.0 / static_cast<double>(polygon.vertices.size()));
+            polygonCenter =
+                multiply(polygonCenter, 1.0 / static_cast<double>(polygon.vertices.size()));
             const sf::Vector2f capsuleCenter = multiply(capsule.first + capsule.second, 0.5);
             const sf::Vector2f centerDelta = polygonCenter - capsuleCenter;
             double minimumOverlap = std::numeric_limits<double>::infinity();
