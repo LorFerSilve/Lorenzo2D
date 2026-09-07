@@ -743,6 +743,10 @@ For existing top-left-origin objects, explicitly set a collider center offset:
 and `setRadius` no longer change the offset. Collider-only objects remain
 static, and integration remains owned by the world's fixed simulation step.
 
+## License
+
+Lorenzo2D is licensed under the [MIT License](LICENSE).
+
 ## Current limitations and next milestones
 
 - Physics supports circles, oriented boxes, capsules, convex polygons, and distance joints;
@@ -762,7 +766,6 @@ static, and integration remains owned by the world's fixed simulation step.
 - Regression sources use a lightweight first-party harness with shared support
   and focused subsystem executables. More data-driven cases and richer failure
   context can be added as the suite grows.
-- A project license is not yet provided and requires an explicit owner choice.
 
 These constraints are kept explicit so future changes can improve one contract
 at a time without hiding unsupported behavior.
