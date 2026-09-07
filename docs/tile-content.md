@@ -58,6 +58,8 @@ Layer role defaults to `Ground`; set a string property named `role` to `decorati
 `movementCost` populate their strongly typed definition fields while remaining available as normal
 metadata where applicable.
 
-Isometric orientation is content metadata only. Logical tile coordinates remain Cartesian; the
-render projection from phase 3 determines presentation. Navigation, placement, and projected-bounds
-culling remain later roadmap phases.
+Isometric orientation remains content metadata: logical tile coordinates stay Cartesian and are
+shared by physics and navigation. In 0.13, `IsometricTileGrid2D` consumes validated isometric
+`TileMapData` to provide bounded render-space picking, world/render placement anchors, conservative
+projected region bounds, and camera-derived `TileMapRegion` values for `TileMap::setStreamRegion()`.
+See [`isometric.md`](isometric.md) for the complete Phase 9 workflow.

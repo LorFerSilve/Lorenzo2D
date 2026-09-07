@@ -30,11 +30,17 @@ l2d::RenderContext2D context{
 scene.render(window, context);
 ```
 
-A custom projection implements `worldToRender`, `renderToWorld`, and
-`depthFor`. Physics, navigation, and gameplay continue to read Cartesian world
-coordinates. Non-identity tilemap projections transform submitted vertices and
-currently disable chunk culling conservatively; projected-bounds caching is a
-later optimization.
+A projection implements `worldToRender`, `renderToWorld`, and `depthFor`, and
+may implement `projectBounds()` when it can provide a conservative render-space
+AABB. Physics, navigation, and gameplay continue to read Cartesian world
+coordinates. Lorenzo2D 0.13 includes `IsometricProjection2D` as the production
+diamond-isometric implementation. For projected tile maps,
+`IsometricTileGrid2D::visibleRegionForView()` derives a conservative Cartesian
+region from the render-space camera; passing that region to
+`TileMap::setStreamRegion()` performs projected-view chunk rejection before
+vertex submission. Arbitrary non-identity projections still disable the old
+orthogonal per-chunk camera test unless the game supplies an equivalent safe
+region.
 
 ## Layers and deterministic depth
 
@@ -93,7 +99,9 @@ published transactionally so exact merged collision coverage remains intact.
 `setStreamRegion()` accepts a tile-coordinate rectangle. Chunks outside it are
 non-resident and skipped before camera culling. `TileMapRenderStats` separates
 resident and non-resident chunks. `clearStreamRegion()` restores the complete
-map.
+map. For isometric presentation, derive this region from the active
+`sf::View` with `IsometricTileGrid2D::visibleRegionForView()`; see
+[`isometric.md`](isometric.md).
 
 Animated atlas entries are configured with `TileSet::setAnimatedTile()`. Every
 frame has an atlas rectangle and a positive duration. Tilemap updates change
@@ -126,4 +134,5 @@ in screen coordinates after scene rendering and restores the previous view.
 It is intentionally a lightweight color-grading/fade layer, not an off-screen
 shader graph.
 
-See `Lorenzo2DPhase4Example` for the systems working together.
+See `Lorenzo2DPhase4Example` for the Phase 4 systems and
+[`isometric.md`](isometric.md) for the Phase 9 projection workflow.

@@ -11,7 +11,7 @@ Lorenzo2D uses three support levels:
 
 `Planned` is not a support level and must never be presented as an available feature.
 
-## Current matrix for 0.12.0
+## Current matrix for 0.13.0
 
 | Development path | Level | Evidence | Missing before supported |
 | --- | --- | --- | --- |
@@ -19,7 +19,7 @@ Lorenzo2D uses three support levels:
 | Orthogonal platformer | Experimental | public fixed-step controller with acceleration, gravity, variable jumps, coyote/buffer policy and events; slope-aware motor, transactional steps, category-based one-way drop-through, moving-platform translation, focused tests/example/template/tutorial and benchmark | CI template matrix, external usage evidence, platform rotation support |
 | Orthogonal top-down | Experimental | configurable 2D actions, free analog top-down controller, transactional grid-step controller, shared collision-aware motor, layered orthogonal tile data, Tiled import, sprites, animation, sensors, focused example and installed-package template | runtime trigger dispatcher, CI template matrix, external usage evidence |
 | Point-and-click movement | Experimental | camera-aware pointers, tile/physics navigation grid, weighted deterministic A*, collision-aware path following, bounded local avoidance, focused tests/example/installed-package template, CI template build and benchmark | external usage evidence, large-crowd/deadlock evidence, navigation-mesh or hierarchical search if required by a game |
-| Isometric | Planned | projection/inverse-projection contract, projected-Y depth, sprite footpoints, isometric Tiled data import, projected tile submission, orthographic camera primitives, and reusable Cartesian navigation | production isometric projection, projected-bounds culling, picking, placement grid and focused template |
+| Isometric | Experimental | production diamond projection and inverse, conservative projected bounds, bounded tile picking and placement grid, projected-Y foot-point ordering, Tiled isometric import, projected tile submission, Cartesian navigation reuse, focused tests/example/installed-package template, CI template build and diagnostic benchmark | external usage evidence, larger real-game isometric scene evidence, tutorial-level usability feedback |
 
 ## Platform matrix
 

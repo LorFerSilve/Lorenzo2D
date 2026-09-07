@@ -13,6 +13,20 @@ namespace l2d
         virtual sf::Vector2f renderToWorld(sf::Vector2f renderPosition) const = 0;
         virtual float depthFor(sf::Vector2f worldFootPoint) const = 0;
 
+        // Projects an axis-aligned world rectangle into a conservative
+        // axis-aligned render-space rectangle. Returns false when the
+        // projection cannot provide a safe bound; callers must then avoid
+        // projected culling rather than risk dropping visible geometry.
+        virtual bool projectBounds(sf::Vector2f worldMinimum, sf::Vector2f worldMaximum,
+                                   sf::Vector2f& renderMinimum, sf::Vector2f& renderMaximum) const
+        {
+            (void)worldMinimum;
+            (void)worldMaximum;
+            (void)renderMinimum;
+            (void)renderMaximum;
+            return false;
+        }
+
         // Identity projections can keep already-built world-space geometry.
         virtual bool isIdentity() const
         {
@@ -36,6 +50,14 @@ namespace l2d
         float depthFor(sf::Vector2f worldFootPoint) const override
         {
             return worldFootPoint.y;
+        }
+
+        bool projectBounds(sf::Vector2f worldMinimum, sf::Vector2f worldMaximum,
+                           sf::Vector2f& renderMinimum, sf::Vector2f& renderMaximum) const override
+        {
+            renderMinimum = worldMinimum;
+            renderMaximum = worldMaximum;
+            return true;
         }
 
         bool isIdentity() const override

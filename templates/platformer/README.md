@@ -1,6 +1,6 @@
 # Lorenzo2D platformer starter
 
-This standalone Lorenzo2D 0.12 project demonstrates the public platformer API using an installed
+This standalone Lorenzo2D 0.13 project demonstrates the public platformer API using an installed
 package. It includes running, buffered variable-height jumping, a one-way platform, step-up, and a
 moving platform.
 

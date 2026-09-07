@@ -55,6 +55,22 @@ namespace l2d
         std::size_t rowCount = 0;
     };
 
+    struct TileMapCell
+    {
+        std::size_t column = 0;
+        std::size_t row = 0;
+    };
+
+    inline bool operator==(const TileMapCell& left, const TileMapCell& right)
+    {
+        return left.column == right.column && left.row == right.row;
+    }
+
+    inline bool operator!=(const TileMapCell& left, const TileMapCell& right)
+    {
+        return !(left == right);
+    }
+
     struct TileMapUpdateStats
     {
         std::size_t rebuiltRenderChunkCount = 0;

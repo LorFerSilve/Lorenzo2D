@@ -36,6 +36,8 @@ current support claims are documented separately:
   jumping, slopes, steps, one-way platforms, and moving platforms.
 - [`docs/navigation.md`](docs/navigation.md) documents navigation grids, deterministic A*,
   point-and-click following, local avoidance, and replanning.
+- [`docs/isometric.md`](docs/isometric.md) documents isometric projection, picking, placement,
+  projected bounds, depth ordering, and streaming-region culling.
 - [`docs/level-format.md`](docs/level-format.md) documents JSON level version 8,
   asset-backed prefabs, component codecs, and legacy migration.
 
@@ -66,13 +68,15 @@ current support claims are documented separately:
   jumps, coyote time, jump buffering, step-up, one-way drop-through, and movement events
 - Cartesian tile/physics navigation grids, weighted deterministic A*, point-and-click path
   following, path revision/replan signals, and bounded deterministic local avoidance
+- Diamond-isometric projection with reversible world/render mapping, projected-Y depth, tile picking,
+  placement anchors, conservative projected bounds, and view-to-stream-region culling
 - Collision layers, sensors, contact events, and physics debug drawing
 - Snapshot and live font/texture handles, background loading, hot reload,
   dependency tracking, and ordered runtime resource lookup
 - Deterministic particles, screen-space color passes, asset-backed prefabs, custom
   component codecs, JSON level saving, and legacy level loading
 - Debug overlay and independently switchable world, physics, and UI layers
-- Focused minimal, animation, physics, phase-4 through phase-8 examples plus regression tests for timing,
+- Focused minimal, animation, physics, phase-4 through phase-9 examples plus regression tests for timing,
   scenes, rendering, resources, serialization, animation, physics, and tilemaps
 
 ## Requirements
@@ -120,7 +124,7 @@ specialized build trees isolated under `build/<preset>`.
 
 The sandbox and the focused `Lorenzo2DMinimalExample`,
 `Lorenzo2DAnimationExample`, `Lorenzo2DPhysicsExample`, and
-`Lorenzo2DPhase4Example` through `Lorenzo2DPhase8Example` executables are
+`Lorenzo2DPhase4Example` through `Lorenzo2DPhase9Example` executables are
 written to `build/bin`. Disable them independently with
 `-DL2D_BUILD_SANDBOX=OFF` and `-DL2D_BUILD_EXAMPLES=OFF`.
 
@@ -197,7 +201,8 @@ This establishes a measurable baseline without rewarding superficial tests.
 
 The standalone benchmark executable measures uniform-grid and brute-force
 physics steps, scene updates, render-queue construction, batches of top-down and platformer
-controllers, navigation A* batches, full tile-map construction, and tile-map view culling. Results are
+controllers, navigation A* batches, full tile-map construction, tile-map view culling, and
+isometric projection/picking/culling diagnostics. Results are
 diagnostic rather than pass/fail gates:
 
 ```sh
@@ -251,7 +256,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.12 CONFIG REQUIRED)
+find_package(Lorenzo2D 0.13 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -509,7 +514,7 @@ time.
 include/Lorenzo2D/  Public engine headers
 src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
-examples/           Focused minimal, animation, physics, phase-4, and phase-5 applications
+examples/           Focused minimal, animation, physics, and phase-4 through phase-9 applications
 assets/             Text levels and optional runtime assets
 tests/              Regression and consumer integration tests
 benchmarks/         Standalone physics and tile-map performance probes

@@ -76,6 +76,7 @@ jobs:
           -DL2D_BUILD_SANDBOX=ON
           -DL2D_BUILD_EXAMPLES=ON
           -DL2D_BUILD_TESTS=ON
+          -DL2D_BUILD_BENCHMARKS=ON
           -DL2D_WARNINGS_AS_ERRORS=ON
           -DL2D_ENABLE_ASAN=${{ matrix.asan }}
           -DL2D_ENABLE_UBSAN=${{ matrix.ubsan }}
@@ -91,6 +92,7 @@ jobs:
           -DL2D_BUILD_SANDBOX=ON
           -DL2D_BUILD_EXAMPLES=ON
           -DL2D_BUILD_TESTS=ON
+          -DL2D_BUILD_BENCHMARKS=ON
           -DL2D_WARNINGS_AS_ERRORS=ON
           -DL2D_ENABLE_ASAN=${{ matrix.asan }}
           -DL2D_ENABLE_UBSAN=${{ matrix.ubsan }}
@@ -213,6 +215,8 @@ jobs:
           test -f install/include/Lorenzo2D/Scene/LevelSerializer.hpp
           test -f install/include/Lorenzo2D/Scene/ComponentCodecRegistry.hpp
           test -f install/include/Lorenzo2D/Assets/AssetId.hpp
+          test -f install/include/Lorenzo2D/Renderer/IsometricProjection2D.hpp
+          test -f install/include/Lorenzo2D/Tilemap/IsometricTileGrid2D.hpp
           test -f install/include/Lorenzo2D/Tilemap/TileMapData.hpp
           test -f install/include/Lorenzo2D/Tilemap/TiledJsonImporter.hpp
           test -f install/include/Lorenzo2D/Tilemap/TileSet.hpp
@@ -258,6 +262,15 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
           cmake --build build-point-and-click-template --parallel
+
+      - name: Configure and build isometric starter
+        run: |
+          cmake \
+            -S templates/isometric \
+            -B build-isometric-template \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
+          cmake --build build-isometric-template --parallel
 
   quality:
     name: Clang formatting and static analysis
