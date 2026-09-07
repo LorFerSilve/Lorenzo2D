@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.12.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 0.13.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -187,6 +187,8 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/ECS/Component.cpp
     src/Lorenzo2D/ECS/GameObject.cpp
     src/Lorenzo2D/ECS/Transform.cpp
+    src/Lorenzo2D/Isometric/IsometricPlacementGrid2D.cpp
+    src/Lorenzo2D/Isometric/IsometricProjection2D.cpp
     src/Lorenzo2D/Movement/CharacterMotor2D.cpp
     src/Lorenzo2D/Movement/GridStepController2D.cpp
     src/Lorenzo2D/Movement/PlatformerController2D.cpp
