@@ -24,7 +24,13 @@ current runtime first and the allowed dependency direction for upcoming modules.
   `AStarPathfinder2D` is stateless. `PathFollower2D` owns a runtime path command and progress state,
   then delegates velocity and collision translation to the top-down controller and motor.
 - Asset handles own immutable published resource generations independently from the registry that
-  issued them.
+  issued them. This includes fonts, textures, animation clips, and short sound buffers.
+- `AudioSystem` owns active sound voices and streamed music playback; it borrows audio assets only
+  through lifetime-safe handles and never owns scene objects.
+- `UiCanvas2D` owns screen-space runtime controls and transient pointer interaction state. It is a
+  presentation service and does not become authoritative gameplay state.
+- `SaveDocument` owns explicit game-selected persisted values. `SaveGameSerializer` validates and
+  commits complete documents transactionally; it does not serialize arbitrary scene ownership.
 - `TileMapData` owns imported tile definitions, layers, objects, and properties without depending
   on a scene. `TileMap` owns a validated data snapshot and lifetime-aware handles to generated
   render/collision scene objects. `TileMapColliderBuilder2D` remains a pure geometry builder.
@@ -38,11 +44,12 @@ One rendered frame uses this order:
 
 1. poll window events;
 2. sample frame-scoped input;
-3. call `onFrameStart` once;
+3. call `onFrameStart` once (input/UI command capture);
 4. run zero or more complete fixed ticks;
-5. call `onUpdate` once for presentation state;
-6. render using the interpolation alpha;
-7. display the completed frame.
+5. call `onUpdate` once for presentation state and audio voice cleanup;
+6. render world/debug passes using interpolation;
+7. render screen-space UI;
+8. display the completed frame.
 
 One complete fixed tick uses:
 
@@ -63,6 +70,8 @@ Dependencies point downward in this diagram:
 
 ```text
 Templates and game code
+        |
+        +-- UI / Audio / Save services
         |
         +-- Isometric -------+
         |                    |
@@ -87,6 +96,10 @@ Rules:
 - Movement may use Physics query contracts but does not own the physics world.
 - Navigation may use Tilemap data, Movement, and Physics queries.
 - Isometric may use Renderer, Tilemap, Navigation, and Scene/ECS.
+- UI may depend on Core pointer state, asset handles, and SFML graphics, but not on Scene or Physics.
+- Audio may depend on Assets/ResourceLocator and SFML audio, but not on Scene or simulation systems.
+- Save persistence remains independent from Scene/Physics; game code explicitly maps gameplay state
+  into and out of a `SaveDocument`.
 - Templates combine public modules; engine modules never depend on templates or sandbox code.
 
 Cycles between public modules require an architecture review before merge.
@@ -109,6 +122,8 @@ prevents render rounding from feeding back into simulation.
 - New asynchronous systems publish results on the owning simulation or graphics thread through an
   explicit polling/commit point.
 - A failed load or configuration change must not partially replace the last valid state.
+- Save-file writes stage output before replacing the previous file; failed loads leave the caller's
+  destination document unchanged.
 
 ## Numeric and workload safety
 
