@@ -95,8 +95,8 @@ namespace
 
     void testVisibleRegionCanDriveStreamingCulling()
     {
-        const l2d::IsometricTileGrid2D grid(
-            128u, 128u, l2d::IsometricProjection2D({32.f, 32.f}, {64.f, 32.f}));
+        const l2d::IsometricTileGrid2D grid(128u, 128u,
+                                            l2d::IsometricProjection2D({32.f, 32.f}, {64.f, 32.f}));
         sf::View view({0.f, 0.f}, {256.f, 128.f});
         view.setCenter(grid.projection().cellToRender({64, 64}));
 
