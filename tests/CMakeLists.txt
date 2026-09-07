@@ -214,6 +214,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DIsometricTests
+    SOURCE Lorenzo2DIsometricTests.cpp
+    LABELS headless isometric renderer tilemap placement
+    TIMEOUT 60
+)
+
+l2d_add_regression_test(
     Lorenzo2DPhysicsTilemapTests
     SOURCE physics/Lorenzo2DPhysicsTilemapTests.cpp
     LABELS headless physics tilemap
