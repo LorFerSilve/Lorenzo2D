@@ -21,6 +21,7 @@ namespace l2d
 {
     class AssetManager;
     class Scene;
+    struct RenderContext2D;
 
     // Describes the currently loaded geometry, or zeros when unloaded.
     struct TileMapBuildStats
@@ -151,6 +152,10 @@ namespace l2d
 
         // Computes culling telemetry without drawing or creating a window.
         TileMapRenderStats renderStatsForView(const sf::View& view) const;
+        // Uses the active projection to cull against conservative render-space
+        // bounds. Projections without a bounds capability fall back to visible.
+        TileMapRenderStats renderStatsForView(const sf::View& view,
+                                              const RenderContext2D& context) const;
 
         // Returns telemetry from the most recent actual render. It is empty
         // until the current map has been rendered at least once.
