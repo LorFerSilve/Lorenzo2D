@@ -90,10 +90,11 @@ namespace l2d
 
         for (const std::string& row : layout)
         {
-            for (const unsigned char character : row)
+            for (const char character : row)
             {
-                const TileId id = static_cast<TileId>(character) + 1u;
-                importer.mapCharacter(static_cast<char>(character), id);
+                const auto byte = static_cast<unsigned char>(character);
+                const TileId id = static_cast<TileId>(byte) + 1u;
+                importer.mapCharacter(character, id);
             }
         }
 

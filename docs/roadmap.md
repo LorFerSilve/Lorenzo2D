@@ -15,7 +15,7 @@ available feature.
 
 | Phase | Scope | Status |
 | --- | --- | --- |
-| 0 | baseline, versioning, architecture, support policy, deterministic test helper, benchmark reporting, and licensing | In progress; license choice pending |
+| 0 | baseline, versioning, architecture, support policy, deterministic test helper, benchmark reporting, and licensing | Implemented |
 | 1 | general input actions, input contexts, controllers, and pointer abstraction | Implemented |
 | 2 | physics/world queries plus character-oriented collider foundations | Implemented |
 | 3 | render context, coordinate projections, and depth sorting | Implemented |

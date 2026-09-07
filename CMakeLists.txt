@@ -321,6 +321,12 @@ if(L2D_INSTALL)
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/Lorenzo2D/Core"
     )
 
+    install(
+        FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/Lorenzo2D"
+    )
+
     get_target_property(
         l2d_sfml_graphics_target
         SFML::Graphics

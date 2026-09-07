@@ -92,7 +92,7 @@ namespace l2d
 
     GridStepController2D::GridStepController2D(GridStepControllerConfig2D config)
     {
-        (void)setConfig(std::move(config));
+        (void)setConfig(config);
     }
 
     bool GridStepController2D::isValidConfig(const GridStepControllerConfig2D& config)
@@ -112,7 +112,7 @@ namespace l2d
         if (!isValidConfig(config)) return false;
         if (m_state.stepping && owner() != nullptr)
             owner()->transform.setPosition(m_state.stepStart);
-        m_config = std::move(config);
+        m_config = config;
         clearState();
         return true;
     }

@@ -327,7 +327,7 @@ namespace l2d::detail
                 sf::Vector2f center = {0.f, 0.f};
                 for (const sf::Vector2f vertex : polygon.vertices)
                     center += vertex;
-                return multiply(center, 1.0 / polygon.vertices.size());
+                return multiply(center, 1.0 / static_cast<double>(polygon.vertices.size()));
             }();
             const sf::Vector2f centerDelta = polygonCenter - circle.center;
             double minimumOverlap = std::numeric_limits<double>::infinity();
@@ -421,7 +421,8 @@ namespace l2d::detail
             sf::Vector2f polygonCenter = {0.f, 0.f};
             for (const sf::Vector2f vertex : polygon.vertices)
                 polygonCenter += vertex;
-            polygonCenter = multiply(polygonCenter, 1.0 / polygon.vertices.size());
+            polygonCenter =
+                multiply(polygonCenter, 1.0 / static_cast<double>(polygon.vertices.size()));
             const sf::Vector2f capsuleCenter = multiply(capsule.first + capsule.second, 0.5);
             const sf::Vector2f centerDelta = polygonCenter - capsuleCenter;
             double minimumOverlap = std::numeric_limits<double>::infinity();
@@ -656,20 +657,20 @@ namespace l2d::detail
             constexpr std::size_t HalfSteps = 12u;
             const sf::Vector2f axis = normalized(capsule.second - capsule.first, {0.f, 1.f});
             const double axisAngle = std::atan2(axis.y, axis.x);
-            const double step = Pi / HalfSteps;
+            const double step = Pi / static_cast<double>(HalfSteps);
             const double safeRadius = capsule.radius / std::cos(step * 0.5);
             PolygonGeometry2D result;
             result.vertices.reserve((HalfSteps + 1u) * 2u);
             for (std::size_t index = 0; index <= HalfSteps; ++index)
             {
-                const double angle = axisAngle - Pi * 0.5 + step * index;
+                const double angle = axisAngle - Pi * 0.5 + step * static_cast<double>(index);
                 result.vertices.push_back(
                     capsule.second +
                     vectorFromDoubles(std::cos(angle) * safeRadius, std::sin(angle) * safeRadius));
             }
             for (std::size_t index = 0; index <= HalfSteps; ++index)
             {
-                const double angle = axisAngle + Pi * 0.5 + step * index;
+                const double angle = axisAngle + Pi * 0.5 + step * static_cast<double>(index);
                 result.vertices.push_back(
                     capsule.first +
                     vectorFromDoubles(std::cos(angle) * safeRadius, std::sin(angle) * safeRadius));
@@ -897,7 +898,7 @@ namespace l2d::detail
             center += vertex;
         return geometry.polygon.vertices.empty()
                    ? center
-                   : multiply(center, 1.0 / geometry.polygon.vertices.size());
+                   : multiply(center, 1.0 / static_cast<double>(geometry.polygon.vertices.size()));
     }
 
     sf::Vector2f supportPoint(const ColliderGeometry2D& geometry, sf::Vector2f direction)
@@ -1018,10 +1019,9 @@ namespace l2d::detail
             return sweptPolygons(polygon.polygon, movement, target.polygon, hit);
         if (target.type == GeometryType2D::Circle)
         {
-            ColliderGeometry2D staticPolygon = polygon;
             GeometryRayHit2D inverse;
             if (!castCircleAgainstGeometry(target.circle.center, target.circle.center - movement,
-                                           target.circle.radius, staticPolygon, inverse))
+                                           target.circle.radius, polygon, inverse))
                 return false;
             hit.fraction = inverse.fraction;
             hit.normal = {-inverse.normal.x, -inverse.normal.y};

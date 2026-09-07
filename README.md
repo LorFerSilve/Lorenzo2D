@@ -124,10 +124,10 @@ The sandbox and the focused `Lorenzo2DMinimalExample`,
 written to `build/bin`. Disable them independently with
 `-DL2D_BUILD_SANDBOX=OFF` and `-DL2D_BUILD_EXAMPLES=OFF`.
 
-`Lorenzo2DRendererTests` and `Lorenzo2DTimingAccountingTests` are explicitly
-labeled `headless` and can run on Linux with `DISPLAY` and `WAYLAND_DISPLAY`
-unset. The remaining Linux suite runs under Xvfb because the asset tests
-exercise SFML graphics resources:
+Tests that do not construct SFML graphics resources are labeled `headless` and can
+run on Linux with `DISPLAY` and `WAYLAND_DISPLAY` unset. Suites that construct
+textures or other graphics resources—including the renderer, tilemap, serialization,
+asset, and animation suites—run under Xvfb:
 
 ```sh
 xvfb-run --auto-servernum \

@@ -125,7 +125,7 @@ l2d_add_regression_test(
 l2d_add_regression_test(
     Lorenzo2DTilemapTests
     SOURCE Lorenzo2DTilemapTests.cpp
-    LABELS headless tilemap physics renderer
+    LABELS xvfb tilemap physics renderer
     TIMEOUT 90
 )
 
@@ -258,7 +258,7 @@ l2d_add_regression_test(
 l2d_add_regression_test(
     Lorenzo2DSerializationTests
     SOURCE Lorenzo2DSerializationTests.cpp
-    LABELS headless scene prefabs serialization physics renderer
+    LABELS xvfb scene prefabs serialization physics renderer
     TIMEOUT 60
 )
 
@@ -271,7 +271,7 @@ configure_file(
 l2d_add_regression_test(
     Lorenzo2DRendererTests
     SOURCE Lorenzo2DRendererTests.cpp
-    LABELS headless renderer
+    LABELS xvfb renderer
     PRIVATE_INCLUDE_DIRECTORIES
         "${PROJECT_SOURCE_DIR}/src/Lorenzo2D/Renderer"
     TIMEOUT 60

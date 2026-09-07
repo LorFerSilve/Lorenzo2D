@@ -37,7 +37,7 @@ namespace l2d
 
     PathFollower2D::PathFollower2D(PathFollowerConfig2D config)
     {
-        (void)setConfig(std::move(config));
+        (void)setConfig(config);
     }
 
     bool PathFollower2D::isValidConfig(const PathFollowerConfig2D& config)
@@ -56,7 +56,7 @@ namespace l2d
     bool PathFollower2D::setConfig(PathFollowerConfig2D config)
     {
         if (!isValidConfig(config)) return false;
-        m_config = std::move(config);
+        m_config = config;
         clearPath();
         return true;
     }

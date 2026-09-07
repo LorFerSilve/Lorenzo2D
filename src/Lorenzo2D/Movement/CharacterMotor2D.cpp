@@ -236,7 +236,7 @@ namespace l2d
 
     CharacterMotor2D::CharacterMotor2D(CharacterMotorConfig2D config)
     {
-        (void)setConfig(std::move(config));
+        (void)setConfig(config);
     }
 
     bool CharacterMotor2D::isValidConfig(const CharacterMotorConfig2D& config)
@@ -260,7 +260,7 @@ namespace l2d
     {
         if (!isValidConfig(config)) return false;
         config.upDirection = *normalized(config.upDirection);
-        m_config = std::move(config);
+        m_config = config;
         clearState();
         return true;
     }

@@ -309,7 +309,7 @@ namespace l2d
                 if (!data.contains("rect") || !data.at("rect").is_array() ||
                     data.at("rect").size() != 4u ||
                     !std::all_of(data.at("rect").begin(), data.at("rect").end(),
-                                 [](const Json& value) { return value.is_number_integer(); }) ||
+                                 [](const Json& entry) { return entry.is_number_integer(); }) ||
                     !data.contains("size") || !readVector(data.at("size"), value.size) ||
                     !data.contains("color") || !readJsonColor(data.at("color"), value.color) ||
                     !data.contains("origin") || !readVector(data.at("origin"), value.origin))
@@ -393,7 +393,7 @@ namespace l2d
                 motor.inheritPlatformTranslation =
                     data.value("inheritPlatformTranslation", motor.inheritPlatformTranslation);
                 if (!CharacterMotor2D::isValidConfig(motor)) return false;
-                prefab.characterMotor = std::move(value);
+                prefab.characterMotor = value;
             }
             else if (type == "TopDownController2D")
             {
@@ -407,7 +407,7 @@ namespace l2d
                 controller.maximumDeltaTime =
                     data.value("maximumDeltaTime", controller.maximumDeltaTime);
                 if (!TopDownController2D::isValidConfig(controller)) return false;
-                prefab.topDownController = std::move(value);
+                prefab.topDownController = value;
             }
             else if (type == "GridStepController2D")
             {
@@ -434,7 +434,7 @@ namespace l2d
                 controller.axisPriority = static_cast<GridAxisPriority2D>(axisPriority);
                 controller.bufferTurns = data.value("bufferTurns", controller.bufferTurns);
                 if (!GridStepController2D::isValidConfig(controller)) return false;
-                prefab.gridStepController = std::move(value);
+                prefab.gridStepController = value;
             }
             else if (type == "PlatformerController2D")
             {
@@ -468,7 +468,7 @@ namespace l2d
                 controller.maximumDeltaTime =
                     data.value("maximumDeltaTime", controller.maximumDeltaTime);
                 if (!PlatformerController2D::isValidConfig(controller)) return false;
-                prefab.platformerController = std::move(value);
+                prefab.platformerController = value;
             }
             else if (type == "PathFollower2D")
             {
@@ -507,7 +507,7 @@ namespace l2d
                         avoidanceData.value("maximumNeighbors", avoidance.maximumNeighbors);
                 }
                 if (!PathFollower2D::isValidConfig(follower)) return false;
-                prefab.pathFollower = std::move(value);
+                prefab.pathFollower = value;
             }
             else if (type == "BoxCollider2D")
             {
@@ -631,14 +631,6 @@ namespace l2d
             return true;
         }
 
-        void writeColor(std::ostream& output, sf::Color color)
-        {
-            output << static_cast<unsigned int>(color.r) << ' '
-                   << static_cast<unsigned int>(color.g) << ' '
-                   << static_cast<unsigned int>(color.b) << ' '
-                   << static_cast<unsigned int>(color.a);
-        }
-
         bool parseColliderProperties(std::istream& input, ColliderPrefabProperties& properties)
         {
             return static_cast<bool>(
@@ -647,16 +639,6 @@ namespace l2d
                        properties.material.dynamicFriction >> properties.filter.categoryBits >>
                        properties.filter.maskBits) &&
                    parseBoolean(input, properties.sensor);
-        }
-
-        void writeColliderProperties(std::ostream& output,
-                                     const ColliderPrefabProperties& properties)
-        {
-            output << properties.offset.x << ' ' << properties.offset.y << ' '
-                   << properties.material.restitution << ' ' << properties.material.staticFriction
-                   << ' ' << properties.material.dynamicFriction << ' '
-                   << properties.filter.categoryBits << ' ' << properties.filter.maskBits << ' '
-                   << (properties.sensor ? 1 : 0);
         }
 
         bool readObject(std::istream& input, Prefab& prefab, std::uint32_t version)
@@ -823,84 +805,6 @@ namespace l2d
             if (!parseLine(input, "end", [](std::istream&) { return true; })) return false;
 
             return isValidPrefab(prefab);
-        }
-
-        void writeObject(std::ostream& output, const Prefab& prefab)
-        {
-            output << "object\n";
-            output << "name " << std::quoted(prefab.name) << '\n';
-            output << "tag " << std::quoted(prefab.tag) << '\n';
-            output << "active " << (prefab.active ? 1 : 0) << '\n';
-            output << "z_order " << prefab.zOrder << '\n';
-            output << "transform " << prefab.transform.position.x << ' '
-                   << prefab.transform.position.y << ' ' << prefab.transform.rotation << ' '
-                   << prefab.transform.scale.x << ' ' << prefab.transform.scale.y << '\n';
-
-            output << "rectangle " << (prefab.rectangleRenderer ? 1 : 0);
-            if (prefab.rectangleRenderer)
-            {
-                output << ' ' << prefab.rectangleRenderer->size.x << ' '
-                       << prefab.rectangleRenderer->size.y << ' ';
-                writeColor(output, prefab.rectangleRenderer->color);
-            }
-            output << '\n';
-
-            output << "circle " << (prefab.circleRenderer ? 1 : 0);
-            if (prefab.circleRenderer)
-            {
-                output << ' ' << prefab.circleRenderer->radius << ' ';
-                writeColor(output, prefab.circleRenderer->color);
-            }
-            output << '\n';
-
-            output << "rigid_body " << (prefab.rigidBody ? 1 : 0);
-            if (prefab.rigidBody)
-            {
-                output << ' ' << static_cast<int>(prefab.rigidBody->bodyType) << ' '
-                       << prefab.rigidBody->velocity.x << ' ' << prefab.rigidBody->velocity.y << ' '
-                       << prefab.rigidBody->acceleration.x << ' '
-                       << prefab.rigidBody->acceleration.y << ' ' << prefab.rigidBody->mass << ' '
-                       << (prefab.rigidBody->useGravity ? 1 : 0) << ' '
-                       << prefab.rigidBody->gravityScale;
-            }
-            output << '\n';
-
-            output << "box_collider " << (prefab.boxCollider ? 1 : 0);
-            if (prefab.boxCollider)
-            {
-                output << ' ' << prefab.boxCollider->size.x << ' ' << prefab.boxCollider->size.y
-                       << ' ';
-                writeColliderProperties(output, prefab.boxCollider->properties);
-            }
-            output << '\n';
-
-            output << "circle_collider " << (prefab.circleCollider ? 1 : 0);
-            if (prefab.circleCollider)
-            {
-                output << ' ' << prefab.circleCollider->radius << ' ';
-                writeColliderProperties(output, prefab.circleCollider->properties);
-            }
-            output << '\n';
-
-            output << "capsule_collider " << (prefab.capsuleCollider ? 1 : 0);
-            if (prefab.capsuleCollider)
-            {
-                output << ' ' << prefab.capsuleCollider->radius << ' '
-                       << prefab.capsuleCollider->height << ' ';
-                writeColliderProperties(output, prefab.capsuleCollider->properties);
-            }
-            output << '\n';
-
-            output << "convex_polygon_collider " << (prefab.convexPolygonCollider ? 1 : 0);
-            if (prefab.convexPolygonCollider)
-            {
-                output << ' ' << prefab.convexPolygonCollider->vertices.size();
-                for (const sf::Vector2f vertex : prefab.convexPolygonCollider->vertices)
-                    output << ' ' << vertex.x << ' ' << vertex.y;
-                output << ' ';
-                writeColliderProperties(output, prefab.convexPolygonCollider->properties);
-            }
-            output << "\nend\n";
         }
 
         bool isValidLevel(const LevelDocument& level)
@@ -1086,7 +990,7 @@ namespace l2d
         }
         catch (...)
         {
-            for (GameObjectHandle handle : handles)
+            for (const GameObjectHandle& handle : handles)
                 if (GameObject* object = handle.get()) object->destroy();
             scene.destroyQueuedGameObjects();
             throw;

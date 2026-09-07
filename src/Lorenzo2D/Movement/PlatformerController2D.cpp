@@ -52,7 +52,7 @@ namespace l2d
 
     PlatformerController2D::PlatformerController2D(PlatformerControllerConfig2D config)
     {
-        (void)setConfig(std::move(config));
+        (void)setConfig(config);
     }
 
     bool PlatformerController2D::isValidConfig(const PlatformerControllerConfig2D& config)
@@ -79,7 +79,7 @@ namespace l2d
     bool PlatformerController2D::setConfig(PlatformerControllerConfig2D config)
     {
         if (!isValidConfig(config)) return false;
-        m_config = std::move(config);
+        m_config = config;
         reset();
         return true;
     }
