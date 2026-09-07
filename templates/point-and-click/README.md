@@ -1,6 +1,6 @@
 # Lorenzo2D point-and-click starter
 
-This standalone Lorenzo2D 0.12 project uses only the installed public API. Left-clicking a
+This standalone Lorenzo2D 0.13 project uses only the installed public API. Left-clicking a
 walkable location computes a deterministic A* path and follows it through the shared top-down
 controller and collision-aware character motor.
 
