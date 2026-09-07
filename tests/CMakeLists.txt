@@ -130,6 +130,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DIsometricTests
+    SOURCE Lorenzo2DIsometricTests.cpp
+    LABELS headless isometric renderer tilemap placement culling determinism
+    TIMEOUT 60
+)
+
+l2d_add_regression_test(
     Lorenzo2DTimingAccountingTests
     SOURCE Lorenzo2DTimingAccountingTests.cpp
     LABELS headless core timing
