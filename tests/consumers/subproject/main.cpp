@@ -117,7 +117,7 @@ int main()
                    joint.id() != l2d::InvalidJointId &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY &&
-                   pickedCell == std::optional<sf::Vector2u>({1u, 0u}) &&
+                   pickedCell.has_value() && *pickedCell == sf::Vector2u(1u, 0u) &&
                    placementGrid.place({1u, 0u}) && placementGrid.occupied({1u, 0u})
                ? 0
                : 1;
