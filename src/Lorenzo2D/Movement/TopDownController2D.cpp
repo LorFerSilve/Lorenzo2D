@@ -56,7 +56,7 @@ namespace l2d
 
     TopDownController2D::TopDownController2D(TopDownControllerConfig2D config)
     {
-        (void)setConfig(std::move(config));
+        (void)setConfig(config);
     }
 
     bool TopDownController2D::isValidConfig(const TopDownControllerConfig2D& config)
@@ -72,7 +72,7 @@ namespace l2d
     bool TopDownController2D::setConfig(TopDownControllerConfig2D config)
     {
         if (!isValidConfig(config)) return false;
-        m_config = std::move(config);
+        m_config = config;
         stop();
         return true;
     }
