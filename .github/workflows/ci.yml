@@ -185,7 +185,7 @@ jobs:
           -B build-sfml-package
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
-          -DSFML_BUILD_AUDIO=OFF
+          -DSFML_BUILD_AUDIO=ON
           -DSFML_BUILD_NETWORK=OFF
           -DSFML_BUILD_EXAMPLES=OFF
           -DSFML_BUILD_TEST_SUITE=OFF
