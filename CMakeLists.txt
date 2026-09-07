@@ -234,6 +234,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Tilemap/TileMapData.cpp
     src/Lorenzo2D/Tilemap/TileSet.cpp
     src/Lorenzo2D/Tilemap/TiledJsonImporter.cpp
+    src/Lorenzo2D/UI/UiCanvas2D.cpp
 )
 
 add_library(Lorenzo2D STATIC ${LORENZO2D_SOURCES})
