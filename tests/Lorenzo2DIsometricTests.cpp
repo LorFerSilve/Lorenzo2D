@@ -10,6 +10,8 @@
 #include <SFML/Graphics/View.hpp>
 
 #include <cmath>
+#include <limits>
+#include <optional>
 #include <stdexcept>
 
 #include "TestSupport.hpp"
@@ -130,9 +132,9 @@ namespace
         queue.build(scene, context);
 
         L2D_REQUIRE(queue.size() == 2u);
-        L2D_REQUIRE(queue.entries()[0].object == &back);
-        L2D_REQUIRE(queue.entries()[1].object == &front);
-        L2D_REQUIRE(queue.entries()[0].key.depth < queue.entries()[1].key.depth);
+        L2D_REQUIRE(queue.entries()[0].gameObject.get() == &back);
+        L2D_REQUIRE(queue.entries()[1].gameObject.get() == &front);
+        L2D_REQUIRE(queue.entries()[0].sortKey.depth < queue.entries()[1].sortKey.depth);
     }
 }
 
