@@ -215,11 +215,38 @@ namespace l2d
                    first.top <= second.bottom && first.bottom >= second.top;
         }
 
-        bool isVisible(const RenderChunk& chunk, const CullingArea& cullingArea)
+        bool projectedBounds(const Bounds& worldBounds,
+                             const CoordinateProjection2D& projection, Bounds& output)
+        {
+            sf::Vector2f renderMinimum;
+            sf::Vector2f renderMaximum;
+            if (!projection.projectBounds({worldBounds.left, worldBounds.top},
+                                          {worldBounds.right, worldBounds.bottom},
+                                          renderMinimum, renderMaximum))
+            {
+                return false;
+            }
+
+            output = {renderMinimum.x, renderMinimum.y, renderMaximum.x, renderMaximum.y};
+            return isFinite(output) && output.left <= output.right && output.top <= output.bottom;
+        }
+
+        bool isVisible(const RenderChunk& chunk, const CullingArea& cullingArea,
+                       const CoordinateProjection2D* projection = nullptr)
         {
             if (!cullingArea.enabled) return true;
+            if (projection == nullptr || projection->isIdentity())
+                return intersects(chunk.worldBounds, cullingArea.bounds);
 
-            return intersects(chunk.worldBounds, cullingArea.bounds);
+            Bounds renderBounds;
+            if (!projectedBounds(chunk.worldBounds, *projection, renderBounds))
+            {
+                // Unknown projection bounds stay visible. Culling must never
+                // trade correctness for an optimization.
+                return true;
+            }
+
+            return intersects(renderBounds, cullingArea.bounds);
         }
 
         void appendVertex(sf::VertexArray& vertices, sf::Vector2f position, sf::Color color,
@@ -629,7 +656,15 @@ namespace l2d
 
             TileMapRenderStats statsForView(const sf::View& view) const
             {
+                return statsForView(view, RenderContext2D{});
+            }
+
+            TileMapRenderStats statsForView(const sf::View& view,
+                                            const RenderContext2D& context) const
+            {
                 const CullingArea cullingArea = makeCullingArea(view);
+                const CoordinateProjection2D* projection =
+                    context.pass == RenderPass2D::UI ? nullptr : context.projection;
 
                 TileMapRenderStats stats = baseStats();
 
@@ -644,7 +679,7 @@ namespace l2d
 
                     stats.residentChunkCount++;
 
-                    if (isVisible(chunk, cullingArea))
+                    if (isVisible(chunk, cullingArea, projection))
                     {
                         addVisibleChunk(stats, chunk);
                     }
@@ -763,9 +798,9 @@ namespace l2d
 
                     stats.residentChunkCount++;
 
-                    // A general projection can rotate/shear a chunk. Until projected
-                    // bounds are cached, drawing it is the conservative correct choice.
-                    if (!projectGeometry && !isVisible(chunk, cullingArea))
+                    const CoordinateProjection2D* cullingProjection =
+                        projectGeometry ? context.projection : nullptr;
+                    if (!isVisible(chunk, cullingArea, cullingProjection))
                     {
                         stats.culledChunkCount++;
                         continue;
@@ -1576,6 +1611,12 @@ namespace l2d
 
     TileMapRenderStats TileMap::renderStatsForView(const sf::View& view) const
     {
+        return renderStatsForView(view, RenderContext2D{});
+    }
+
+    TileMapRenderStats TileMap::renderStatsForView(const sf::View& view,
+                                                   const RenderContext2D& context) const
+    {
         GameObject* renderObject = m_renderObject.get();
 
         if (renderObject == nullptr) return {};
@@ -1585,7 +1626,7 @@ namespace l2d
 
         if (renderer == nullptr) return {};
 
-        return renderer->statsForView(view);
+        return renderer->statsForView(view, context);
     }
 
     TileMapRenderStats TileMap::lastRenderStats() const
