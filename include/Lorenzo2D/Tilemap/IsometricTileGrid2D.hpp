@@ -23,14 +23,12 @@ namespace l2d
     class IsometricTileGrid2D
     {
       public:
-        IsometricTileGrid2D(std::size_t width, std::size_t height,
-                            IsometricProjection2D projection)
+        IsometricTileGrid2D(std::size_t width, std::size_t height, IsometricProjection2D projection)
             : m_width(width), m_height(height), m_projection(std::move(projection))
         {
             if (width == 0u || height == 0u)
             {
-                throw std::invalid_argument(
-                    "Isometric tile grids must have non-zero dimensions.");
+                throw std::invalid_argument("Isometric tile grids must have non-zero dimensions.");
             }
         }
 
@@ -101,9 +99,8 @@ namespace l2d
             if (!validRegion(region)) return false;
 
             const sf::Vector2f worldCell = m_projection.worldCellSize();
-            const sf::Vector2f worldMinimum = {
-                static_cast<float>(region.firstColumn) * worldCell.x,
-                static_cast<float>(region.firstRow) * worldCell.y};
+            const sf::Vector2f worldMinimum = {static_cast<float>(region.firstColumn) * worldCell.x,
+                                               static_cast<float>(region.firstRow) * worldCell.y};
             const sf::Vector2f worldMaximum = {
                 static_cast<float>(region.firstColumn + region.columnCount) * worldCell.x,
                 static_cast<float>(region.firstRow + region.rowCount) * worldCell.y};
@@ -159,12 +156,12 @@ namespace l2d
             const double widthDouble = static_cast<double>(m_width);
             const double heightDouble = static_cast<double>(m_height);
 
-            const std::size_t firstColumn = static_cast<std::size_t>(
-                std::clamp(firstColumnDouble, 0.0, widthDouble));
+            const std::size_t firstColumn =
+                static_cast<std::size_t>(std::clamp(firstColumnDouble, 0.0, widthDouble));
             const std::size_t firstRow =
                 static_cast<std::size_t>(std::clamp(firstRowDouble, 0.0, heightDouble));
-            const std::size_t lastColumn = static_cast<std::size_t>(
-                std::clamp(lastColumnDouble, 0.0, widthDouble));
+            const std::size_t lastColumn =
+                static_cast<std::size_t>(std::clamp(lastColumnDouble, 0.0, widthDouble));
             const std::size_t lastRow =
                 static_cast<std::size_t>(std::clamp(lastRowDouble, 0.0, heightDouble));
 
