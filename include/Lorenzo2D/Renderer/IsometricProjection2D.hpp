@@ -29,7 +29,8 @@ namespace l2d
             if (!isValidCellSize(worldCellSize) || !isValidCellSize(renderCellSize) ||
                 !isFinite(renderOrigin))
             {
-                throw std::invalid_argument("Isometric projection parameters must be finite and positive.");
+                throw std::invalid_argument(
+                    "Isometric projection parameters must be finite and positive.");
             }
         }
 
@@ -62,19 +63,18 @@ namespace l2d
             const double halfWidth = static_cast<double>(m_renderCellSize.x) * 0.5;
             const double halfHeight = static_cast<double>(m_renderCellSize.y) * 0.5;
             return checkedVector(static_cast<double>(m_renderOrigin.x) + (column - row) * halfWidth,
-                                 static_cast<double>(m_renderOrigin.y) + (column + row) * halfHeight);
+                                 static_cast<double>(m_renderOrigin.y) +
+                                     (column + row) * halfHeight);
         }
 
         sf::Vector2f renderToWorld(sf::Vector2f renderPosition) const override
         {
             if (!isFinite(renderPosition)) return invalidVector();
 
-            const double horizontal =
-                (static_cast<double>(renderPosition.x) - m_renderOrigin.x) /
-                (static_cast<double>(m_renderCellSize.x) * 0.5);
-            const double vertical =
-                (static_cast<double>(renderPosition.y) - m_renderOrigin.y) /
-                (static_cast<double>(m_renderCellSize.y) * 0.5);
+            const double horizontal = (static_cast<double>(renderPosition.x) - m_renderOrigin.x) /
+                                      (static_cast<double>(m_renderCellSize.x) * 0.5);
+            const double vertical = (static_cast<double>(renderPosition.y) - m_renderOrigin.y) /
+                                    (static_cast<double>(m_renderCellSize.y) * 0.5);
             const double column = (horizontal + vertical) * 0.5;
             const double row = (vertical - horizontal) * 0.5;
             return checkedVector(column * m_worldCellSize.x, row * m_worldCellSize.y);
@@ -87,8 +87,7 @@ namespace l2d
         }
 
         bool projectBounds(sf::Vector2f worldMinimum, sf::Vector2f worldMaximum,
-                           sf::Vector2f& renderMinimum,
-                           sf::Vector2f& renderMaximum) const override
+                           sf::Vector2f& renderMinimum, sf::Vector2f& renderMaximum) const override
         {
             if (!isFinite(worldMinimum) || !isFinite(worldMaximum) ||
                 worldMaximum.x < worldMinimum.x || worldMaximum.y < worldMinimum.y)
@@ -97,10 +96,8 @@ namespace l2d
             }
 
             const sf::Vector2f corners[4] = {
-                worldToRender(worldMinimum),
-                worldToRender({worldMinimum.x, worldMaximum.y}),
-                worldToRender(worldMaximum),
-                worldToRender({worldMaximum.x, worldMinimum.y})};
+                worldToRender(worldMinimum), worldToRender({worldMinimum.x, worldMaximum.y}),
+                worldToRender(worldMaximum), worldToRender({worldMaximum.x, worldMinimum.y})};
 
             for (const sf::Vector2f corner : corners)
                 if (!isFinite(corner)) return false;
@@ -132,7 +129,8 @@ namespace l2d
         std::optional<sf::Vector2i> worldToCell(sf::Vector2f worldPosition) const
         {
             if (!isFinite(worldPosition)) return std::nullopt;
-            const double column = std::floor(static_cast<double>(worldPosition.x) / m_worldCellSize.x);
+            const double column =
+                std::floor(static_cast<double>(worldPosition.x) / m_worldCellSize.x);
             const double row = std::floor(static_cast<double>(worldPosition.y) / m_worldCellSize.y);
             const double minimum = static_cast<double>(std::numeric_limits<int>::min());
             const double maximum = static_cast<double>(std::numeric_limits<int>::max());
