@@ -5,7 +5,7 @@ performance trends visible without encoding timing-dependent correctness claims.
 
 ## Scenarios
 
-The current executable measures:
+The main `Lorenzo2DBenchmarks` executable measures:
 
 - typed input-action sampling over a representative digital 2D binding;
 - scene fixed updates over a populated component set;
@@ -21,8 +21,11 @@ The current executable measures:
 - full legacy and layered tile-map construction;
 - tile-map view-culling telemetry.
 
-Complete isometric scene scenarios must be added alongside that system. The report schema accepts
-those scenarios without a format change.
+Phase 9 additionally builds `Lorenzo2DIsometricBenchmarks`. It performs repeated production
+isometric projection/inverse-projection, bounded cell picking, placement lookups, and render-view to
+visible-tile-region calculations over a 512-by-512 logical map. Its checksum keeps the projection
+and culling work observable. This is a focused diagnostic executable rather than an extension of the
+persisted JSON/CSV report schema, so existing benchmark consumers remain unchanged.
 
 ## Building and running
 
@@ -30,10 +33,11 @@ those scenarios without a format change.
 cmake --preset benchmarks
 cmake --build --preset benchmarks
 ./build/benchmarks/benchmarks/Lorenzo2DBenchmarks
+./build/benchmarks/benchmarks/Lorenzo2DIsometricBenchmarks
 ```
 
-The executable always writes its human-readable table to standard output. Optional machine-readable
-reports can be written in the same run:
+The main executable always writes its human-readable table to standard output. Optional
+machine-readable reports can be written in the same run:
 
 ```sh
 ./build/benchmarks/benchmarks/Lorenzo2DBenchmarks \
