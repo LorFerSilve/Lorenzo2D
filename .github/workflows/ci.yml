@@ -215,6 +215,9 @@ jobs:
           test -f install/include/Lorenzo2D/Scene/LevelSerializer.hpp
           test -f install/include/Lorenzo2D/Scene/ComponentCodecRegistry.hpp
           test -f install/include/Lorenzo2D/Assets/AssetId.hpp
+          test -f install/include/Lorenzo2D/Audio/AudioSystem.hpp
+          test -f install/include/Lorenzo2D/Save/SaveGame.hpp
+          test -f install/include/Lorenzo2D/UI/UiCanvas2D.hpp
           test -f install/include/Lorenzo2D/Renderer/IsometricProjection2D.hpp
           test -f install/include/Lorenzo2D/Tilemap/IsometricTileGrid2D.hpp
           test -f install/include/Lorenzo2D/Tilemap/TileMapData.hpp
@@ -271,6 +274,15 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
           cmake --build build-isometric-template --parallel
+
+      - name: Configure and build top-down starter
+        run: |
+          cmake \
+            -S templates/top-down \
+            -B build-top-down-template \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
+          cmake --build build-top-down-template --parallel
 
   quality:
     name: Clang formatting and static analysis
