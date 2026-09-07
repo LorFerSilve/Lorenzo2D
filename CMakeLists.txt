@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.13.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 1.0.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -368,7 +368,7 @@ if(L2D_INSTALL)
     write_basic_package_version_file(
         "${PROJECT_BINARY_DIR}/Lorenzo2DConfigVersion.cmake"
         VERSION ${PROJECT_VERSION}
-        COMPATIBILITY SameMinorVersion
+        COMPATIBILITY SameMajorVersion
     )
 
     install(

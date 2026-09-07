@@ -11,10 +11,10 @@ namespace
 
     void testGeneratedVersionMatchesProjectVersion()
     {
-        L2D_REQUIRE_EQUAL(l2d::VersionMajor, 0u);
-        L2D_REQUIRE_EQUAL(l2d::VersionMinor, 13u);
+        L2D_REQUIRE_EQUAL(l2d::VersionMajor, 1u);
+        L2D_REQUIRE_EQUAL(l2d::VersionMinor, 0u);
         L2D_REQUIRE_EQUAL(l2d::VersionPatch, 0u);
-        L2D_REQUIRE_EQUAL(l2d::VersionString, std::string_view("0.13.0"));
+        L2D_REQUIRE_EQUAL(l2d::VersionString, std::string_view("1.0.0"));
     }
 
     void testVersionMacrosMatchConstants()
