@@ -4,8 +4,12 @@ include(CMakeFindDependencyMacro)
 
 set(_l2d_requires_static_sfml @L2D_PACKAGE_USES_STATIC_SFML@)
 
-if(TARGET SFML::Graphics)
+if(TARGET SFML::Graphics OR TARGET SFML::Audio)
+    if(NOT TARGET SFML::Graphics OR NOT TARGET SFML::Audio)
+        message(FATAL_ERROR "Lorenzo2D requires both SFML::Graphics and SFML::Audio")
+    endif()
     get_target_property(_l2d_sfml_graphics_type SFML::Graphics TYPE)
+    get_target_property(_l2d_sfml_audio_type SFML::Audio TYPE)
 
     if(_l2d_requires_static_sfml AND
         NOT _l2d_sfml_graphics_type STREQUAL "STATIC_LIBRARY")
@@ -15,11 +19,27 @@ if(TARGET SFML::Graphics)
         )
     endif()
 
+    if(_l2d_requires_static_sfml AND
+        NOT _l2d_sfml_audio_type STREQUAL "STATIC_LIBRARY")
+        message(FATAL_ERROR
+            "Lorenzo2D was built against static SFML, but the existing "
+            "SFML::Audio target is ${_l2d_sfml_audio_type}"
+        )
+    endif()
+
     if(NOT _l2d_requires_static_sfml AND
         _l2d_sfml_graphics_type STREQUAL "STATIC_LIBRARY")
         message(FATAL_ERROR
             "Lorenzo2D was built against shared SFML, but the existing "
             "SFML::Graphics target is static"
+        )
+    endif()
+
+    if(NOT _l2d_requires_static_sfml AND
+        _l2d_sfml_audio_type STREQUAL "STATIC_LIBRARY")
+        message(FATAL_ERROR
+            "Lorenzo2D was built against shared SFML, but the existing "
+            "SFML::Audio target is static"
         )
     endif()
 else()
@@ -31,7 +51,7 @@ else()
     endif()
 
     set(SFML_STATIC_LIBRARIES ${_l2d_requires_static_sfml})
-    find_dependency(SFML 3.1 CONFIG REQUIRED COMPONENTS Graphics)
+    find_dependency(SFML 3.1 CONFIG REQUIRED COMPONENTS Graphics Audio)
 
     if(_l2d_sfml_static_libraries_was_defined)
         set(SFML_STATIC_LIBRARIES "${_l2d_saved_sfml_static_libraries}")
@@ -46,4 +66,5 @@ check_required_components(Lorenzo2D)
 unset(_l2d_requires_static_sfml)
 unset(_l2d_saved_sfml_static_libraries)
 unset(_l2d_sfml_graphics_type)
+unset(_l2d_sfml_audio_type)
 unset(_l2d_sfml_static_libraries_was_defined)
