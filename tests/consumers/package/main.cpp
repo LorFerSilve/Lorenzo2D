@@ -1,4 +1,5 @@
 #include <Lorenzo2D/Animation/AnimationClip.hpp>
+#include <Lorenzo2D/Audio/AudioSystem.hpp>
 #include <Lorenzo2D/Assets/ResourceLocator.hpp>
 #include <Lorenzo2D/Core/Version.hpp>
 #include <Lorenzo2D/Core/InputMap.hpp>
@@ -19,10 +20,12 @@
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
 #include <Lorenzo2D/Scene/ComponentCodecRegistry.hpp>
+#include <Lorenzo2D/Save/SaveGame.hpp>
 #include <Lorenzo2D/Tilemap/AsciiTileMapImporter.hpp>
 #include <Lorenzo2D/Tilemap/IsometricTileGrid2D.hpp>
 #include <Lorenzo2D/Tilemap/TileMapColliderBuilder2D.hpp>
 #include <Lorenzo2D/Tilemap/TileSet.hpp>
+#include <Lorenzo2D/UI/UiCanvas2D.hpp>
 
 #include <sstream>
 
@@ -64,6 +67,29 @@ int main()
     l2d::ResourceLocator resources;
     const bool resourceRootAdded = resources.addRoot("assets");
 
+    l2d::SaveDocument save("consumer", 1u);
+    const bool saveValueSet = save.setInteger("score", 7);
+    std::ostringstream saveOutput;
+    const bool saveWritten = l2d::SaveGameSerializer::save(saveOutput, save);
+    l2d::SaveDocument saveLoaded;
+    std::istringstream saveInput(saveOutput.str());
+    const bool saveRead = l2d::SaveGameSerializer::load(saveInput, saveLoaded);
+
+    l2d::UiCanvas2D ui;
+    l2d::UiButton2D uiButton;
+    uiButton.id = "consumer-button";
+    uiButton.position = {0.f, 0.f};
+    uiButton.size = {64.f, 32.f};
+    const bool uiConfigured = ui.addButton(uiButton);
+    l2d::PointerState uiPointer;
+    uiPointer.screenPosition = {16, 16};
+    ui.update(uiPointer);
+    const bool uiHit = ui.hoveredButton() == std::optional<std::string>("consumer-button");
+
+    l2d::AudioPlayOptions2D audioOptions;
+    audioOptions.bus = l2d::AudioBus2D::Ui;
+    const bool audioConfigured = l2d::AudioSystem::isValidPlayOptions(audioOptions);
+
     l2d::CircleCollider2D collider(2.f);
     l2d::CapsuleCollider2D capsule(2.f, 8.f);
     l2d::ConvexPolygonCollider2D polygon;
@@ -96,7 +122,9 @@ int main()
 
     return l2d::VersionString == "0.13.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
                    tileAdded && tileDataImported && tileColliders.empty() && isometricPick &&
-                   codecRegistered && levelSaved && resourceRootAdded && inputConfigured &&
+                   codecRegistered && levelSaved && resourceRootAdded && saveValueSet && saveWritten &&
+                   saveRead && saveLoaded == save && uiConfigured && uiHit && audioConfigured &&
+                   inputConfigured &&
                    collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
                    polygon.vertices().size() == 3u && queryFilter.categoryMask != 0u &&
                    l2d::CharacterMotor2D::isValidConfig(motorConfig) &&
