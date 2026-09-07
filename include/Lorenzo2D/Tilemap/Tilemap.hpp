@@ -20,6 +20,7 @@ namespace sf
 namespace l2d
 {
     class AssetManager;
+    class CoordinateProjection2D;
     class Scene;
 
     // Describes the currently loaded geometry, or zeros when unloaded.
@@ -54,6 +55,22 @@ namespace l2d
         std::size_t columnCount = 0;
         std::size_t rowCount = 0;
     };
+
+    struct TileMapCell
+    {
+        std::size_t column = 0;
+        std::size_t row = 0;
+    };
+
+    inline bool operator==(const TileMapCell& left, const TileMapCell& right)
+    {
+        return left.column == right.column && left.row == right.row;
+    }
+
+    inline bool operator!=(const TileMapCell& left, const TileMapCell& right)
+    {
+        return !(left == right);
+    }
 
     struct TileMapUpdateStats
     {
@@ -144,6 +161,18 @@ namespace l2d
 
         std::vector<sf::Vector2f> findTilePositions(char tileChar, bool centered = true) const;
 
+        // Picking and placement keep logical cells Cartesian. A projection only
+        // changes the render-space representation, so the same APIs work for
+        // orthogonal and isometric maps.
+        std::optional<TileMapCell> cellAtWorld(sf::Vector2f worldPosition) const;
+        std::optional<TileMapCell> cellAtRender(sf::Vector2f renderPosition,
+                                                const CoordinateProjection2D& projection) const;
+        std::optional<sf::Vector2f> worldPositionForCell(TileMapCell cell,
+                                                         bool centered = true) const;
+        std::optional<sf::Vector2f> renderPositionForCell(
+            TileMapCell cell, const CoordinateProjection2D& projection,
+            bool centered = true) const;
+
         const Layout& layout() const;
         const sf::Vector2f& worldSize() const;
 
@@ -151,6 +180,8 @@ namespace l2d
 
         // Computes culling telemetry without drawing or creating a window.
         TileMapRenderStats renderStatsForView(const sf::View& view) const;
+        TileMapRenderStats renderStatsForView(const sf::View& view,
+                                              const CoordinateProjection2D& projection) const;
 
         // Returns telemetry from the most recent actual render. It is empty
         // until the current map has been rendered at least once.
