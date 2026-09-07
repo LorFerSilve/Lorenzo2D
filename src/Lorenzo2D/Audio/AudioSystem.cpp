@@ -74,7 +74,8 @@ namespace l2d
 
         void applyAllVoiceVolumes() noexcept
         {
-            for (Voice& voice : voices)\n                applyVoiceVolume(voice);
+            for (Voice& voice : voices)
+                applyVoiceVolume(voice);
         }
 
         void applyMusicVolume() noexcept
@@ -165,7 +166,8 @@ namespace l2d
 
     void AudioSystem::stopAllSounds()
     {
-        for (Impl::Voice& voice : m_impl->voices)\n            voice.sound.stop();
+        for (Impl::Voice& voice : m_impl->voices)
+            voice.sound.stop();
         m_impl->voices.clear();
     }
 
