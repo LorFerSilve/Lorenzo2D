@@ -1019,10 +1019,9 @@ namespace l2d::detail
             return sweptPolygons(polygon.polygon, movement, target.polygon, hit);
         if (target.type == GeometryType2D::Circle)
         {
-            ColliderGeometry2D staticPolygon = polygon;
             GeometryRayHit2D inverse;
             if (!castCircleAgainstGeometry(target.circle.center, target.circle.center - movement,
-                                           target.circle.radius, staticPolygon, inverse))
+                                           target.circle.radius, polygon, inverse))
                 return false;
             hit.fraction = inverse.fraction;
             hit.normal = {-inverse.normal.x, -inverse.normal.y};
