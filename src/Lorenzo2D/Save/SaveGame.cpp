@@ -25,8 +25,7 @@ namespace l2d
 
         bool valueWithinLimits(const SaveValue& value, const SaveGameLimits& limits)
         {
-            if (const auto* number = std::get_if<double>(&value))
-                return std::isfinite(*number);
+            if (const auto* number = std::get_if<double>(&value)) return std::isfinite(*number);
 
             if (const auto* text = std::get_if<std::string>(&value))
                 return text->size() <= limits.maxStringBytes;
@@ -310,7 +309,8 @@ namespace l2d
         return static_cast<bool>(output);
     }
 
-    bool SaveGameSerializer::load(std::istream& input, SaveDocument& document, SaveGameLimits limits)
+    bool SaveGameSerializer::load(std::istream& input, SaveDocument& document,
+                                  SaveGameLimits limits)
     {
         if (!input || !validLimits(limits)) return false;
 
@@ -337,7 +337,8 @@ namespace l2d
 
             SaveDocument candidate(schema, static_cast<std::uint32_t>(revision));
 
-            for (auto iterator = root["values"].begin(); iterator != root["values"].end(); ++iterator)
+            for (auto iterator = root["values"].begin(); iterator != root["values"].end();
+                 ++iterator)
             {
                 const std::string& key = iterator.key();
                 if (key.empty() || key.size() > limits.maxKeyBytes) return false;

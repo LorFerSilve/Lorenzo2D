@@ -69,8 +69,7 @@ namespace l2d
 
         static bool save(std::ostream& output, const SaveDocument& document,
                          SaveGameLimits limits = {});
-        static bool load(std::istream& input, SaveDocument& document,
-                         SaveGameLimits limits = {});
+        static bool load(std::istream& input, SaveDocument& document, SaveGameLimits limits = {});
 
         static bool saveToFile(const std::filesystem::path& path, const SaveDocument& document,
                                SaveGameLimits limits = {});

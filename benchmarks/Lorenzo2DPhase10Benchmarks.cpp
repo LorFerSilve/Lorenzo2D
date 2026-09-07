@@ -41,9 +41,8 @@ namespace
         for (std::size_t iteration = 0u; iteration < iterations; ++iteration)
         {
             l2d::PointerState pointer;
-            pointer.screenPosition = {
-                static_cast<int>((iteration * 37u) % 832u),
-                static_cast<int>((iteration * 19u) % 304u)};
+            pointer.screenPosition = {static_cast<int>((iteration * 37u) % 832u),
+                                      static_cast<int>((iteration * 19u) % 304u)};
             pointer.down = iteration % 5u == 0u;
             pointer.pressed = pointer.down;
             pointer.released = iteration % 5u == 1u;

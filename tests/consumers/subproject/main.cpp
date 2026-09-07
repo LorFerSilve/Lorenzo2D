@@ -122,11 +122,11 @@ int main()
 
     return l2d::VersionString == "1.0.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
                    tileAdded && tileDataImported && tileColliders.empty() && isometricPick &&
-                   codecRegistered && levelSaved && resourceRootAdded && saveValueSet && saveWritten &&
-                   saveRead && saveLoaded == save && uiConfigured && uiHit && audioConfigured &&
-                   inputConfigured &&
-                   collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
-                   polygon.vertices().size() == 3u && queryFilter.categoryMask != 0u &&
+                   codecRegistered && levelSaved && resourceRootAdded && saveValueSet &&
+                   saveWritten && saveRead && saveLoaded == save && uiConfigured && uiHit &&
+                   audioConfigured && inputConfigured && collider.id() != l2d::InvalidColliderId &&
+                   capsule.height() == 8.f && polygon.vertices().size() == 3u &&
+                   queryFilter.categoryMask != 0u &&
                    l2d::CharacterMotor2D::isValidConfig(motorConfig) &&
                    l2d::CharacterMotor2D::isValidConfig(topDownMotorConfig) &&
                    l2d::TopDownController2D::isValidConfig(topDownConfig) &&

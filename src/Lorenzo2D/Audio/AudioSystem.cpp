@@ -74,13 +74,12 @@ namespace l2d
 
         void applyAllVoiceVolumes() noexcept
         {
-            for (Voice& voice : voices) applyVoiceVolume(voice);
+            for (Voice& voice : voices)\n                applyVoiceVolume(voice);
         }
 
         void applyMusicVolume() noexcept
         {
-            if (music)
-                music->setVolume(effectiveVolume(100.f, musicVolume, masterVolume));
+            if (music) music->setVolume(effectiveVolume(100.f, musicVolume, masterVolume));
         }
 
         AudioVoiceId allocateVoiceId() noexcept
@@ -91,9 +90,9 @@ namespace l2d
                 if (nextVoice == InvalidAudioVoiceId) nextVoice = 1u;
                 if (candidate == InvalidAudioVoiceId) continue;
 
-                const auto existing = std::find_if(
-                    voices.begin(), voices.end(),
-                    [candidate](const Voice& voice) { return voice.id == candidate; });
+                const auto existing =
+                    std::find_if(voices.begin(), voices.end(),
+                                 [candidate](const Voice& voice) { return voice.id == candidate; });
                 if (existing == voices.end()) return candidate;
             }
 
@@ -107,9 +106,7 @@ namespace l2d
         }
     };
 
-    AudioSystem::AudioSystem() : m_impl(std::make_unique<Impl>())
-    {
-    }
+    AudioSystem::AudioSystem() : m_impl(std::make_unique<Impl>()) {}
 
     AudioSystem::~AudioSystem() = default;
     AudioSystem::AudioSystem(AudioSystem&&) noexcept = default;
@@ -168,7 +165,7 @@ namespace l2d
 
     void AudioSystem::stopAllSounds()
     {
-        for (Impl::Voice& voice : m_impl->voices) voice.sound.stop();
+        for (Impl::Voice& voice : m_impl->voices)\n            voice.sound.stop();
         m_impl->voices.clear();
     }
 
@@ -245,8 +242,7 @@ namespace l2d
         if (!replacement->openFromFile(path)) return false;
 
         replacement->setLooping(m_impl->musicLooping);
-        replacement->setVolume(
-            effectiveVolume(100.f, m_impl->musicVolume, m_impl->masterVolume));
+        replacement->setVolume(effectiveVolume(100.f, m_impl->musicVolume, m_impl->masterVolume));
         m_impl->music = std::move(replacement);
         return true;
     }
@@ -264,8 +260,7 @@ namespace l2d
 
     bool AudioSystem::musicPlaying() const noexcept
     {
-        return m_impl->music &&
-               m_impl->music->getStatus() == sf::SoundSource::Status::Playing;
+        return m_impl->music && m_impl->music->getStatus() == sf::SoundSource::Status::Playing;
     }
 
     void AudioSystem::playMusic()

@@ -129,11 +129,10 @@ namespace l2d
         m_pointerDown = pointer.down;
 
         const sf::Vector2f screenPosition{static_cast<float>(pointer.screenPosition.x),
-                                         static_cast<float>(pointer.screenPosition.y)};
+                                          static_cast<float>(pointer.screenPosition.y)};
         m_hovered = hitTest(screenPosition);
 
-        if (pointer.pressed)
-            m_pressed = m_hovered;
+        if (pointer.pressed) m_pressed = m_hovered;
 
         if (pointer.released)
         {
