@@ -32,6 +32,7 @@ namespace l2d
 
     IsometricPlacementGrid2D::IsometricPlacementGrid2D(IsometricPlacementGridConfig2D config)
     {
+        (void)reset({});
         (void)reset(config);
     }
 
