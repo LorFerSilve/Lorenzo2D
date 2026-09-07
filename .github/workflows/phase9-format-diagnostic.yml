@@ -1,0 +1,24 @@
+name: Phase 9 format diagnostic
+
+on:
+  pull_request:
+
+jobs:
+  format-diff:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install formatter
+        run: python3 -m pip install --break-system-packages clang-format==22.1.3
+      - name: Show exact Phase 9 formatting diff
+        run: |
+          "$HOME/.local/bin/clang-format" -i \
+            include/Lorenzo2D/Renderer/CoordinateProjection2D.hpp \
+            include/Lorenzo2D/Renderer/IsometricProjection2D.hpp \
+            include/Lorenzo2D/Tilemap/IsometricTileGrid2D.hpp \
+            tests/Lorenzo2DIsometricTests.cpp
+          git diff -- \
+            include/Lorenzo2D/Renderer/CoordinateProjection2D.hpp \
+            include/Lorenzo2D/Renderer/IsometricProjection2D.hpp \
+            include/Lorenzo2D/Tilemap/IsometricTileGrid2D.hpp \
+            tests/Lorenzo2DIsometricTests.cpp
