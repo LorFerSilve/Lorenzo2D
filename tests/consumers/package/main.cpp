@@ -14,11 +14,13 @@
 #include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
 #include <Lorenzo2D/Physics/DistanceJoint2D.hpp>
+#include <Lorenzo2D/Renderer/IsometricProjection2D.hpp>
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
 #include <Lorenzo2D/Scene/ComponentCodecRegistry.hpp>
 #include <Lorenzo2D/Tilemap/AsciiTileMapImporter.hpp>
+#include <Lorenzo2D/Tilemap/IsometricTileGrid2D.hpp>
 #include <Lorenzo2D/Tilemap/TileMapColliderBuilder2D.hpp>
 #include <Lorenzo2D/Tilemap/TileSet.hpp>
 
@@ -42,6 +44,11 @@ int main()
     l2d::TileMapData tileData;
     const bool tileDataImported = tileImporter.import({"##"}, {16.f, 16.f}, tileData);
     const auto tileColliders = l2d::TileMapColliderBuilder2D::build(tileData);
+    tileData.setOrientation(l2d::TileMapOrientation::Isometric);
+    const l2d::IsometricTileGrid2D isometricGrid(tileData, {32.f, 16.f});
+    const auto isometricRender = isometricGrid.renderPosition({1u, 0u});
+    const bool isometricPick =
+        isometricRender && isometricGrid.pick(*isometricRender) == l2d::TileMapCell{1u, 0u};
 
     l2d::ComponentCodecRegistry codecs;
     const bool codecRegistered = codecs.registerCodec(
@@ -87,9 +94,9 @@ int main()
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::S));
 
-    return l2d::VersionString == "0.12.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
-                   tileAdded && tileDataImported && tileColliders.empty() && codecRegistered &&
-                   levelSaved && resourceRootAdded && inputConfigured &&
+    return l2d::VersionString == "0.13.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
+                   tileAdded && tileDataImported && tileColliders.empty() && isometricPick &&
+                   codecRegistered && levelSaved && resourceRootAdded && inputConfigured &&
                    collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
                    polygon.vertices().size() == 3u && queryFilter.categoryMask != 0u &&
                    l2d::CharacterMotor2D::isValidConfig(motorConfig) &&
