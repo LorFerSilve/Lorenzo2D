@@ -393,7 +393,7 @@ namespace l2d
                 motor.inheritPlatformTranslation =
                     data.value("inheritPlatformTranslation", motor.inheritPlatformTranslation);
                 if (!CharacterMotor2D::isValidConfig(motor)) return false;
-                prefab.characterMotor = std::move(value);
+                prefab.characterMotor = value;
             }
             else if (type == "TopDownController2D")
             {
@@ -407,7 +407,7 @@ namespace l2d
                 controller.maximumDeltaTime =
                     data.value("maximumDeltaTime", controller.maximumDeltaTime);
                 if (!TopDownController2D::isValidConfig(controller)) return false;
-                prefab.topDownController = std::move(value);
+                prefab.topDownController = value;
             }
             else if (type == "GridStepController2D")
             {
@@ -434,7 +434,7 @@ namespace l2d
                 controller.axisPriority = static_cast<GridAxisPriority2D>(axisPriority);
                 controller.bufferTurns = data.value("bufferTurns", controller.bufferTurns);
                 if (!GridStepController2D::isValidConfig(controller)) return false;
-                prefab.gridStepController = std::move(value);
+                prefab.gridStepController = value;
             }
             else if (type == "PlatformerController2D")
             {
@@ -468,7 +468,7 @@ namespace l2d
                 controller.maximumDeltaTime =
                     data.value("maximumDeltaTime", controller.maximumDeltaTime);
                 if (!PlatformerController2D::isValidConfig(controller)) return false;
-                prefab.platformerController = std::move(value);
+                prefab.platformerController = value;
             }
             else if (type == "PathFollower2D")
             {
@@ -507,7 +507,7 @@ namespace l2d
                         avoidanceData.value("maximumNeighbors", avoidance.maximumNeighbors);
                 }
                 if (!PathFollower2D::isValidConfig(follower)) return false;
-                prefab.pathFollower = std::move(value);
+                prefab.pathFollower = value;
             }
             else if (type == "BoxCollider2D")
             {
@@ -990,7 +990,7 @@ namespace l2d
         }
         catch (...)
         {
-            for (GameObjectHandle handle : handles)
+            for (const GameObjectHandle& handle : handles)
                 if (GameObject* object = handle.get()) object->destroy();
             scene.destroyQueuedGameObjects();
             throw;
