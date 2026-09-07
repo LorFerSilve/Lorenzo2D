@@ -8,3 +8,14 @@ l2d_enable_warnings(Lorenzo2DBenchmarks)
 l2d_enable_sanitizers(Lorenzo2DBenchmarks)
 l2d_enable_coverage(Lorenzo2DBenchmarks)
 l2d_enable_clang_tidy(Lorenzo2DBenchmarks)
+
+add_executable(
+    Lorenzo2DIsometricBenchmarks
+    Lorenzo2DIsometricBenchmarks.cpp
+)
+
+target_link_libraries(Lorenzo2DIsometricBenchmarks PRIVATE Lorenzo2D::Lorenzo2D)
+l2d_enable_warnings(Lorenzo2DIsometricBenchmarks)
+l2d_enable_sanitizers(Lorenzo2DIsometricBenchmarks)
+l2d_enable_coverage(Lorenzo2DIsometricBenchmarks)
+l2d_enable_clang_tidy(Lorenzo2DIsometricBenchmarks)
