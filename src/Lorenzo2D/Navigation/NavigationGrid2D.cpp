@@ -33,7 +33,7 @@ namespace l2d
 
     NavigationGrid2D::NavigationGrid2D(NavigationGridConfig2D config, NavigationCell2D defaultCell)
     {
-        (void)reset(std::move(config), defaultCell);
+        (void)reset(config, defaultCell);
     }
 
     bool NavigationGrid2D::isValidConfig(const NavigationGridConfig2D& config)
@@ -68,7 +68,7 @@ namespace l2d
 
         const std::size_t count =
             static_cast<std::size_t>(config.size.x) * static_cast<std::size_t>(config.size.y);
-        m_config = std::move(config);
+        m_config = config;
         m_cells.assign(count, defaultCell);
         advanceRevision();
         return true;
