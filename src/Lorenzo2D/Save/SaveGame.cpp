@@ -2,9 +2,11 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <fstream>
+#include <limits>
 #include <system_error>
 #include <utility>
 
