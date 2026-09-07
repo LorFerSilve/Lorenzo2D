@@ -269,6 +269,13 @@ l2d_add_regression_test(
     TIMEOUT 60
 )
 
+l2d_add_regression_test(
+    Lorenzo2DSaveTests
+    SOURCE Lorenzo2DSaveTests.cpp
+    LABELS headless save serialization persistence
+    TIMEOUT 30
+)
+
 configure_file(
     "${PROJECT_SOURCE_DIR}/assets/levels/phase2-showcase.l2dlevel"
     "${CMAKE_CURRENT_BINARY_DIR}/phase2-showcase.l2dlevel"

@@ -227,6 +227,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Scene/Prefab.cpp
     src/Lorenzo2D/Scene/Scene.cpp
     src/Lorenzo2D/Scene/SceneManager.cpp
+    src/Lorenzo2D/Save/SaveGame.cpp
     src/Lorenzo2D/Tilemap/Tilemap.cpp
     src/Lorenzo2D/Tilemap/AsciiTileMapImporter.cpp
     src/Lorenzo2D/Tilemap/TileMapColliderBuilder2D.cpp
