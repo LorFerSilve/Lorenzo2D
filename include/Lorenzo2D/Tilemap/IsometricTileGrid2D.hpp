@@ -13,6 +13,7 @@
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace l2d
 {
@@ -27,7 +28,10 @@ namespace l2d
             : m_width(width), m_height(height), m_projection(std::move(projection))
         {
             if (width == 0u || height == 0u)
-                throw std::invalid_argument("Isometric tile grids must have non-zero dimensions.");
+            {
+                throw std::invalid_argument(
+                    "Isometric tile grids must have non-zero dimensions.");
+            }
         }
 
         explicit IsometricTileGrid2D(const TileMapData& data, sf::Vector2f renderCellSize,
@@ -37,7 +41,10 @@ namespace l2d
                   IsometricProjection2D(data.tileSize(), renderCellSize, renderOrigin))
         {
             if (!data.isValid() || data.orientation() != TileMapOrientation::Isometric)
-                throw std::invalid_argument("IsometricTileGrid2D requires valid isometric tile data.");
+            {
+                throw std::invalid_argument(
+                    "IsometricTileGrid2D requires valid isometric tile data.");
+            }
         }
 
         std::size_t width() const
@@ -72,8 +79,9 @@ namespace l2d
 
         std::optional<sf::Vector2f> worldPosition(TileMapCell cell, bool centered = true) const
         {
-            if (!contains(cell) || cell.column > static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
-                cell.row > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+            const std::size_t maximumIndex =
+                static_cast<std::size_t>(std::numeric_limits<int>::max());
+            if (!contains(cell) || cell.column > maximumIndex || cell.row > maximumIndex)
                 return std::nullopt;
 
             return m_projection.cellToWorld(
@@ -177,8 +185,9 @@ namespace l2d
       private:
         bool validRegion(TileMapRegion region) const
         {
-            return region.columnCount > 0u && region.rowCount > 0u && region.firstColumn < m_width &&
-                   region.firstRow < m_height && region.columnCount <= m_width - region.firstColumn &&
+            return region.columnCount > 0u && region.rowCount > 0u &&
+                   region.firstColumn < m_width && region.firstRow < m_height &&
+                   region.columnCount <= m_width - region.firstColumn &&
                    region.rowCount <= m_height - region.firstRow;
         }
 
