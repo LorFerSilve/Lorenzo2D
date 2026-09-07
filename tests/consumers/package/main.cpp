@@ -3,6 +3,8 @@
 #include <Lorenzo2D/Core/Version.hpp>
 #include <Lorenzo2D/Core/InputMap.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
+#include <Lorenzo2D/Isometric/IsometricPlacementGrid2D.hpp>
+#include <Lorenzo2D/Isometric/IsometricProjection2D.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
 #include <Lorenzo2D/Movement/PlatformerController2D.hpp>
@@ -79,6 +81,17 @@ int main()
     const l2d::RenderContext2D renderContext{1.f, &projection, l2d::RenderPass2D::World};
     l2d::RenderOrder2D renderOrder(l2d::RenderDepthMode2D::ProjectedY);
 
+    l2d::IsometricProjectionConfig2D isometricConfig;
+    isometricConfig.worldCellSize = {16.f, 16.f};
+    isometricConfig.renderTileSize = {32.f, 16.f};
+    const l2d::IsometricProjection2D isometricProjection(isometricConfig);
+    l2d::IsometricPlacementGridConfig2D placementConfig;
+    placementConfig.size = {2u, 2u};
+    placementConfig.cellSize = {16.f, 16.f};
+    l2d::IsometricPlacementGrid2D placementGrid(placementConfig);
+    const auto pickedCell =
+        placementGrid.pickCell(isometricProjection.worldToRender({24.f, 8.f}), isometricProjection);
+
     l2d::InputSnapshot inputSnapshot;
     l2d::InputMap inputMap(inputSnapshot);
     const bool inputConfigured =
@@ -87,7 +100,7 @@ int main()
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::S));
 
-    return l2d::VersionString == "0.12.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
+    return l2d::VersionString == "0.13.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
                    tileAdded && tileDataImported && tileColliders.empty() && codecRegistered &&
                    levelSaved && resourceRootAdded && inputConfigured &&
                    collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
@@ -103,7 +116,9 @@ int main()
                    l2d::gridDirectionFromInput({1.f, 0.f}) == l2d::GridDirection2D::Right &&
                    joint.id() != l2d::InvalidJointId &&
                    renderContext.worldToRender(position) == position &&
-                   renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
+                   renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY &&
+                   pickedCell == std::optional<sf::Vector2u>({1u, 0u}) &&
+                   placementGrid.place({1u, 0u}) && placementGrid.occupied({1u, 0u})
                ? 0
                : 1;
 }
