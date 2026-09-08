@@ -87,8 +87,7 @@ namespace
         else if (uiPhase == 11u)
             input.uiAction = 2u;
 
-        if (tick % 128u == 0u)
-            input.navigationAction = ((tick / 128u) % 2u == 0u) ? 1u : 2u;
+        if (tick % 128u == 0u) input.navigationAction = ((tick / 128u) % 2u == 0u) ? 1u : 2u;
 
         return input;
     }
@@ -178,8 +177,7 @@ namespace
         l2d::FixedStepScheduler scheduler(schedulerConfig);
 
         constexpr std::array<double, 4u> ChunkedFramePattern = {
-            FixedDeltaTime * 0.5, FixedDeltaTime * 0.5, FixedDeltaTime,
-            FixedDeltaTime * 2.0};
+            FixedDeltaTime * 0.5, FixedDeltaTime * 0.5, FixedDeltaTime, FixedDeltaTime * 2.0};
 
         std::size_t recordedTicks = 0u;
         std::size_t frameIndex = 0u;
@@ -308,8 +306,7 @@ namespace
         L2D_REQUIRE_EQUAL(comparison.divergence, l2d::ReplayDivergence::Input);
         L2D_REQUIRE_EQUAL(comparison.firstDivergenceTick,
                           std::optional<std::uint64_t>(InputDivergenceTick));
-        L2D_REQUIRE_EQUAL(comparison.matchedTicks,
-                          static_cast<std::size_t>(InputDivergenceTick));
+        L2D_REQUIRE_EQUAL(comparison.matchedTicks, static_cast<std::size_t>(InputDivergenceTick));
     }
 
     void testIntegratedReplayFindsStateDivergence()
@@ -325,8 +322,7 @@ namespace
         L2D_REQUIRE_EQUAL(comparison.divergence, l2d::ReplayDivergence::State);
         L2D_REQUIRE_EQUAL(comparison.firstDivergenceTick,
                           std::optional<std::uint64_t>(StateDivergenceTick));
-        L2D_REQUIRE_EQUAL(comparison.matchedTicks,
-                          static_cast<std::size_t>(StateDivergenceTick));
+        L2D_REQUIRE_EQUAL(comparison.matchedTicks, static_cast<std::size_t>(StateDivergenceTick));
     }
 }
 
@@ -335,9 +331,9 @@ int main()
     int failures = 0;
     runTest("integrated replay ignores frame cadence",
             testIntegratedReplayIsStableAcrossFrameCadence, failures);
-    runTest("integrated replay finds input divergence",
-            testIntegratedReplayFindsInputDivergence, failures);
-    runTest("integrated replay finds state divergence",
-            testIntegratedReplayFindsStateDivergence, failures);
+    runTest("integrated replay finds input divergence", testIntegratedReplayFindsInputDivergence,
+            failures);
+    runTest("integrated replay finds state divergence", testIntegratedReplayFindsStateDivergence,
+            failures);
     return failures == 0 ? 0 : 1;
 }
