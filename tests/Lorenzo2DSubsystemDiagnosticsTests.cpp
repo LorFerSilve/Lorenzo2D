@@ -67,8 +67,7 @@ namespace
         l2d::NavigationGridConfig2D config;
         config.size = {3u, 1u};
         const l2d::NavigationGrid2D grid(config);
-        const l2d::NavigationPath2D path =
-            l2d::AStarPathfinder2D{}.findPath(grid, {0, 0}, {2, 0});
+        const l2d::NavigationPath2D path = l2d::AStarPathfinder2D{}.findPath(grid, {0, 0}, {2, 0});
 
         l2d::TileMapRenderStats renderStats;
         renderStats.drawCallCount = 4u;
@@ -90,8 +89,7 @@ namespace
     {
         l2d::AssetManager assets;
         auto clip = std::make_shared<l2d::AnimationClip>("idle");
-        L2D_REQUIRE(
-            assets.storeAnimationClip("idle", l2d::AnimationClipHandle(std::move(clip))));
+        L2D_REQUIRE(assets.storeAnimationClip("idle", l2d::AnimationClipHandle(std::move(clip))));
 
         const l2d::LiveFontHandle liveFont = assets.liveFont("ui");
         const l2d::LiveTextureHandle liveTexture = assets.liveTexture("atlas");
