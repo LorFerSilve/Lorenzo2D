@@ -3,7 +3,9 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
+#include <iterator>
 #include <string_view>
 
 namespace
