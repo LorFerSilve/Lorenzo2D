@@ -1,6 +1,8 @@
 #include <Lorenzo2D/Animation/AnimationClip.hpp>
 #include <Lorenzo2D/Audio/AudioSystem.hpp>
 #include <Lorenzo2D/Assets/ResourceLocator.hpp>
+#include <Lorenzo2D/Core/ActionMap.hpp>
+#include <Lorenzo2D/Core/InputContextStack.hpp>
 #include <Lorenzo2D/Core/Version.hpp>
 #include <Lorenzo2D/Core/InputMap.hpp>
 #include <Lorenzo2D/Diagnostics/DeterministicReplay.hpp>
@@ -18,6 +20,7 @@
 #include <Lorenzo2D/Physics/ConvexPolygonCollider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsQueries2D.hpp>
 #include <Lorenzo2D/Physics/DistanceJoint2D.hpp>
+#include <Lorenzo2D/Renderer/Camera2D.hpp>
 #include <Lorenzo2D/Renderer/IsometricProjection2D.hpp>
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
@@ -142,11 +145,20 @@ int main()
     l2d::DistanceJoint2D joint(42u, 3.f);
     const l2d::OrthogonalProjection2D projection;
     const l2d::RenderContext2D renderContext{1.f, &projection, l2d::RenderPass2D::World};
+    const auto checkedRenderPosition = renderContext.tryWorldToRender(position);
     l2d::RenderOrder2D renderOrder(l2d::RenderDepthMode2D::ProjectedY);
+    l2d::Camera2D camera({100.f, 100.f});
+    const bool cameraConfigured = camera.trySetCenter(position);
 
     l2d::InputSnapshot inputSnapshot;
     l2d::InputMap inputMap(inputSnapshot);
-    const bool inputConfigured =
+    l2d::InputContextStack inputContexts(inputSnapshot);
+    l2d::ActionMap compatibilityActions;
+    const bool checkedCompatibilityAction =
+        compatibilityActions.tryBindAction("consumer-action", l2d::Key::D) &&
+        compatibilityActions.tryClearAction("consumer-action");
+    const bool inputConfigured = inputMap.hasSnapshot() && inputContexts.hasSnapshot() &&
+
         inputMap.bindAxis2D("move", l2d::InputCode::keyboard(sf::Keyboard::Scancode::A),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::D),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
@@ -173,7 +185,9 @@ int main()
                    navigationPath.succeeded() &&
                    l2d::PathFollower2D::isValidConfig(followerConfig) &&
                    l2d::gridDirectionFromInput({1.f, 0.f}) == l2d::GridDirection2D::Right &&
-                   joint.id() != l2d::InvalidJointId &&
+                   joint.id() != l2d::InvalidJointId && checkedRenderPosition.has_value() &&
+                   *checkedRenderPosition == position && cameraConfigured &&
+                   checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0
