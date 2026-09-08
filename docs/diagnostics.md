@@ -220,10 +220,18 @@ if (!comparison.equivalent())
 
 Phase 11.4 uses this replay primitive in the stress runner for an accelerated Scene/fixed-step soak.
 The `soak` profile runs 432,000 fixed ticks (two simulated hours at 60 Hz) twice and requires full
-trace equivalence for canonical integer-only component state. Broader subsystem-integrated replay,
-especially floating-point physics contracts, remains future Phase 11 work.
+trace equivalence for canonical integer-only component state.
 
-See [stress-validation.md](stress-validation.md) for the stress profiles and invariants.
+Phase 11.6 adds `Lorenzo2DIntegratedReplayTests`, an 8,192-tick headless scenario spanning
+Scene/ECS, fixed-step scheduling, physics/query snapshots, navigation replans, and UI transitions.
+It compares equivalent simulations across different presentation-frame cadences, then verifies exact
+first-divergence reporting for one changed input tick and one state-only perturbation. Floating-point
+simulation fields are quantized to signed integers at 1/4096-unit resolution before hashing rather
+than using raw float memory.
+
+See [stress-validation.md](stress-validation.md) for stress profiles and
+[replay-validation.md](replay-validation.md) for the integrated replay scenario and explicit
+determinism boundary.
 
 ## Threading and ownership
 
@@ -234,6 +242,7 @@ scope.
 
 ## Phase 11 progression
 
-The diagnostics, replay, subsystem-wiring, and bounded stress/soak foundations are now in place.
-Phase 11 still requires fuzz/property tests, broader subsystem-integrated replay, nightly CI, branch
-protection, and a public-API/failure-path audit before the phase can be marked implemented.
+The diagnostics, replay, subsystem-wiring, stress/soak, fuzz/malformed-input, repository-policy,
+and subsystem-integrated replay foundations are now in place. Phase 11 still requires scheduled
+nightly extended validation and the public 1.0 API/failure-path audit before the phase can be marked
+implemented.

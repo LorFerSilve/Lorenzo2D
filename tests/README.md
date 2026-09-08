@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The focused regression executables use a small first-party harness. Thirty-four focused suites
+The focused regression executables use a small first-party harness. Thirty-five focused suites
 share assertion and named-test execution support through `TestSupport.hpp`. The separately
 registered `Lorenzo2DStressValidation` and `Lorenzo2DFuzzValidation` executables are
 self-reporting Phase 11 runners. Stress validation supports standard/soak profiles and JSON output;
@@ -20,6 +20,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DVersionTests` | Generated build/install version constants and macros | `headless` | 30 s |
 | `Lorenzo2DDiagnosticsTests` | Bounded profiler configuration, frame aggregation, counters, scoped timing, and deterministic reports | `headless` | 30 s |
 | `Lorenzo2DReplayTests` | Bounded replay capture, canonical hashing, and first-divergence detection | `headless` | 30 s |
+| `Lorenzo2DIntegratedReplayTests` | 8,192-tick Scene/ECS, physics, navigation, UI, frame-cadence equivalence, and exact divergence detection | `headless` | 120 s |
 | `Lorenzo2DSubsystemDiagnosticsTests` | Scene, physics, navigation, render, asset, audio, and persistence counter adapters | `headless` | 60 s |
 | `Lorenzo2DStressValidation` | Bounded smoke stress across tile streaming, renderables/handles, dynamic physics, navigation replans, fixed-step replay, assets, UI, audio, and saves | `headless` | 180 s |
 | `Lorenzo2DFuzzValidation` | Deterministic malformed-input/property validation for save/level/Tiled parsing, physics, navigation, UI, and resource lookup | `headless` | 120 s |
@@ -148,6 +149,12 @@ Reproduce or expand the Phase 11 malformed-input runner directly:
 ```sh
 ./build/tests/Lorenzo2DFuzzValidation --seed 0x4c324446555a5a31 --cases 96
 ./build/tests/Lorenzo2DFuzzValidation --seed 0x4c324446555a5a31 --cases 2048 --scenario tiled-json
+```
+
+Run the subsystem-integrated deterministic replay directly:
+
+```sh
+ctest --test-dir build -C Debug --output-on-failure -R Lorenzo2DIntegratedReplayTests
 ```
 
 ## Adding a suite

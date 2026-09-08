@@ -72,10 +72,13 @@ This phase should be completed before adding another large subsystem.
   bounds/costs, UI bounds/pointer sequences, and resource lookup. Level/Tiled parsers now enforce
   configurable byte envelopes, relative resource lookup cannot escape configured roots, and
   parser failures preserve prior destination state.
+- **11.6 Integrated deterministic replay:** an 8,192-tick headless regression now drives canonical
+  fixed-tick input through Scene/ECS, physics/query snapshots, navigation replans, and UI state.
+  It proves equivalence across fixed-frame cadences and detects exact first input/state divergence
+  ticks using a documented quantized floating-point state-hash contract.
 - **Repository policy:** `master` is protected by an active repository ruleset requiring pull
   requests, all seven CI gates, an up-to-date branch, and blocking force-pushes/deletion.
-- Broader subsystem-integrated replay, nightly CI, and the 1.0 API audit remain required before
-  Phase 11 can be completed.
+- Nightly CI and the 1.0 API/failure-path audit remain required before Phase 11 can be completed.
 
 ### Scope
 
