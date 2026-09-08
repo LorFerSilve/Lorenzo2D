@@ -43,6 +43,11 @@ The existing character-based `TileMap::loadFromLayout` API remains supported thr
 `AsciiTileMapImporter::importLegacy`. Its layout lookup and incremental edit methods remain for
 existing games; new layered games should edit/import `TileMapData` and reload it transactionally.
 
+For 1.x compatibility, `TileMapData::layer()` and mutable `layers()` remain available. They are
+escape hatches that can bypass checked layer/cell invariants. Prefer `addLayer()`,
+`replaceLayer()`, and `setTile()`; after direct mutable access, the caller is responsible for
+restoring invariants and checking `isValid()` before publication.
+
 ## Tiled JSON import
 
 `TiledJsonImporter` accepts finite orthogonal and isometric JSON maps with inline atlas tilesets,
