@@ -96,7 +96,8 @@ overloads.
 Every regression executable must declare exactly one runtime label:
 
 - `headless`: CI unsets `DISPLAY` and `WAYLAND_DISPLAY` before execution.
-- `xvfb`: CI executes the suite through Xvfb on Linux.
+- `xvfb`: CI executes each suite on its own fresh Xvfb server on Linux, preventing
+  graphics-context state from leaking between test executables.
 
 `Lorenzo2DAssetTests`, `Lorenzo2DAnimationTests`, `Lorenzo2DTilemapTests`,
 `Lorenzo2DSerializationTests`, and `Lorenzo2DRendererTests` use the Xvfb partition
