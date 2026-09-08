@@ -150,7 +150,8 @@ Register new executables through `l2d_add_regression_test` in
 - one or more subsystem labels;
 - a practical timeout;
 - private include directories only when a test intentionally exercises an
-  internal implementation contract.
+  internal implementation contract;
+- optional `ARGUMENTS` when a registered executable needs a fixed bounded CTest invocation.
 
 New focused suites should use `TestSupport.hpp` for the common harness instead
 of copying assertion or test-runner implementations. Prefer value-rich
