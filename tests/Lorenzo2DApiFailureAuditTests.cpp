@@ -60,9 +60,8 @@ namespace
                       "InputMap must reject temporary snapshots");
         static_assert(!std::is_constructible<l2d::InputMap, const l2d::InputSnapshot&&>::value,
                       "InputMap must reject const temporary snapshots");
-        static_assert(
-            !std::is_constructible<l2d::InputContextStack, l2d::InputSnapshot&&>::value,
-            "InputContextStack must reject temporary snapshots");
+        static_assert(!std::is_constructible<l2d::InputContextStack, l2d::InputSnapshot&&>::value,
+                      "InputContextStack must reject temporary snapshots");
         static_assert(
             !std::is_constructible<l2d::InputContextStack, const l2d::InputSnapshot&&>::value,
             "InputContextStack must reject const temporary snapshots");
@@ -251,12 +250,12 @@ int main()
 
     runTest("input snapshot borrowing rejects temporaries",
             testInputSnapshotBorrowingRejectsTemporaryConstruction, failures);
-    runTest("checked legacy action map reports failure",
-            testCheckedLegacyActionMapReportsFailure, failures);
+    runTest("checked legacy action map reports failure", testCheckedLegacyActionMapReportsFailure,
+            failures);
     runTest("checked render context surfaces projection failure",
             testCheckedRenderContextSurfacesProjectionFailure, failures);
-    runTest("checked camera mutations report rejection",
-            testCheckedCameraMutationsReportRejection, failures);
+    runTest("checked camera mutations report rejection", testCheckedCameraMutationsReportRejection,
+            failures);
     runTest("level instantiation rolls back partial batch",
             testLevelInstantiationRollsBackPartialBatch, failures);
     runTest("level rollback preserves existing destroy queue",
