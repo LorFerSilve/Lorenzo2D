@@ -36,6 +36,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -183,6 +184,17 @@ namespace
     void require(bool condition, std::string_view message)
     {
         if (!condition) throw std::runtime_error(std::string(message));
+    }
+
+    std::filesystem::path uniqueStressSavePath()
+    {
+        const auto timestamp =
+            std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        const std::random_device::result_type randomValue = std::random_device{}();
+
+        return std::filesystem::temp_directory_path() /
+               ("lorenzo2d_phase11_stress_save_" + std::to_string(timestamp) + "_" +
+                std::to_string(randomValue) + ".json");
     }
 
     StressConfig stressConfig(std::string_view name)
@@ -436,9 +448,11 @@ namespace
         l2d::Scene scene("stress-physics");
         std::vector<l2d::GameObject*> objects;
         std::vector<l2d::RigidBody2D*> bodies;
+        std::vector<l2d::ColliderId> colliderIds;
         std::vector<sf::Vector2f> basePositions;
         objects.reserve(config.physicsColliders);
         bodies.reserve(config.physicsColliders);
+        colliderIds.reserve(config.physicsColliders);
         basePositions.reserve(config.physicsColliders);
 
         std::size_t columns = 1u;
@@ -455,13 +469,15 @@ namespace
 
             l2d::GameObject& object = scene.createGameObject("stress-collider");
             object.transform.setPosition(position);
-            object.addComponent<l2d::BoxCollider2D>(sf::Vector2f{10.f, 10.f});
+            l2d::BoxCollider2D& collider =
+                object.addComponent<l2d::BoxCollider2D>(sf::Vector2f{10.f, 10.f});
             l2d::RigidBody2D& body = object.addComponent<l2d::RigidBody2D>();
             body.setBodyType(l2d::BodyType2D::Dynamic);
             body.setUseGravity(false);
             body.setFixedRotation(true);
             objects.push_back(&object);
             bodies.push_back(&body);
+            colliderIds.push_back(collider.id());
             basePositions.push_back(position);
         }
 
@@ -491,6 +507,13 @@ namespace
             require(world.broadPhaseStats().proxyCount == config.physicsColliders,
                     "Physics proxy count drift");
 
+            if (tick % 2u == 0u)
+                require(world.contacts().empty(),
+                        "Physics contact churn expected a separated phase");
+            else
+                require(!world.contacts().empty(),
+                        "Physics contact churn expected an overlapping phase");
+
             const l2d::PhysicsQueryContext2D queries = world.createQueryContext(scene);
             require(queries.proxyCount() == config.physicsColliders,
                     "Physics query snapshot proxy drift");
@@ -501,7 +524,10 @@ namespace
                 const float y = static_cast<float>(row) * spacing;
                 const auto hit =
                     queries.raycast({-16.f, y}, {static_cast<float>(columns) * spacing + 16.f, y});
-                if (hit) checksum = saturatingAdd(checksum, hit->colliderId);
+                require(hit.has_value(), "Physics stress raycast unexpectedly missed");
+                require(hit->colliderId == colliderIds[row * columns],
+                        "Physics stress raycast hit an unexpected collider");
+                checksum = saturatingAdd(checksum, hit->colliderId);
                 l2d::recordPhysicsQueries(counters);
             }
 
@@ -878,8 +904,7 @@ namespace
         require(counters.value(l2d::DiagnosticCounter::SaveBytesRead) == expectedBytes,
                 "Save-byte-read diagnostic drift");
 
-        TemporarySaveFile file(std::filesystem::temp_directory_path() /
-                               "lorenzo2d_phase11_stress_save.json");
+        TemporarySaveFile file(uniqueStressSavePath());
         for (std::size_t cycle = 0u; cycle < config.saveFileCycles; ++cycle)
         {
             require(document.setInteger("stress.cycle", static_cast<std::int64_t>(cycle)),
