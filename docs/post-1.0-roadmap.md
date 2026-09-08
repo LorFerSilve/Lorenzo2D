@@ -62,8 +62,13 @@ This phase should be completed before adding another large subsystem.
 - **11.3 Subsystem diagnostics wiring:** additive adapters connect scene, physics, navigation,
   render/tilemap, asset, audio, and persistence telemetry to the standard counters, with stable
   profiler scope names and focused regression coverage.
-- Stress/soak workloads, fuzz/property validation, subsystem-integrated long replay, nightly CI,
-  branch protection, and the 1.0 API audit remain required before Phase 11 can be completed.
+- **11.4 Stress/soak validation foundation:** a bounded headless runner now provides smoke,
+  representative standard, and accelerated soak profiles across tile streaming, renderables and
+  handles, dynamic physics/query churn, navigation replans, fixed-step replay, asset lifetime, UI,
+  audio, and near-limit save persistence. Pull-request CI executes the smoke profile, while heavier
+  profiles are available for manual and future nightly validation with optional JSON reports.
+- Fuzz/property validation, broader subsystem-integrated replay, nightly CI, branch protection, and
+  the 1.0 API audit remain required before Phase 11 can be completed.
 
 ### Scope
 
