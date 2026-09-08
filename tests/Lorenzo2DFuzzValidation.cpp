@@ -491,11 +491,13 @@ namespace
         const float nan = std::numeric_limits<float>::quiet_NaN();
         const float infinity = std::numeric_limits<float>::infinity();
         const std::array<float, 3u> nonFinite = {nan, infinity, -infinity};
+        const std::array<float, 3u> invalidRadii = {nan, infinity, -1.f};
         const std::array<float, 4u> invalidDimensions = {nan, infinity, 0.f, -1.f};
 
         for (std::size_t caseIndex = 0u; caseIndex < cases; ++caseIndex)
         {
             const float badCoordinate = nonFinite[random.index(nonFinite.size())];
+            const float badRadius = invalidRadii[random.index(invalidRadii.size())];
             const float badDimension = invalidDimensions[random.index(invalidDimensions.size())];
             const sf::Vector2f badPoint =
                 random.bit() ? sf::Vector2f{badCoordinate, 0.f} : sf::Vector2f{0.f, badCoordinate};
@@ -504,11 +506,11 @@ namespace
                         caseIndex, "invalid raycast coordinate did not fail closed");
             requireCase(queries.pointQuery(badPoint).empty(), Scenario, seed, caseIndex,
                         "invalid point query did not fail closed");
-            requireCase(queries.overlapCircle({0.f, 0.f}, badDimension).empty(), Scenario, seed,
+            requireCase(queries.overlapCircle({0.f, 0.f}, badRadius).empty(), Scenario, seed,
                         caseIndex, "invalid circle overlap did not fail closed");
-            requireCase(!queries.castCircle({-30.f, 0.f}, {30.f, 0.f}, badDimension).has_value(),
+            requireCase(!queries.castCircle({-30.f, 0.f}, {30.f, 0.f}, badRadius).has_value(),
                         Scenario, seed, caseIndex, "invalid circle cast did not fail closed");
-            requireCase(queries.castCircleAll({-30.f, 0.f}, {30.f, 0.f}, badDimension).empty(),
+            requireCase(queries.castCircleAll({-30.f, 0.f}, {30.f, 0.f}, badRadius).empty(),
                         Scenario, seed, caseIndex, "invalid circle cast-all did not fail closed");
             requireCase(queries.overlapBox({0.f, 0.f}, {badDimension, 10.f}).empty(), Scenario,
                         seed, caseIndex, "invalid box overlap did not fail closed");
