@@ -158,8 +158,7 @@ int main()
         compatibilityActions.tryBindAction("consumer-action", l2d::Key::D) &&
         compatibilityActions.tryClearAction("consumer-action");
     const bool inputConfigured = inputMap.hasSnapshot() && inputContexts.hasSnapshot() &&
-
-        inputMap.bindAxis2D("move", l2d::InputCode::keyboard(sf::Keyboard::Scancode::A),
+                                 inputMap.bindAxis2D("move", l2d::InputCode::keyboard(sf::Keyboard::Scancode::A),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::D),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::S));
