@@ -188,8 +188,7 @@ namespace
 
     std::filesystem::path uniqueStressSavePath()
     {
-        const auto timestamp =
-            std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        const auto timestamp = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         const std::random_device::result_type randomValue = std::random_device{}();
 
         return std::filesystem::temp_directory_path() /
