@@ -7,8 +7,7 @@ namespace l2d
 {
     namespace
     {
-        bool isWithinRoot(const std::filesystem::path& candidate,
-                          const std::filesystem::path& root)
+        bool isWithinRoot(const std::filesystem::path& candidate, const std::filesystem::path& root)
         {
             auto candidateIterator = candidate.begin();
             for (auto rootIterator = root.begin(); rootIterator != root.end();
