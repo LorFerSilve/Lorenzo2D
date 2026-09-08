@@ -202,7 +202,7 @@ namespace
         if (name == "soak")
         {
             return {"soak", 128u, 96u, 1000u, 2048u, 512u, 240u, 32u, 256u, 16u, 128u,
-                    120000u, 32u, 10000u, 512u, 50000u, 4096u, 64u, 4000u, 768u, 128u, 32u};
+                    432000u, 32u, 10000u, 512u, 50000u, 4096u, 64u, 4000u, 768u, 128u, 32u};
         }
 
         throw std::invalid_argument("Unknown stress profile: " + std::string(name));
@@ -302,17 +302,23 @@ namespace
         require(build.renderedTileCount == tileCount, "Tilemap rendered-tile counter drift");
         require(build.renderChunkCount > 0u, "Tilemap produced no render chunks");
 
+        const float tileSizeX = tileMap.loadedTileSize().x;
+        const float tileSizeY = tileMap.loadedTileSize().y;
+        const sf::Vector2f worldSize = tileMap.worldSize();
+        const sf::View fullView({worldSize.x * 0.5f, worldSize.y * 0.5f}, worldSize);
+        const l2d::TileMapRenderStats fullStats = tileMap.renderStatsForView(fullView);
+        require(fullStats.submittedTileCount == tileCount,
+                "Full-map stress view did not submit every rendered tile");
+
         const std::size_t regionColumns = std::min<std::size_t>(32u, config.tileWidth);
         const std::size_t regionRows = std::min<std::size_t>(24u, config.tileHeight);
         require(regionColumns > 0u && regionRows > 0u, "Tilemap stream region is empty");
 
-        const float tileSizeX = tileMap.loadedTileSize().x;
-        const float tileSizeY = tileMap.loadedTileSize().y;
         sf::View view({0.f, 0.f},
                       {static_cast<float>(regionColumns) * tileSizeX,
                        static_cast<float>(regionRows) * tileSizeY});
 
-        std::uint64_t checksum = 0u;
+        std::uint64_t checksum = toUint64(fullStats.submittedTileCount);
         l2d::DiagnosticCounters counters;
 
         for (std::size_t change = 0u; change < config.streamChanges; ++change)
@@ -434,8 +440,10 @@ namespace
     {
         l2d::Scene scene("stress-physics");
         std::vector<l2d::GameObject*> objects;
+        std::vector<l2d::RigidBody2D*> bodies;
         std::vector<sf::Vector2f> basePositions;
         objects.reserve(config.physicsColliders);
+        bodies.reserve(config.physicsColliders);
         basePositions.reserve(config.physicsColliders);
 
         std::size_t columns = 1u;
@@ -453,9 +461,11 @@ namespace
             object.transform.setPosition(position);
             object.addComponent<l2d::BoxCollider2D>(sf::Vector2f{10.f, 10.f});
             l2d::RigidBody2D& body = object.addComponent<l2d::RigidBody2D>();
-            body.setBodyType(l2d::BodyType2D::Kinematic);
+            body.setBodyType(l2d::BodyType2D::Dynamic);
             body.setUseGravity(false);
+            body.setFixedRotation(true);
             objects.push_back(&object);
+            bodies.push_back(&body);
             basePositions.push_back(position);
         }
 
@@ -470,11 +480,16 @@ namespace
 
         for (std::size_t tick = 0u; tick < config.physicsTicks; ++tick)
         {
-            for (std::size_t index = 1u; index < objects.size(); index += 8u)
+            for (std::size_t index = 0u; index < objects.size(); ++index)
             {
                 sf::Vector2f position = basePositions[index];
-                if (tick % 2u == 1u && index % columns != 0u) position.x -= 4.f;
+                if (tick % 2u == 1u && index % 8u == 1u && index % columns != 0u)
+                    position.x -= 4.f;
+
                 objects[index]->transform.setPosition(position);
+                bodies[index]->setVelocity({0.f, 0.f});
+                bodies[index]->setAngularVelocity(0.f);
+                bodies[index]->clearForces();
             }
 
             world.step(scene, 1.f / 60.f);
