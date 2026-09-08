@@ -5,6 +5,7 @@
 #include <Lorenzo2D/Core/InputMap.hpp>
 #include <Lorenzo2D/Diagnostics/DeterministicReplay.hpp>
 #include <Lorenzo2D/Diagnostics/Diagnostics.hpp>
+#include <Lorenzo2D/Diagnostics/SubsystemDiagnostics.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
@@ -98,6 +99,9 @@ int main()
     const bool diagnosticFrameEnded = diagnostics.endFrame();
     l2d::DiagnosticCounters diagnosticCounters;
     diagnosticCounters.set(l2d::DiagnosticCounter::ActiveEntities, 1u);
+    l2d::recordPhysicsQueries(diagnosticCounters, 2u);
+    l2d::recordSaveWriteDiagnostics(diagnosticCounters, saveOutput.str().size());
+    l2d::recordSaveReadDiagnostics(diagnosticCounters, saveOutput.str().size());
     const l2d::DiagnosticSnapshot diagnosticSnapshot =
         l2d::captureDiagnosticSnapshot(diagnostics, diagnosticCounters);
     const bool diagnosticsConfigured =
@@ -128,6 +132,7 @@ int main()
     l2d::NavigationGrid2D navigationGrid(navigationConfig);
     const l2d::NavigationPath2D navigationPath =
         l2d::AStarPathfinder2D{}.findPath(navigationGrid, {0, 0}, {1, 0});
+    l2d::recordNavigationPathDiagnostics(navigationPath, diagnosticCounters);
     l2d::PathFollowerConfig2D followerConfig;
     l2d::DistanceJoint2D joint(42u, 3.f);
     const l2d::OrthogonalProjection2D projection;
@@ -147,6 +152,9 @@ int main()
                    codecRegistered && levelSaved && resourceRootAdded && saveValueSet &&
                    saveWritten && saveRead && saveLoaded == save && uiConfigured && uiHit &&
                    audioConfigured && diagnosticsConfigured && replayConfigured &&
+                   diagnosticCounters.value(l2d::DiagnosticCounter::PhysicsQueries) == 2u &&
+                   diagnosticCounters.value(l2d::DiagnosticCounter::NavigationExpansions) ==
+                       navigationPath.visitedNodes &&
                    inputConfigured && collider.id() != l2d::InvalidColliderId &&
                    capsule.height() == 8.f && polygon.vertices().size() == 3u &&
                    queryFilter.categoryMask != 0u &&
