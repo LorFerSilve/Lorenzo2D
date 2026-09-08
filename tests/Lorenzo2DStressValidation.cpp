@@ -287,8 +287,11 @@ namespace
 
     std::pair<std::uint64_t, std::uint64_t> stressTileMap(const StressConfig& config)
     {
+        require(config.tileHeight == 0u ||
+                    config.tileWidth <=
+                        std::numeric_limits<std::size_t>::max() / config.tileHeight,
+                "Tile workload overflow");
         const std::size_t tileCount = config.tileWidth * config.tileHeight;
-        require(tileCount >= config.tileWidth, "Tile workload overflow");
 
         l2d::Scene scene("stress-tilemap");
         l2d::TileMap tileMap;
@@ -832,6 +835,7 @@ namespace
     l2d::SaveDocument makeStressSave(const StressConfig& config)
     {
         l2d::SaveDocument document("phase11.stress", 1u);
+        require(config.saveStringBytes > 0u, "Stress save string payload must be non-empty");
         std::string payload(config.saveStringBytes, 'x');
 
         for (std::size_t index = 0u; index < config.saveEntries; ++index)
@@ -906,11 +910,15 @@ namespace
             require(loaded == document, "Transactional save-file replacement changed data");
 
             std::error_code error;
-            require(!std::filesystem::exists(file.path().string() + ".tmp", error),
-                    "Temporary save artifact leaked after successful replacement");
+            const bool temporaryExists =
+                std::filesystem::exists(file.path().string() + ".tmp", error);
+            require(!error && !temporaryExists,
+                    "Temporary save artifact leaked or could not be inspected");
             error.clear();
-            require(!std::filesystem::exists(file.path().string() + ".bak", error),
-                    "Backup save artifact leaked after successful replacement");
+            const bool backupExists =
+                std::filesystem::exists(file.path().string() + ".bak", error);
+            require(!error && !backupExists,
+                    "Backup save artifact leaked or could not be inspected");
         }
 
         checksum = saturatingAdd(checksum, toUint64(config.saveFileCycles));
@@ -925,8 +933,9 @@ namespace
         std::ostringstream output;
         output << '"';
 
-        for (const unsigned char character : value)
+        for (const char rawCharacter : value)
         {
+            const unsigned char character = static_cast<unsigned char>(rawCharacter);
             switch (character)
             {
             case '"':
