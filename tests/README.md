@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The regression executables use a small first-party harness. All twenty-five suites
+The regression executables use a small first-party harness. All thirty-four suites
 share assertion and named-test execution support through `TestSupport.hpp`.
 Physics and renderer assertions use the same value-rich diagnostics while
 keeping their subsystem comparison tolerances explicit in the owning source.
@@ -15,12 +15,16 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | --- | --- | --- | --- |
 | `Lorenzo2DTestSupportTests` | Harness diagnostics, explicit tolerances, 2D comparison, and temporary-file cleanup | `headless` | 30 s |
 | `Lorenzo2DVersionTests` | Generated build/install version constants and macros | `headless` | 30 s |
+| `Lorenzo2DDiagnosticsTests` | Bounded profiler configuration, frame aggregation, counters, scoped timing, and deterministic reports | `headless` | 30 s |
+| `Lorenzo2DReplayTests` | Bounded replay capture, canonical hashing, and first-divergence detection | `headless` | 30 s |
+| `Lorenzo2DSubsystemDiagnosticsTests` | Scene, physics, navigation, render, asset, audio, and persistence counter adapters | `headless` | 60 s |
 | `Lorenzo2DCharacterMotorTests` | Sweep/slide, overlap recovery, slopes, contacts, capsule movement, moving platforms, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DTopDownControllerTests` | Validation, analog acceleration/deceleration, diagonal normalization, wall sliding, facing, failures, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DGridStepControllerTests` | Direction ties, alignment, smooth steps, transactional blocking, turn buffering, rollback, failures, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DPlatformerControllerTests` | Run/jump policy, one-way drop-through, transactional steps, moving platforms, failures, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DNavigationGridTests` | Grid/tile/physics baking, coordinates, costs, deterministic A*, diagonal policy, limits, and failures | `headless` | 120 s |
 | `Lorenzo2DNavigationAgentTests` | Path following, arrival, stale paths, stuck/repath signaling, local avoidance, failures, and replay determinism | `headless` | 120 s |
+| `Lorenzo2DIsometricTests` | Projection, picking, placement, culling, and deterministic projected ordering | `headless` | 60 s |
 | `Lorenzo2DCoreTimingTests` | Identity contracts, fixed-step scheduling, and transform interpolation | `headless` | 60 s |
 | `Lorenzo2DInputTests` | Device codes, typed actions, layouts, deadzones, contexts, fixed-tick edges, reconnects, and pointer projection | `headless` | 30 s |
 | `Lorenzo2DEcsSceneTests` | Component mutation, activation, scene dispatch, handles, indexing, and deferred destruction | `headless` | 90 s |
@@ -38,7 +42,10 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DAssetTests` | Font and texture handle lifetime, registries, and renderer leases | `xvfb` | 60 s |
 | `Lorenzo2DAnimationTests` | Clip validation, atlas frames, animator timing, looping, pause, speed, and completion | `xvfb` | 60 s |
 | `Lorenzo2DResourceTests` | Ordered roots, absolute paths, executable-relative lookup, and asset-manager integration | `headless` | 30 s |
-| `Lorenzo2DSerializationTests` | Prefab validation, versioned level round trips, transactional rejection, files, and ECS instantiation | `headless` | 60 s |
+| `Lorenzo2DSerializationTests` | Prefab validation, versioned level round trips, transactional rejection, files, and ECS instantiation | `xvfb` | 60 s |
+| `Lorenzo2DSaveTests` | Versioned save JSON, workload limits, transactional file replacement, and malformed input | `headless` | 30 s |
+| `Lorenzo2DUiTests` | Button bounds, pointer transitions, capture, overlap ordering, and invalid input | `headless` | 30 s |
+| `Lorenzo2DAudioTests` | Null-device playback options, voice lifecycle, buses, and sound-buffer asset binding | `headless` | 30 s |
 | `Lorenzo2DRendererTests` | Camera/transform numeric safety, contexts, projections, pass filtering, deterministic depth, sprite origins/flips, and physics independence | `headless` | 60 s |
 
 The previous broad regression targets mixed unrelated core, scene, physics,
