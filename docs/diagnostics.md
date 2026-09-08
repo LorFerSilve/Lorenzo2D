@@ -218,8 +218,12 @@ if (!comparison.equivalent())
 }
 ```
 
-This is the replay primitive, not yet the complete Phase 11 soak harness. Later slices still need to
-wire real engine input/state capture into long-running deterministic simulations.
+Phase 11.4 uses this replay primitive in the stress runner for an accelerated Scene/fixed-step soak.
+The `soak` profile runs 432,000 fixed ticks (two simulated hours at 60 Hz) twice and requires full
+trace equivalence for canonical integer-only component state. Broader subsystem-integrated replay,
+especially floating-point physics contracts, remains future Phase 11 work.
+
+See [stress-validation.md](stress-validation.md) for the stress profiles and invariants.
 
 ## Threading and ownership
 
@@ -230,7 +234,6 @@ scope.
 
 ## Phase 11 progression
 
-The diagnostics, replay, and subsystem-wiring foundations are now in place. Phase 11 still requires
-stress/soak workloads, fuzz/property tests, subsystem-integrated long deterministic replay, nightly
-CI, branch protection, and a public-API/failure-path audit before the phase can be marked
-implemented.
+The diagnostics, replay, subsystem-wiring, and bounded stress/soak foundations are now in place.
+Phase 11 still requires fuzz/property tests, broader subsystem-integrated replay, nightly CI, branch
+protection, and a public-API/failure-path audit before the phase can be marked implemented.
