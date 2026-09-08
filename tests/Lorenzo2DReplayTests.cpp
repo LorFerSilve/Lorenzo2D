@@ -69,8 +69,8 @@ namespace
 
         L2D_REQUIRE(trace.record(10u, {std::uint8_t{1u}, std::uint8_t{2u}}, 100u));
         L2D_REQUIRE(!trace.record(10u, input(std::uint8_t{3u}), 200u));
-        L2D_REQUIRE(!trace.record(
-            11u, {std::uint8_t{3u}, std::uint8_t{4u}, std::uint8_t{5u}}, 200u));
+        L2D_REQUIRE(
+            !trace.record(11u, {std::uint8_t{3u}, std::uint8_t{4u}, std::uint8_t{5u}}, 200u));
         L2D_REQUIRE(trace.record(11u, input(std::uint8_t{3u}), 200u));
         L2D_REQUIRE(!trace.record(12u, {}, 300u));
 
@@ -116,8 +116,7 @@ namespace
 
             L2D_REQUIRE(expected.record(tick, expectedInput, tick + 100u));
             L2D_REQUIRE(inputDiverged.record(tick, alternateInput, tick + 100u));
-            L2D_REQUIRE(stateDiverged.record(tick, expectedInput,
-                                             tick == 4u ? 999u : tick + 100u));
+            L2D_REQUIRE(stateDiverged.record(tick, expectedInput, tick == 4u ? 999u : tick + 100u));
         }
 
         const l2d::ReplayComparison inputComparison =
@@ -143,8 +142,7 @@ namespace
         L2D_REQUIRE(shifted.record(10u, {}, 1u));
         L2D_REQUIRE(shifted.record(12u, {}, 2u));
 
-        const l2d::ReplayComparison tickComparison =
-            l2d::compareReplayTraces(expected, shifted);
+        const l2d::ReplayComparison tickComparison = l2d::compareReplayTraces(expected, shifted);
         L2D_REQUIRE_EQUAL(tickComparison.divergence, l2d::ReplayDivergence::Tick);
         L2D_REQUIRE_EQUAL(tickComparison.firstDivergenceTick, std::optional<std::uint64_t>(11u));
         L2D_REQUIRE_EQUAL(tickComparison.matchedTicks, 1u);
@@ -152,11 +150,9 @@ namespace
         l2d::ReplayTrace shorter;
         L2D_REQUIRE(shorter.record(10u, {}, 1u));
 
-        const l2d::ReplayComparison lengthComparison =
-            l2d::compareReplayTraces(expected, shorter);
+        const l2d::ReplayComparison lengthComparison = l2d::compareReplayTraces(expected, shorter);
         L2D_REQUIRE_EQUAL(lengthComparison.divergence, l2d::ReplayDivergence::Length);
-        L2D_REQUIRE_EQUAL(lengthComparison.firstDivergenceTick,
-                          std::optional<std::uint64_t>(11u));
+        L2D_REQUIRE_EQUAL(lengthComparison.firstDivergenceTick, std::optional<std::uint64_t>(11u));
         L2D_REQUIRE_EQUAL(lengthComparison.matchedTicks, 1u);
     }
 
@@ -184,8 +180,7 @@ namespace
         L2D_REQUIRE_EQUAL(comparison.divergence, l2d::ReplayDivergence::State);
         L2D_REQUIRE_EQUAL(comparison.firstDivergenceTick,
                           std::optional<std::uint64_t>(DivergenceTick));
-        L2D_REQUIRE_EQUAL(comparison.matchedTicks,
-                          static_cast<std::size_t>(DivergenceTick));
+        L2D_REQUIRE_EQUAL(comparison.matchedTicks, static_cast<std::size_t>(DivergenceTick));
     }
 }
 
