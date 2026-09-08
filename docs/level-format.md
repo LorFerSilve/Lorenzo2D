@@ -2,7 +2,10 @@
 
 `LevelSerializer::save` writes deterministic JSON version 8. The serializer validates the entire
 `LevelDocument` before writing, and `load` replaces its destination only after the complete input
-has parsed and passed validation. The object limit is 100,000.
+has parsed and passed validation. The object limit is 100,000. All load entry points also read
+through a bounded byte envelope before parsing. `LevelLoadLimits::maxInputBytes` defaults to
+64 MiB and can be lowered for untrusted or tightly budgeted content. A zero-byte limit is invalid,
+and an oversized input is rejected without modifying the destination.
 
 ## Version 8 schema
 
