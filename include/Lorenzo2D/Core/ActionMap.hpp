@@ -10,6 +10,11 @@ namespace l2d
     class ActionMap
     {
       public:
+        // Checked variants expose invalid names/keys instead of silently
+        // discarding the failure through the legacy void adapter.
+        bool tryBindAction(const std::string& actionName, Key key);
+        bool tryClearAction(const std::string& actionName);
+
         void bindAction(const std::string& actionName, Key key);
         void clearAction(const std::string& actionName);
         void clearAll();
