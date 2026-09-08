@@ -17,6 +17,18 @@ namespace l2d
             context.second.setSnapshot(snapshot);
     }
 
+    void InputContextStack::clearSnapshot() noexcept
+    {
+        m_snapshot = nullptr;
+        for (auto& context : m_contexts)
+            context.second.clearSnapshot();
+    }
+
+    bool InputContextStack::hasSnapshot() const noexcept
+    {
+        return m_snapshot != nullptr;
+    }
+
     InputMap& InputContextStack::createContext(const std::string& contextName)
     {
         auto result = m_contexts.try_emplace(contextName);
