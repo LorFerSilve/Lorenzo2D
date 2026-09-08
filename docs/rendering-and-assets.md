@@ -19,6 +19,15 @@ projection so screen-space positions cannot accidentally be skewed. Input or
 picking code can use `renderToWorld()` on the same context.
 `OrthogonalProjection2D` is the identity adapter used by existing games.
 
+The legacy projection helpers preserve their 1.x presentation fallback when a custom projection
+returns a non-finite value. Code that must distinguish failure uses
+`tryWorldToRender()`, `tryRenderToWorld()`, or `tryDepthFor()`; these return
+`std::nullopt` for non-finite input/output instead of applying the compatibility fallback.
+
+`Camera2D` likewise retains its existing void mutators, while `trySetCenter()`, `tryMove()`,
+`tryFollow()`, and `trySetBounds()` report rejected unsafe coordinates/time deltas. Size and zoom
+remain sanitizing/clamping APIs by design.
+
 ```cpp
 l2d::OrthogonalProjection2D projection;
 l2d::RenderContext2D context{
@@ -122,6 +131,10 @@ is temporarily empty.
 publish completed GPU textures. `watchTexture()` plus `scanForChanges()` adds
 polling-based hot reload. The dependency graph rejects cycles and each reload
 event reports transitively invalidated dependents.
+
+`AssetPipeline` borrows its `AssetManager`; the manager must outlive the pipeline. Apart from the
+documented background decode work, pipeline/watch/event/dependency mutation is a caller-thread
+contract rather than a general concurrent API.
 
 ## Particles and post-processing
 
