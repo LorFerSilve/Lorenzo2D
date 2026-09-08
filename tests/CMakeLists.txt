@@ -105,6 +105,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DIntegratedReplayTests
+    SOURCE Lorenzo2DIntegratedReplayTests.cpp
+    LABELS headless diagnostics replay determinism integration physics navigation ui scene
+    TIMEOUT 120
+)
+
+l2d_add_regression_test(
     Lorenzo2DSubsystemDiagnosticsTests
     SOURCE Lorenzo2DSubsystemDiagnosticsTests.cpp
     LABELS headless diagnostics profiling ecs physics navigation renderer assets audio save
