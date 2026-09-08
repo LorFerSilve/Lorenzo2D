@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace
@@ -184,10 +185,9 @@ namespace
 
         while (recordedTicks < IntegratedTicks)
         {
-            const double frameDelta =
-                options.cadence == ReplayCadence::Steady
-                    ? FixedDeltaTime
-                    : ChunkedFramePattern[frameIndex % ChunkedFramePattern.size()];
+            double frameDelta = FixedDeltaTime;
+            if (options.cadence == ReplayCadence::Chunked)
+                frameDelta = ChunkedFramePattern[frameIndex % ChunkedFramePattern.size()];
             ++frameIndex;
 
             const l2d::FixedStepFrame frame = scheduler.advance(frameDelta);
@@ -252,12 +252,12 @@ namespace
                 state.appendUInt64(navigation.revision());
                 appendPath(state, path);
 
-                state.appendUInt64(ui.hoveredButton() == std::optional<std::string>("replay-button")
-                                       ? 1u
-                                       : 0u);
-                state.appendUInt64(ui.pressedButton() == std::optional<std::string>("replay-button")
-                                       ? 1u
-                                       : 0u);
+                const bool hovered =
+                    ui.hoveredButton() == std::optional<std::string>("replay-button");
+                const bool pressed =
+                    ui.pressedButton() == std::optional<std::string>("replay-button");
+                state.appendUInt64(hovered ? 1u : 0u);
+                state.appendUInt64(pressed ? 1u : 0u);
                 state.appendUInt64(ui.wasActivated("replay-button") ? 1u : 0u);
 
                 state.appendUInt64(static_cast<std::uint64_t>(world.broadPhaseStats().proxyCount));
