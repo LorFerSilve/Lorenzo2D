@@ -221,6 +221,7 @@ jobs:
           test -f install/include/Lorenzo2D/Assets/AssetId.hpp
           test -f install/include/Lorenzo2D/Audio/AudioSystem.hpp
           test -f install/include/Lorenzo2D/Diagnostics/Diagnostics.hpp
+          test -f install/include/Lorenzo2D/Diagnostics/DeterministicReplay.hpp
           test -f install/include/Lorenzo2D/Save/SaveGame.hpp
           test -f install/include/Lorenzo2D/UI/UiCanvas2D.hpp
           test -f install/include/Lorenzo2D/Renderer/IsometricProjection2D.hpp
