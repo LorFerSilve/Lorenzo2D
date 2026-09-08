@@ -24,7 +24,7 @@ namespace l2d
         const CoordinateProjection2D* projection = nullptr;
         RenderPass2D pass = RenderPass2D::World;
 
-        std::optional<sf::Vector2f> tryWorldToRender(sf::Vector2f position) const
+        [[nodiscard]] std::optional<sf::Vector2f> tryWorldToRender(sf::Vector2f position) const
         {
             if (!isFinite(position)) return std::nullopt;
             if (pass == RenderPass2D::UI || projection == nullptr) return position;
@@ -33,7 +33,7 @@ namespace l2d
             return isFinite(projected) ? std::optional<sf::Vector2f>(projected) : std::nullopt;
         }
 
-        std::optional<sf::Vector2f> tryRenderToWorld(sf::Vector2f position) const
+        [[nodiscard]] std::optional<sf::Vector2f> tryRenderToWorld(sf::Vector2f position) const
         {
             if (!isFinite(position)) return std::nullopt;
             if (pass == RenderPass2D::UI || projection == nullptr) return position;
@@ -42,7 +42,7 @@ namespace l2d
             return isFinite(world) ? std::optional<sf::Vector2f>(world) : std::nullopt;
         }
 
-        std::optional<float> tryDepthFor(sf::Vector2f worldFootPoint) const
+        [[nodiscard]] std::optional<float> tryDepthFor(sf::Vector2f worldFootPoint) const
         {
             if (!isFinite(worldFootPoint)) return std::nullopt;
             if (pass == RenderPass2D::UI || projection == nullptr) return worldFootPoint.y;
