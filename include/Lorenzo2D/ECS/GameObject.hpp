@@ -58,6 +58,8 @@ namespace l2d
         std::size_t componentCount() const noexcept;
         std::size_t activeComponentCount() const noexcept;
 
+        // Component references and pointers are borrowed from this GameObject
+        // and become invalid when the owning object is destroyed.
         template <typename T, typename... Args> T& addComponent(Args&&... args)
         {
             static_assert(std::is_base_of<Component, T>::value,
