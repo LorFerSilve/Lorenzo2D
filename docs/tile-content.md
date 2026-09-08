@@ -49,7 +49,10 @@ existing games; new layered games should edit/import `TileMapData` and reload it
 uncompressed array tile layers, object layers, properties, animation frames, and horizontal,
 vertical, or diagonal tile flips. It rejects infinite maps, external tilesets, encoded/compressed
 layer payloads, unsupported layer types, unknown tile IDs, invalid numbers, and allocations above
-the `TileMapData` limits.
+the `TileMapData` limits. Parsing is additionally wrapped in
+`TiledJsonImportLimits::maxInputBytes`, which defaults to 64 MiB and is checked before JSON
+construction. Oversized or malformed input is rejected transactionally; callers can lower the
+limit when importing untrusted content.
 
 Tiled global IDs remain the runtime `TileId`. Atlas image paths become texture `AssetId` strings,
 so load those exact IDs into `AssetManager` or remap them in game content before runtime loading.
