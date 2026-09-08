@@ -63,5 +63,6 @@ A heavier deterministic pass can be run manually without changing the executable
 ./build/tests/Lorenzo2DFuzzValidation --seed 0x4c324446555a5a31 --cases 2048
 ```
 
-Future nightly CI should reuse this runner with larger case counts and additional fixed seeds,
-rather than making normal pull requests depend on unbounded fuzzing time.
+Phase 11.7 nightly CI reuses this runner with 2,048 cases per scenario across four fixed seeds.
+Normal pull requests remain at 96 cases with the default seed, while nightly failures retain
+per-seed logs for exact reproduction.

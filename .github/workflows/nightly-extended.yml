@@ -1,0 +1,300 @@
+name: Nightly Extended Validation
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/nightly-extended.yml"
+      - "docs/nightly-validation.md"
+
+# Extended validation is read-only. Artifacts are written only to the Actions run.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  workflow-definition:
+    name: Nightly workflow definition
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Verify scheduled validation sources
+        run: |
+          test -f .github/workflows/nightly-extended.yml
+          test -f docs/nightly-validation.md
+          grep -F 'cron: "17 2 * * *"' .github/workflows/nightly-extended.yml
+          grep -F 'Lorenzo2DStressValidation' .github/workflows/nightly-extended.yml
+          grep -F 'Lorenzo2DFuzzValidation' .github/workflows/nightly-extended.yml
+
+  release-extended:
+    name: Release stress soak and trends
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install build and graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            ninja-build \
+            xorg-dev \
+            libharfbuzz-dev \
+            libfreetype-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libudev-dev \
+            libflac-dev \
+            libvorbis-dev
+
+      - name: Configure release validation
+        run: >-
+          cmake -S . -B build/nightly-release -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DL2D_BUILD_SANDBOX=OFF
+          -DL2D_BUILD_EXAMPLES=OFF
+          -DL2D_BUILD_TESTS=ON
+          -DL2D_BUILD_BENCHMARKS=ON
+          -DL2D_WARNINGS_AS_ERRORS=ON
+
+      - name: Build release validation targets
+        run: >-
+          cmake --build build/nightly-release
+          --target Lorenzo2DStressValidation Lorenzo2DBenchmarks
+          --parallel
+
+      - name: Prepare report directory
+        run: |
+          mkdir -p artifacts
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "event=${GITHUB_EVENT_NAME}"
+            echo "schedule=17 2 * * *"
+          } > artifacts/metadata.txt
+
+      - name: Run representative standard stress
+        id: standard
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./build/nightly-release/bin/Lorenzo2DStressValidation \
+            --profile standard \
+            --json artifacts/stress-standard.json \
+            2>&1 | tee artifacts/stress-standard.log
+
+      - name: Run accelerated soak stress
+        id: soak
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./build/nightly-release/bin/Lorenzo2DStressValidation \
+            --profile soak \
+            --json artifacts/stress-soak.json \
+            2>&1 | tee artifacts/stress-soak.log
+
+      - name: Capture benchmark trend snapshot
+        id: benchmarks
+        if: always()
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./build/nightly-release/bin/Lorenzo2DBenchmarks \
+            --json artifacts/benchmarks.json \
+            --csv artifacts/benchmarks.csv \
+            2>&1 | tee artifacts/benchmarks.log
+
+      - name: Upload release extended reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: nightly-release-extended-${{ github.run_id }}
+          path: artifacts
+          if-no-files-found: warn
+          retention-days: 21
+
+      - name: Enforce release extended correctness
+        if: always()
+        env:
+          STANDARD_OUTCOME: ${{ steps.standard.outcome }}
+          SOAK_OUTCOME: ${{ steps.soak.outcome }}
+          BENCHMARK_OUTCOME: ${{ steps.benchmarks.outcome }}
+        run: |
+          if [[ "${STANDARD_OUTCOME}" != "success" ||
+                "${SOAK_OUTCOME}" != "success" ||
+                "${BENCHMARK_OUTCOME}" != "success" ]]; then
+            echo "Extended release validation failed."
+            echo "standard=${STANDARD_OUTCOME}"
+            echo "soak=${SOAK_OUTCOME}"
+            echo "benchmarks=${BENCHMARK_OUTCOME}"
+            exit 1
+          fi
+
+  sanitizer-standard:
+    name: ASan UBSan standard stress
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:strict_init_order=1:check_initialization_order=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install sanitizer and graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            clang \
+            ninja-build \
+            xorg-dev \
+            libharfbuzz-dev \
+            libfreetype-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libudev-dev \
+            libflac-dev \
+            libvorbis-dev
+
+      - name: Configure sanitizer validation
+        env:
+          CC: clang
+          CXX: clang++
+        run: >-
+          cmake -S . -B build/nightly-sanitize -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DL2D_BUILD_SANDBOX=OFF
+          -DL2D_BUILD_EXAMPLES=OFF
+          -DL2D_BUILD_TESTS=ON
+          -DL2D_BUILD_BENCHMARKS=OFF
+          -DL2D_WARNINGS_AS_ERRORS=ON
+          -DL2D_ENABLE_ASAN=ON
+          -DL2D_ENABLE_UBSAN=ON
+
+      - name: Build sanitizer stress target
+        run: >-
+          cmake --build build/nightly-sanitize
+          --target Lorenzo2DStressValidation
+          --parallel
+
+      - name: Prepare sanitizer report directory
+        run: |
+          mkdir -p artifacts-sanitize
+          echo "commit=${GITHUB_SHA}" > artifacts-sanitize/metadata.txt
+          echo "run_id=${GITHUB_RUN_ID}" >> artifacts-sanitize/metadata.txt
+
+      - name: Run sanitizer standard stress
+        run: |
+          set -o pipefail
+          ./build/nightly-sanitize/bin/Lorenzo2DStressValidation \
+            --profile standard \
+            --json artifacts-sanitize/stress-standard-sanitized.json \
+            2>&1 | tee artifacts-sanitize/stress-standard-sanitized.log
+
+      - name: Upload sanitizer report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: nightly-sanitizer-standard-${{ github.run_id }}
+          path: artifacts-sanitize
+          if-no-files-found: warn
+          retention-days: 21
+
+  extended-fuzz:
+    name: Extended deterministic fuzz
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install build and graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            ninja-build \
+            xorg-dev \
+            libharfbuzz-dev \
+            libfreetype-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libudev-dev \
+            libflac-dev \
+            libvorbis-dev
+
+      - name: Configure fuzz validation
+        run: >-
+          cmake -S . -B build/nightly-fuzz -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DL2D_BUILD_SANDBOX=OFF
+          -DL2D_BUILD_EXAMPLES=OFF
+          -DL2D_BUILD_TESTS=ON
+          -DL2D_BUILD_BENCHMARKS=OFF
+          -DL2D_WARNINGS_AS_ERRORS=ON
+
+      - name: Build fuzz target
+        run: >-
+          cmake --build build/nightly-fuzz
+          --target Lorenzo2DFuzzValidation
+          --parallel
+
+      - name: Run fixed-seed extended fuzz passes
+        run: |
+          mkdir -p artifacts-fuzz
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "cases_per_scenario=2048"
+          } > artifacts-fuzz/metadata.txt
+
+          failures=0
+          seeds=(
+            0x4c324446555a5a31
+            0x9e3779b97f4a7c15
+            0xd1b54a32d192ed03
+            0x94d049bb133111eb
+          )
+
+          for seed in "${seeds[@]}"; do
+            echo "Running extended fuzz seed ${seed}"
+            set +e
+            ./build/nightly-fuzz/bin/Lorenzo2DFuzzValidation \
+              --seed "${seed}" \
+              --cases 2048 \
+              2>&1 | tee "artifacts-fuzz/fuzz-${seed}.log"
+            status=${PIPESTATUS[0]}
+            set -e
+
+            if (( status != 0 )); then
+              failures=1
+            fi
+          done
+
+          exit "${failures}"
+
+      - name: Upload fuzz reproduction logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: nightly-extended-fuzz-${{ github.run_id }}
+          path: artifacts-fuzz
+          if-no-files-found: warn
+          retention-days: 21

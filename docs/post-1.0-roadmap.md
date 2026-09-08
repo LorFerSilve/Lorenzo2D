@@ -66,7 +66,8 @@ This phase should be completed before adding another large subsystem.
   representative standard, and accelerated soak profiles across tile streaming, renderables and
   handles, dynamic physics/query churn, navigation replans, fixed-step replay, asset lifetime, UI,
   audio, and near-limit save persistence. Pull-request CI executes the smoke profile, while heavier
-  profiles are available for manual and future nightly validation with optional JSON reports.
+  profiles remain available manually and now run through the scheduled Phase 11.7 workflow with
+  retained JSON reports.
 - **11.5 Fuzz/malformed-input validation:** a deterministic seedable property runner covers
   save-game JSON, level/prefab deserialization, Tiled JSON, physics queries, navigation-grid
   bounds/costs, UI bounds/pointer sequences, and resource lookup. Level/Tiled parsers now enforce
@@ -76,9 +77,13 @@ This phase should be completed before adding another large subsystem.
   fixed-tick input through Scene/ECS, physics/query snapshots, navigation replans, and UI state.
   It proves equivalence across fixed-frame cadences and detects exact first input/state divergence
   ticks using a documented quantized floating-point state-hash contract.
+- **11.7 Nightly extended validation:** a scheduled read-only workflow now runs Release standard
+  and soak stress, ASan/UBSan standard stress, four fixed-seed 2,048-case fuzz passes, and
+  benchmark trend capture. JSON/CSV/log artifacts are retained for 21 days without turning noisy
+  wall-clock benchmark values into hard pass/fail thresholds.
 - **Repository policy:** `master` is protected by an active repository ruleset requiring pull
   requests, all seven CI gates, an up-to-date branch, and blocking force-pushes/deletion.
-- Nightly CI and the 1.0 API/failure-path audit remain required before Phase 11 can be completed.
+- The 1.0 public-API/failure-path audit remains required before Phase 11 can be completed.
 
 ### Scope
 

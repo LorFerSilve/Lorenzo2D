@@ -5,8 +5,8 @@ diagnostic invariants without turning unstable wall-clock measurements into merg
 
 The executable is `Lorenzo2DStressValidation`. It is built with the regression tests and uses only
 public Lorenzo2D APIs. Pull-request CI runs the default `smoke` profile in the headless partition,
-including ASan/UBSan. The larger profiles are intentionally available for manual and future nightly
-validation rather than every pull request.
+including ASan/UBSan. The scheduled Phase 11.7 workflow keeps pull requests bounded while running
+the full `standard` and `soak` profiles nightly; `standard` also runs under ASan/UBSan.
 
 ## What makes a scenario fail
 
@@ -183,14 +183,13 @@ cmake --build --preset sanitize --target Lorenzo2DStressValidation
 ./build/sanitize/bin/Lorenzo2DStressValidation --profile standard
 ```
 
-The PR `smoke` profile already participates in the repository's ASan/UBSan matrix. The future
-nightly Phase 11 slice should run heavier `standard`/`soak` combinations and retain JSON
-artifacts.
+The PR `smoke` profile already participates in the repository's ASan/UBSan matrix. The nightly
+workflow runs Release `standard` plus `soak`, runs `standard` again under ASan/UBSan, and
+retains the JSON and console reports for 21 days.
 
 ## Current boundary
 
 Phase 11.4 establishes reproducible stress/soak workloads and an accelerated Scene/fixed-step replay
-soak. It does not yet claim full-engine cross-platform replay equivalence for floating-point physics
-or presentation services, and it does not replace targeted fuzzing. Fuzz/property targets, broader
-subsystem-integrated replay, nightly scheduling, branch protection, and the public API/failure-path
-audit remain separate Phase 11 work.
+soak. Phase 11.7 now schedules the heavier profiles and retains their artifacts. Full-engine
+cross-platform replay equivalence for floating-point physics or presentation services is still not
+claimed; the remaining Phase 11 work is the public API/failure-path audit.
