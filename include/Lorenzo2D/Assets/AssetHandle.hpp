@@ -9,6 +9,7 @@
 namespace sf
 {
     class Font;
+    class SoundBuffer;
     class Texture;
 }
 
@@ -153,8 +154,10 @@ namespace l2d
     };
 
     using FontHandle = AssetHandle<sf::Font>;
+    using SoundBufferHandle = AssetHandle<sf::SoundBuffer>;
     using TextureHandle = AssetHandle<sf::Texture>;
     using AnimationClipHandle = AssetHandle<AnimationClip>;
     using LiveFontHandle = LiveAssetHandle<sf::Font>;
+    using LiveSoundBufferHandle = LiveAssetHandle<sf::SoundBuffer>;
     using LiveTextureHandle = LiveAssetHandle<sf::Texture>;
 }

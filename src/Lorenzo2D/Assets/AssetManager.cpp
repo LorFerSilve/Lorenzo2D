@@ -172,6 +172,85 @@ namespace l2d
         return m_textures.size();
     }
 
+    bool AssetManager::loadSoundBuffer(const std::string& name, const std::string& filepath)
+    {
+        std::shared_ptr<sf::SoundBuffer> buffer = std::make_shared<sf::SoundBuffer>();
+
+        if (!buffer->loadFromFile(filepath)) return false;
+
+        return storeSoundBuffer(name, SoundBufferHandle(std::move(buffer)));
+    }
+
+    bool AssetManager::loadSoundBuffer(const std::string& name, const ResourceLocator& locator,
+                                       const std::string& resource)
+    {
+        const std::optional<ResourceLocator::Path> path = locator.locate(resource);
+        return path && loadSoundBuffer(name, path->string());
+    }
+
+    bool AssetManager::storeSoundBuffer(const std::string& name, SoundBufferHandle buffer)
+    {
+        if (name.empty() || !buffer) return false;
+
+        m_soundBuffers.insert_or_assign(name, buffer);
+        const auto live = m_liveSoundBuffers.find(name);
+
+        if (live != m_liveSoundBuffers.end())
+        {
+            const std::lock_guard<std::mutex> lock(live->second->mutex);
+            live->second->current = std::move(buffer);
+            ++live->second->generation;
+        }
+
+        return true;
+    }
+
+    SoundBufferHandle AssetManager::getSoundBuffer(const std::string& name) const
+    {
+        const auto iterator = m_soundBuffers.find(name);
+        return iterator == m_soundBuffers.end() ? SoundBufferHandle{} : iterator->second;
+    }
+
+    LiveSoundBufferHandle AssetManager::liveSoundBuffer(const std::string& name)
+    {
+        auto& state = m_liveSoundBuffers[name];
+
+        if (!state)
+        {
+            state = std::make_shared<detail::LiveAssetState<sf::SoundBuffer>>();
+            state->current = getSoundBuffer(name);
+            state->generation = state->current ? 1u : 0u;
+        }
+
+        return LiveSoundBufferHandle(state);
+    }
+
+    bool AssetManager::hasSoundBuffer(const std::string& name) const
+    {
+        return m_soundBuffers.find(name) != m_soundBuffers.end();
+    }
+
+    bool AssetManager::unloadSoundBuffer(const std::string& name)
+    {
+        if (m_soundBuffers.erase(name) == 0u) return false;
+
+        const auto live = m_liveSoundBuffers.find(name);
+
+        if (live != m_liveSoundBuffers.end())
+        {
+            const std::lock_guard<std::mutex> lock(live->second->mutex);
+            live->second->current.reset();
+            ++live->second->generation;
+        }
+
+        return true;
+    }
+
+    std::size_t AssetManager::soundBufferCount() const
+    {
+        return m_soundBuffers.size();
+    }
+
     bool AssetManager::storeAnimationClip(const std::string& name, AnimationClipHandle clip)
     {
         if (name.empty() || !clip) return false;
@@ -233,6 +312,22 @@ namespace l2d
         m_textures.clear();
     }
 
+    void AssetManager::clearSoundBuffers()
+    {
+        for (const auto& entry : m_soundBuffers)
+        {
+            const auto live = m_liveSoundBuffers.find(entry.first);
+
+            if (live == m_liveSoundBuffers.end()) continue;
+
+            const std::lock_guard<std::mutex> lock(live->second->mutex);
+            live->second->current.reset();
+            ++live->second->generation;
+        }
+
+        m_soundBuffers.clear();
+    }
+
     void AssetManager::clearAnimationClips()
     {
         m_animationClips.clear();
@@ -242,6 +337,7 @@ namespace l2d
     {
         clearFonts();
         clearTextures();
+        clearSoundBuffers();
         clearAnimationClips();
     }
 }

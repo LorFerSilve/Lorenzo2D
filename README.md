@@ -12,9 +12,11 @@ The public engine version is generated from CMake's project version and is
 available through `<Lorenzo2D/Core/Version.hpp>`. Project-wide contracts and
 current support claims are documented separately:
 
+- [`docs/getting-started.md`](docs/getting-started.md) starts from an installed 1.0 package and
+  explains the four starter projects and runtime order.
 - [`docs/architecture.md`](docs/architecture.md) defines ownership, update
   order, dependency direction, numeric safety, and determinism boundaries.
-- [`docs/versioning.md`](docs/versioning.md) defines the pre-1.0 compatibility
+- [`docs/versioning.md`](docs/versioning.md) defines the stable 1.x compatibility
   and deprecation policy.
 - [`docs/support-matrix.md`](docs/support-matrix.md) distinguishes planned,
   experimental, supported, and production-tested development paths.
@@ -38,6 +40,8 @@ current support claims are documented separately:
   point-and-click following, local avoidance, and replanning.
 - [`docs/isometric.md`](docs/isometric.md) documents isometric projection, picking, placement,
   projected bounds, depth ordering, and streaming-region culling.
+- [`docs/ui.md`](docs/ui.md), [`docs/audio.md`](docs/audio.md), and
+  [`docs/saves.md`](docs/saves.md) document the 1.0 game-facing services.
 - [`docs/level-format.md`](docs/level-format.md) documents JSON level version 8,
   asset-backed prefabs, component codecs, and legacy migration.
 
@@ -71,12 +75,15 @@ current support claims are documented separately:
 - Diamond-isometric projection with reversible world/render mapping, projected-Y depth, tile picking,
   placement anchors, conservative projected bounds, and view-to-stream-region culling
 - Collision layers, sensors, contact events, and physics debug drawing
-- Snapshot and live font/texture handles, background loading, hot reload,
-  dependency tracking, and ordered runtime resource lookup
+- Snapshot/live font, texture, and sound-buffer handles; background texture loading; hot reload;
+  dependency tracking; and ordered runtime resource lookup
+- Screen-space runtime buttons with topmost hit-testing and press/release capture
+- Effects/UI/music audio buses with lifetime-safe voices and transactional streamed music
+- Deterministic typed save documents with versioned envelopes, workload limits, and safe file replacement
 - Deterministic particles, screen-space color passes, asset-backed prefabs, custom
   component codecs, JSON level saving, and legacy level loading
 - Debug overlay and independently switchable world, physics, and UI layers
-- Focused minimal, animation, physics, phase-4 through phase-9 examples plus regression tests for timing,
+- Focused minimal, animation, physics, phase-4 through phase-10 examples plus regression tests for timing,
   scenes, rendering, resources, serialization, animation, physics, and tilemaps
 
 ## Requirements
@@ -95,7 +102,7 @@ first configure:
 ```sh
 sudo apt-get update
 sudo apt-get install xorg-dev xauth xvfb libharfbuzz-dev libfreetype-dev \
-  libgl1-mesa-dev libegl1-mesa-dev libudev-dev
+  libgl1-mesa-dev libegl1-mesa-dev libudev-dev libflac-dev libvorbis-dev
 ```
 
 Package names differ on other Linux distributions.
@@ -124,7 +131,7 @@ specialized build trees isolated under `build/<preset>`.
 
 The sandbox and the focused `Lorenzo2DMinimalExample`,
 `Lorenzo2DAnimationExample`, `Lorenzo2DPhysicsExample`, and
-`Lorenzo2DPhase4Example` through `Lorenzo2DPhase9Example` executables are
+`Lorenzo2DPhase4Example` through `Lorenzo2DPhase10Example` executables are
 written to `build/bin`. Disable them independently with
 `-DL2D_BUILD_SANDBOX=OFF` and `-DL2D_BUILD_EXAMPLES=OFF`.
 
@@ -256,7 +263,7 @@ The installed package exports `Lorenzo2D::Lorenzo2D` and locates its required
 SFML 3.1 Graphics package through `find_dependency`. A consumer can then use:
 
 ```cmake
-find_package(Lorenzo2D 0.13 CONFIG REQUIRED)
+find_package(Lorenzo2D 1.0 CONFIG REQUIRED)
 target_link_libraries(MyGame PRIVATE Lorenzo2D::Lorenzo2D)
 ```
 
@@ -453,15 +460,15 @@ contracts and integration order.
 
 ## Asset lifetime
 
-`FontHandle` and `TextureHandle` are shared leases that provide read-only access
+`FontHandle`, `TextureHandle`, and `SoundBufferHandle` are shared leases that provide read-only access
 to SFML assets. Copying a handle shares ownership of the same published asset
 generation; a default or missing handle is empty and can be checked before
 dereferencing. The asset remains alive until the registry and every copied
 handle have released it.
 
 `AssetManager` provides matching `load`, `store`, `get`, `unload`, `count`, and
-`clear` operations for named fonts and textures. `loadFont()` and
-`loadTexture()` publish a new asset only after the complete file load succeeds.
+`clear` operations for named fonts, textures, and sound buffers. File loads publish a new asset only
+after the complete load succeeds.
 `storeFont()` and `storeTexture()` register an existing non-empty handle, while
 `getFont()` and `getTexture()` return an empty handle when the name is absent.
 The `has` and `count` queries describe only the manager's current registry.
@@ -514,15 +521,15 @@ time.
 include/Lorenzo2D/  Public engine headers
 src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
-examples/           Focused minimal, animation, physics, and phase-4 through phase-9 applications
+examples/           Focused minimal, animation, physics, and phase-4 through phase-10 applications
 assets/             Text levels and optional runtime assets
 tests/              Regression and consumer integration tests
-benchmarks/         Standalone physics and tile-map performance probes
+benchmarks/         Diagnostic engine, isometric, UI, and save performance probes
 cmake/              Installed-package configuration templates
 ```
 
-The public engine is separated into `Core`, `ECS`, `Scene`, `Renderer`,
-`Animation`, `Physics`, `Assets`, and `Tilemap` modules. Scenes own game objects, and game
+The public engine is separated into `Core`, `ECS`, `Scene`, `Renderer`, `Animation`, `Physics`,
+`Movement`, `Navigation`, `Assets`, `Audio`, `Tilemap`, `UI`, and `Save` modules. Scenes own game objects, and game
 objects own their components. Destruction is queued so an object can safely
 request its own removal during an update.
 

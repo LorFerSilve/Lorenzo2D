@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 0.13.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 1.0.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -116,17 +116,22 @@ function(l2d_enable_sanitizers target)
     target_link_options(${target} PRIVATE ${l2d_sanitizer_flag})
 endfunction()
 
-if(TARGET SFML::Graphics)
-    message(STATUS "Using the SFML::Graphics target provided by the parent project")
+if(TARGET SFML::Graphics OR TARGET SFML::Audio)
+    if(NOT TARGET SFML::Graphics OR NOT TARGET SFML::Audio)
+        message(FATAL_ERROR
+            "A parent project must provide both SFML::Graphics and SFML::Audio"
+        )
+    endif()
+    message(STATUS "Using SFML::Graphics and SFML::Audio targets provided by the parent project")
 elseif(L2D_USE_SYSTEM_SFML)
-    find_package(SFML 3.1 CONFIG REQUIRED COMPONENTS Graphics)
+    find_package(SFML 3.1 CONFIG REQUIRED COMPONENTS Graphics Audio)
 else()
     include(FetchContent)
 
-    # Lorenzo2D currently uses only SFML Graphics. Respect values already chosen
-    # by a parent project instead of force-writing shared cache entries.
+    # Graphics and Audio are public Lorenzo2D dependencies. Respect values
+    # already chosen by a parent project instead of force-writing shared cache entries.
     if(NOT DEFINED SFML_BUILD_AUDIO)
-        set(SFML_BUILD_AUDIO OFF CACHE BOOL "Build SFML Audio")
+        set(SFML_BUILD_AUDIO ON CACHE BOOL "Build SFML Audio")
     endif()
     if(NOT DEFINED SFML_BUILD_NETWORK)
         set(SFML_BUILD_NETWORK OFF CACHE BOOL "Build SFML Network")
@@ -169,6 +174,7 @@ endif()
 set(LORENZO2D_SOURCES
     src/Lorenzo2D/Animation/AnimationClip.cpp
     src/Lorenzo2D/Animation/Animator.cpp
+    src/Lorenzo2D/Audio/AudioSystem.cpp
     src/Lorenzo2D/Assets/AssetManager.cpp
     src/Lorenzo2D/Assets/AssetPipeline.cpp
     src/Lorenzo2D/Assets/ResourceLocator.cpp
@@ -227,12 +233,14 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Scene/Prefab.cpp
     src/Lorenzo2D/Scene/Scene.cpp
     src/Lorenzo2D/Scene/SceneManager.cpp
+    src/Lorenzo2D/Save/SaveGame.cpp
     src/Lorenzo2D/Tilemap/Tilemap.cpp
     src/Lorenzo2D/Tilemap/AsciiTileMapImporter.cpp
     src/Lorenzo2D/Tilemap/TileMapColliderBuilder2D.cpp
     src/Lorenzo2D/Tilemap/TileMapData.cpp
     src/Lorenzo2D/Tilemap/TileSet.cpp
     src/Lorenzo2D/Tilemap/TiledJsonImporter.cpp
+    src/Lorenzo2D/UI/UiCanvas2D.cpp
 )
 
 add_library(Lorenzo2D STATIC ${LORENZO2D_SOURCES})
@@ -258,7 +266,7 @@ get_target_property(
 target_include_directories(Lorenzo2D PRIVATE ${l2d_json_include_directories})
 
 target_compile_features(Lorenzo2D PUBLIC cxx_std_17)
-target_link_libraries(Lorenzo2D PUBLIC SFML::Graphics)
+target_link_libraries(Lorenzo2D PUBLIC SFML::Graphics SFML::Audio)
 l2d_enable_warnings(Lorenzo2D)
 l2d_enable_sanitizers(Lorenzo2D)
 l2d_enable_coverage(Lorenzo2D)
@@ -360,7 +368,7 @@ if(L2D_INSTALL)
     write_basic_package_version_file(
         "${PROJECT_BINARY_DIR}/Lorenzo2DConfigVersion.cmake"
         VERSION ${PROJECT_VERSION}
-        COMPATIBILITY SameMinorVersion
+        COMPATIBILITY SameMajorVersion
     )
 
     install(

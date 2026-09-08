@@ -27,6 +27,11 @@ visible-tile-region calculations over a 512-by-512 logical map. Its checksum kee
 and culling work observable. This is a focused diagnostic executable rather than an extension of the
 persisted JSON/CSV report schema, so existing benchmark consumers remain unchanged.
 
+Phase 10 additionally builds `Lorenzo2DPhase10Benchmarks`. It measures a 128-button screen-space
+UI hit-testing/update workload and repeated typed save serialization/deserialization over a
+512-entry document. Audio playback timing is intentionally excluded because device scheduling is
+not a stable blocking microbenchmark.
+
 ## Building and running
 
 ```sh
@@ -34,6 +39,7 @@ cmake --preset benchmarks
 cmake --build --preset benchmarks
 ./build/benchmarks/benchmarks/Lorenzo2DBenchmarks
 ./build/benchmarks/benchmarks/Lorenzo2DIsometricBenchmarks
+./build/benchmarks/benchmarks/Lorenzo2DPhase10Benchmarks
 ```
 
 The main executable always writes its human-readable table to standard output. Optional

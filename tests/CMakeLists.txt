@@ -269,6 +269,27 @@ l2d_add_regression_test(
     TIMEOUT 60
 )
 
+l2d_add_regression_test(
+    Lorenzo2DSaveTests
+    SOURCE Lorenzo2DSaveTests.cpp
+    LABELS headless save serialization persistence
+    TIMEOUT 30
+)
+
+l2d_add_regression_test(
+    Lorenzo2DUiTests
+    SOURCE Lorenzo2DUiTests.cpp
+    LABELS headless ui input
+    TIMEOUT 30
+)
+
+l2d_add_regression_test(
+    Lorenzo2DAudioTests
+    SOURCE Lorenzo2DAudioTests.cpp
+    LABELS headless audio assets
+    TIMEOUT 30
+)
+
 configure_file(
     "${PROJECT_SOURCE_DIR}/assets/levels/phase2-showcase.l2dlevel"
     "${CMAKE_CURRENT_BINARY_DIR}/phase2-showcase.l2dlevel"
