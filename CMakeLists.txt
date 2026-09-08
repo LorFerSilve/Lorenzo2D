@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(Lorenzo2DEngine VERSION 1.0.0 LANGUAGES CXX)
+project(Lorenzo2DEngine VERSION 1.1.0 LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -189,6 +189,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Core/Pointer.cpp
     src/Lorenzo2D/Core/Time.cpp
     src/Lorenzo2D/Core/WindowEvents.cpp
+    src/Lorenzo2D/Diagnostics/Diagnostics.cpp
     src/Lorenzo2D/ECS/Component.cpp
     src/Lorenzo2D/ECS/GameObject.cpp
     src/Lorenzo2D/ECS/Transform.cpp

@@ -3,6 +3,7 @@
 #include <Lorenzo2D/Assets/ResourceLocator.hpp>
 #include <Lorenzo2D/Core/Version.hpp>
 #include <Lorenzo2D/Core/InputMap.hpp>
+#include <Lorenzo2D/Diagnostics/Diagnostics.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
 #include <Lorenzo2D/Movement/GridStepController2D.hpp>
@@ -90,6 +91,18 @@ int main()
     audioOptions.bus = l2d::AudioBus2D::Ui;
     const bool audioConfigured = l2d::AudioSystem::isValidPlayOptions(audioOptions);
 
+    l2d::Profiler diagnostics;
+    const bool diagnosticFrameStarted = diagnostics.beginFrame();
+    const bool diagnosticRecorded = diagnostics.record("consumer", 0.25);
+    const bool diagnosticFrameEnded = diagnostics.endFrame();
+    l2d::DiagnosticCounters diagnosticCounters;
+    diagnosticCounters.set(l2d::DiagnosticCounter::ActiveEntities, 1u);
+    const l2d::DiagnosticSnapshot diagnosticSnapshot =
+        l2d::captureDiagnosticSnapshot(diagnostics, diagnosticCounters);
+    const bool diagnosticsConfigured =
+        diagnosticFrameStarted && diagnosticRecorded && diagnosticFrameEnded &&
+        diagnosticSnapshot.frameIndex == 1u && diagnosticSnapshot.timings.size() == 1u;
+
     l2d::CircleCollider2D collider(2.f);
     l2d::CapsuleCollider2D capsule(2.f, 8.f);
     l2d::ConvexPolygonCollider2D polygon;
@@ -120,13 +133,13 @@ int main()
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::S));
 
-    return l2d::VersionString == "1.0.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
+    return l2d::VersionString == "1.1.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
                    tileAdded && tileDataImported && tileColliders.empty() && isometricPick &&
                    codecRegistered && levelSaved && resourceRootAdded && saveValueSet &&
                    saveWritten && saveRead && saveLoaded == save && uiConfigured && uiHit &&
-                   audioConfigured && inputConfigured && collider.id() != l2d::InvalidColliderId &&
-                   capsule.height() == 8.f && polygon.vertices().size() == 3u &&
-                   queryFilter.categoryMask != 0u &&
+                   audioConfigured && diagnosticsConfigured && inputConfigured &&
+                   collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
+                   polygon.vertices().size() == 3u && queryFilter.categoryMask != 0u &&
                    l2d::CharacterMotor2D::isValidConfig(motorConfig) &&
                    l2d::CharacterMotor2D::isValidConfig(topDownMotorConfig) &&
                    l2d::TopDownController2D::isValidConfig(topDownConfig) &&

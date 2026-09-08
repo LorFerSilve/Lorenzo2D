@@ -30,3 +30,14 @@ l2d_enable_warnings(Lorenzo2DPhase10Benchmarks)
 l2d_enable_sanitizers(Lorenzo2DPhase10Benchmarks)
 l2d_enable_coverage(Lorenzo2DPhase10Benchmarks)
 l2d_enable_clang_tidy(Lorenzo2DPhase10Benchmarks)
+
+add_executable(
+    Lorenzo2DDiagnosticsBenchmarks
+    Lorenzo2DDiagnosticsBenchmarks.cpp
+)
+
+target_link_libraries(Lorenzo2DDiagnosticsBenchmarks PRIVATE Lorenzo2D::Lorenzo2D)
+l2d_enable_warnings(Lorenzo2DDiagnosticsBenchmarks)
+l2d_enable_sanitizers(Lorenzo2DDiagnosticsBenchmarks)
+l2d_enable_coverage(Lorenzo2DDiagnosticsBenchmarks)
+l2d_enable_clang_tidy(Lorenzo2DDiagnosticsBenchmarks)

@@ -27,7 +27,7 @@ done is satisfied, not merely to match a version target.
 
 | Phase | Scope | Status |
 | --- | --- | --- |
-| 11 | production hardening, diagnostics, profiling, fuzzing, stress validation, and CI policy | Planned |
+| 11 | production hardening, diagnostics, profiling, fuzzing, stress validation, and CI policy | In progress |
 | 12 | rendering 2.0: shaders, materials, render targets, batching, post-processing, and render diagnostics | Planned |
 | 13 | tooling and editor foundation using installed public engine API | Planned |
 | 14 | content pipeline 2.0: asset metadata, import/cook pipeline, dependency graph, and rebuild cache | Planned |
@@ -51,6 +51,14 @@ modes, long-running behavior, performance envelopes, and determinism can be meas
 guessed.
 
 This phase should be completed before adding another large subsystem.
+
+### Implementation progress
+
+- **11.1 Diagnostics foundation:** named bounded profiler, rolling frame aggregation, standard
+  counters, deterministic report format, tests, example, documentation, and package-consumer
+  coverage are implemented on the Phase 11 diagnostics branch.
+- Subsystem counter/timing wiring, stress/soak workloads, fuzzing, replay diagnostics, nightly CI,
+  branch protection, and the 1.0 API audit remain required before Phase 11 can be completed.
 
 ### Scope
 
