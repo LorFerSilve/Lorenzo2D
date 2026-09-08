@@ -227,6 +227,14 @@ namespace
                left.allowDiagonalCornerCutting == right.allowDiagonalCornerCutting;
     }
 
+    bool sameNavigationCell(const std::optional<l2d::NavigationCell2D>& left,
+                            const std::optional<l2d::NavigationCell2D>& right)
+    {
+        if (left.has_value() != right.has_value()) return false;
+        return !left || (left->walkable == right->walkable &&
+                         left->traversalCost == right->traversalCost);
+    }
+
     bool pathWithin(const std::filesystem::path& candidate, const std::filesystem::path& root)
     {
         auto candidateIterator = candidate.begin();
@@ -578,7 +586,7 @@ namespace
                         "invalid navigation reset unexpectedly succeeded");
             requireCase(sameNavigationConfig(grid.config(), beforeConfig) &&
                             grid.cellCount() == beforeCount && grid.revision() == beforeRevision &&
-                            grid.cell({0, 0}) == beforeCell,
+                            sameNavigationCell(grid.cell({0, 0}), beforeCell),
                         Scenario, seed, caseIndex,
                         "failed navigation reset changed existing grid state");
 
@@ -614,15 +622,17 @@ namespace
 
         const float nan = std::numeric_limits<float>::quiet_NaN();
         const float infinity = std::numeric_limits<float>::infinity();
+        const std::array<float, 3u> nonFinite = {nan, infinity, -infinity};
         const std::array<float, 4u> invalidDimensions = {nan, infinity, 0.f, -1.f};
 
         for (std::size_t caseIndex = 0u; caseIndex < cases; ++caseIndex)
         {
-            const float invalid = invalidDimensions[random.index(invalidDimensions.size())];
-            const sf::Vector2f position =
-                random.bit() ? sf::Vector2f{invalid, 10.f} : sf::Vector2f{10.f, 10.f};
-            const sf::Vector2f size =
-                random.bit() ? sf::Vector2f{invalid, 40.f} : sf::Vector2f{100.f, invalid};
+            sf::Vector2f position{10.f, 10.f};
+            sf::Vector2f size{100.f, 40.f};
+            if (random.bit())
+                position.x = nonFinite[random.index(nonFinite.size())];
+            else
+                size.x = invalidDimensions[random.index(invalidDimensions.size())];
 
             requireCase(!canvas.setButtonBounds("fuzz-button", position, size), Scenario, seed,
                         caseIndex, "invalid button bounds unexpectedly succeeded");
