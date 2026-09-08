@@ -2,6 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -15,6 +16,31 @@ namespace l2d
     namespace
     {
         using Json = nlohmann::json;
+
+        bool validImportLimits(const TiledJsonImportLimits& limits)
+        {
+            return limits.maxInputBytes > 0u;
+        }
+
+        bool readBoundedInput(std::istream& input, std::string& content, std::size_t maximumBytes)
+        {
+            if (!input || maximumBytes == 0u) return false;
+
+            content.clear();
+            std::array<char, 4096u> buffer{};
+            while (input)
+            {
+                input.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+                const std::streamsize readCount = input.gcount();
+                if (readCount <= 0) break;
+
+                const std::size_t count = static_cast<std::size_t>(readCount);
+                if (count > maximumBytes || content.size() > maximumBytes - count) return false;
+                content.append(buffer.data(), count);
+            }
+
+            return !input.bad();
+        }
 
         constexpr std::uint32_t HorizontalFlip = 0x80000000u;
         constexpr std::uint32_t VerticalFlip = 0x40000000u;
@@ -316,9 +342,14 @@ namespace l2d
 
             return true;
         }
-        bool loadTiledJson(std::istream& input, TileMapData& output)
+        bool loadTiledJson(std::istream& input, TileMapData& output,
+                           const TiledJsonImportLimits& limits)
         {
-            Json root = Json::parse(input, nullptr, false);
+            std::string content;
+            if (!readBoundedInput(input, content, limits.maxInputBytes) || content.empty())
+                return false;
+
+            Json root = Json::parse(content, nullptr, false);
             if (root.is_discarded() || !root.is_object() || root.value("infinite", false))
                 return false;
 
@@ -353,9 +384,17 @@ namespace l2d
 
     bool TiledJsonImporter::load(std::istream& input, TileMapData& output)
     {
+        return load(input, output, {});
+    }
+
+    bool TiledJsonImporter::load(std::istream& input, TileMapData& output,
+                                 TiledJsonImportLimits limits)
+    {
+        if (!validImportLimits(limits)) return false;
+
         try
         {
-            return loadTiledJson(input, output);
+            return loadTiledJson(input, output, limits);
         }
         catch (const Json::exception&)
         {
@@ -365,7 +404,13 @@ namespace l2d
 
     bool TiledJsonImporter::loadFromFile(const std::string& filepath, TileMapData& output)
     {
+        return loadFromFile(filepath, output, {});
+    }
+
+    bool TiledJsonImporter::loadFromFile(const std::string& filepath, TileMapData& output,
+                                         TiledJsonImportLimits limits)
+    {
         std::ifstream input(filepath);
-        return input.is_open() && load(input, output);
+        return input.is_open() && load(input, output, limits);
     }
 }

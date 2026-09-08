@@ -28,6 +28,7 @@
 #include <Lorenzo2D/Tilemap/IsometricTileGrid2D.hpp>
 #include <Lorenzo2D/Tilemap/TileMapColliderBuilder2D.hpp>
 #include <Lorenzo2D/Tilemap/TileSet.hpp>
+#include <Lorenzo2D/Tilemap/TiledJsonImporter.hpp>
 #include <Lorenzo2D/UI/UiCanvas2D.hpp>
 
 #include <sstream>
@@ -66,6 +67,10 @@ int main()
     level.objects.push_back(l2d::Prefab{});
     std::ostringstream serialized;
     const bool levelSaved = l2d::LevelSerializer::save(serialized, level);
+    l2d::LevelLoadLimits levelLoadLimits;
+    levelLoadLimits.maxInputBytes = 1024u * 1024u;
+    l2d::TiledJsonImportLimits tiledImportLimits;
+    tiledImportLimits.maxInputBytes = 1024u * 1024u;
 
     l2d::ResourceLocator resources;
     const bool resourceRootAdded = resources.addRoot("assets");
@@ -149,7 +154,8 @@ int main()
 
     return l2d::VersionString == "1.1.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
                    tileAdded && tileDataImported && tileColliders.empty() && isometricPick &&
-                   codecRegistered && levelSaved && resourceRootAdded && saveValueSet &&
+                   codecRegistered && levelSaved && levelLoadLimits.maxInputBytes > 0u &&
+                   tiledImportLimits.maxInputBytes > 0u && resourceRootAdded && saveValueSet &&
                    saveWritten && saveRead && saveLoaded == save && uiConfigured && uiHit &&
                    audioConfigured && diagnosticsConfigured && replayConfigured &&
                    diagnosticCounters.value(l2d::DiagnosticCounter::PhysicsQueries) == 2u &&

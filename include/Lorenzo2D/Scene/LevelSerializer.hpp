@@ -21,6 +21,11 @@ namespace l2d
         std::vector<Prefab> objects;
     };
 
+    struct LevelLoadLimits
+    {
+        std::size_t maxInputBytes = 64u * 1024u * 1024u;
+    };
+
     // Reads and writes Lorenzo2D's deterministic, versioned .l2dlevel format.
     // Loading is transactional: malformed input never changes the destination.
     class LevelSerializer
@@ -32,12 +37,16 @@ namespace l2d
 
         static bool save(std::ostream& output, const LevelDocument& level);
         static bool load(std::istream& input, LevelDocument& level);
+        static bool load(std::istream& input, LevelDocument& level, LevelLoadLimits limits);
 
         static bool saveJson(std::ostream& output, const LevelDocument& level);
         static bool loadJson(std::istream& input, LevelDocument& level);
+        static bool loadJson(std::istream& input, LevelDocument& level, LevelLoadLimits limits);
 
         static bool saveToFile(const std::string& filepath, const LevelDocument& level);
         static bool loadFromFile(const std::string& filepath, LevelDocument& level);
+        static bool loadFromFile(const std::string& filepath, LevelDocument& level,
+                                 LevelLoadLimits limits);
 
         static std::vector<GameObjectHandle> instantiate(Scene& scene, const LevelDocument& level);
         static std::vector<GameObjectHandle> instantiate(

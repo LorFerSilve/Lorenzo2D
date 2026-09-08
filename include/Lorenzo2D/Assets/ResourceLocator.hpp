@@ -21,7 +21,8 @@ namespace l2d
 
         const std::vector<Path>& roots() const;
 
-        // Returns the first existing match without changing the locator.
+        // Returns the first existing match without changing the locator. Relative
+        // resources are confined to configured roots and cannot escape with "..".
         std::optional<Path> locate(const Path& resource) const;
         bool contains(const Path& resource) const;
 

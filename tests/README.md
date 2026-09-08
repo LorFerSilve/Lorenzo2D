@@ -2,8 +2,9 @@
 
 The focused regression executables use a small first-party harness. Thirty-four focused suites
 share assertion and named-test execution support through `TestSupport.hpp`. The separately
-registered `Lorenzo2DStressValidation` executable is a self-reporting Phase 11 workload runner
-because it also supports standard/soak profiles and JSON output outside CTest.
+registered `Lorenzo2DStressValidation` and `Lorenzo2DFuzzValidation` executables are
+self-reporting Phase 11 runners. Stress validation supports standard/soak profiles and JSON output;
+fuzz validation supports deterministic seed/case/scenario reproduction outside CTest.
 Physics and renderer assertions use the same value-rich diagnostics while
 keeping their subsystem comparison tolerances explicit in the owning source.
 Value-rich equality and approximate assertions, scalar and explicit-epsilon 2D
@@ -21,6 +22,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DReplayTests` | Bounded replay capture, canonical hashing, and first-divergence detection | `headless` | 30 s |
 | `Lorenzo2DSubsystemDiagnosticsTests` | Scene, physics, navigation, render, asset, audio, and persistence counter adapters | `headless` | 60 s |
 | `Lorenzo2DStressValidation` | Bounded smoke stress across tile streaming, renderables/handles, dynamic physics, navigation replans, fixed-step replay, assets, UI, audio, and saves | `headless` | 180 s |
+| `Lorenzo2DFuzzValidation` | Deterministic malformed-input/property validation for save/level/Tiled parsing, physics, navigation, UI, and resource lookup | `headless` | 120 s |
 | `Lorenzo2DCharacterMotorTests` | Sweep/slide, overlap recovery, slopes, contacts, capsule movement, moving platforms, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DTopDownControllerTests` | Validation, analog acceleration/deceleration, diagonal normalization, wall sliding, facing, failures, and replay determinism | `headless` | 120 s |
 | `Lorenzo2DGridStepControllerTests` | Direction ties, alignment, smooth steps, transactional blocking, turn buffering, rollback, failures, and replay determinism | `headless` | 120 s |
@@ -82,8 +84,9 @@ cleanup.
 The original `L2D_REQUIRE` output remains unchanged for compatibility.
 
 Every focused first-party regression executable uses the shared assertion and runner.
-`Lorenzo2DStressValidation` intentionally uses its own scenario/report runner; its CTest
-registration executes only the bounded `smoke` profile. Subsystem-specific fixtures and tolerance
+`Lorenzo2DStressValidation` and `Lorenzo2DFuzzValidation` intentionally use their own
+scenario/report runners. Stress CTest registration executes only the bounded `smoke` profile;
+fuzz CTest registration executes 96 cases per scenario with a fixed seed. Subsystem-specific fixtures and tolerance
 choices remain in their owning source file. No approximate assertion selects an implicit subsystem tolerance:
 callers must provide it explicitly. Physics therefore retains its established
 `0.001f` policy, renderer retains `0.0001f`, and timing accounting uses
@@ -138,6 +141,13 @@ Run tests associated with a subsystem:
 
 ```sh
 ctest --test-dir build -C Debug --output-on-failure -L physics
+```
+
+Reproduce or expand the Phase 11 malformed-input runner directly:
+
+```sh
+./build/tests/Lorenzo2DFuzzValidation --seed 0x4c324446555a5a31 --cases 96
+./build/tests/Lorenzo2DFuzzValidation --seed 0x4c324446555a5a31 --cases 2048 --scenario tiled-json
 ```
 
 ## Adding a suite
