@@ -113,15 +113,23 @@ second authoritative position into gameplay components.
 This rule keeps pathfinding and collision reusable between orthogonal and isometric games and
 prevents render rounding from feeding back into simulation.
 
-## Mutation and lifetime
+## Mutation, lifetime, and concurrency
 
 - Structural scene mutation uses `Scene` methods.
 - Destruction requested during dispatch is deferred and handles become unresolvable immediately.
+- References/raw pointers returned from Scene and GameObject queries are borrowed; use
+  `GameObjectHandle` when identity must cross a deferred/lifetime boundary.
+- Input maps/context stacks borrow their attached `InputSnapshot`; temporary snapshots are rejected.
 - Components may request destruction but must not retain untracked raw pointers across object or
   scene lifetime boundaries.
+- Unless a type explicitly documents otherwise, engine state uses single-owner-thread mutation.
+  Container implementation details do not imply a concurrent API.
 - New asynchronous systems publish results on the owning simulation or graphics thread through an
-  explicit polling/commit point.
+  explicit polling/commit point. AssetPipeline follows this rule: image decode may run in workers,
+  while publication/watch/dependency state remains caller-thread work.
 - A failed load or configuration change must not partially replace the last valid state.
+- Level batch instantiation removes objects appended by a failed call without sweeping unrelated
+  pre-existing queued destruction.
 - Save-file writes stage output before replacing the previous file; failed loads leave the caller's
   destination document unchanged.
 
