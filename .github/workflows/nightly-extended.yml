@@ -36,7 +36,7 @@ jobs:
 
   release-extended:
     name: Release stress soak and trends
-    if: github.event_name != 'pull_request' || github.head_ref == 'feat/phase-11-nightly-validation'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
 
@@ -145,7 +145,7 @@ jobs:
 
   sanitizer-standard:
     name: ASan UBSan standard stress
-    if: github.event_name != 'pull_request' || github.head_ref == 'feat/phase-11-nightly-validation'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
 
@@ -218,7 +218,7 @@ jobs:
 
   extended-fuzz:
     name: Extended deterministic fuzz
-    if: github.event_name != 'pull_request' || github.head_ref == 'feat/phase-11-nightly-validation'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
 
