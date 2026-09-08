@@ -11,7 +11,7 @@ Lorenzo2D uses three support levels:
 
 `Planned` is not a support level and must never be presented as an available feature.
 
-## Current matrix for 1.0.0
+## Current matrix for the 1.x baseline (1.1.0)
 
 | Development path | Level | Evidence | Missing before supported |
 | --- | --- | --- | --- |
@@ -23,6 +23,21 @@ Lorenzo2D uses three support levels:
 
 The 1.0 version number defines compatibility; it does not manufacture production evidence. Support
 levels remain evidence-based.
+
+## Phase 11 hardening evidence
+
+The 1.1.0 baseline now has repository-owned production-hardening evidence beyond ordinary unit
+tests: public diagnostics, bounded standard/soak workloads, long and subsystem-integrated
+deterministic replay, malformed-input property validation, nightly Release/sanitizer/fuzz runs,
+protected required CI, installed-package consumers, a 77-header public API/failure-path audit, and
+published workload limits/performance provenance.
+
+This improves confidence but **does not promote** any development path. The matrix continues to
+require external usage or equivalent sustained independent evidence before calling a path
+`supported`, and released-game/equivalent production evidence before `production-tested`.
+
+See [phase11-production-baseline.md](phase11-production-baseline.md) and
+[api-failure-audit.md](api-failure-audit.md).
 
 ## Platform matrix
 
