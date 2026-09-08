@@ -145,8 +145,8 @@ else()
 
     FetchContent_Declare(SFML
         GIT_REPOSITORY https://github.com/SFML/SFML.git
-        GIT_TAG 3.1.0
-        GIT_SHALLOW ON
+        # Immutable commit behind the upstream 3.1.0 tag.
+        GIT_TAG 8835b6b955c96fa1ad1278a8dae6f05c4143effc
         EXCLUDE_FROM_ALL
         SYSTEM
     )

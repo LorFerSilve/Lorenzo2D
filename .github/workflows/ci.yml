@@ -6,6 +6,11 @@ on:
       - master
   pull_request:
 
+# CI only needs to read repository contents. Keep the implicit GITHUB_TOKEN
+# read-only so pull requests cannot gain repository write permissions.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -52,7 +57,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Linux graphics dependencies
         if: runner.os == 'Linux'
@@ -145,7 +150,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Linux graphics dependencies
         run: |
@@ -305,7 +310,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install tooling and graphics dependencies
         run: |
@@ -339,7 +344,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install coverage and graphics dependencies
         run: |
@@ -394,7 +399,7 @@ jobs:
         run: cmake --build --preset coverage-report
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: lorenzo2d-coverage
           path: build/coverage/coverage
