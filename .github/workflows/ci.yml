@@ -319,8 +319,15 @@ jobs:
       - name: Configure static analysis
         run: cmake --preset lint
 
-      - name: Check formatting
-        run: cmake --build build/lint --target format-check
+      - name: Print subsystem formatting diff
+        run: |
+          clang-format -i \
+            include/Lorenzo2D/Diagnostics/SubsystemDiagnostics.hpp \
+            tests/Lorenzo2DSubsystemDiagnosticsTests.cpp
+          git diff -- \
+            include/Lorenzo2D/Diagnostics/SubsystemDiagnostics.hpp \
+            tests/Lorenzo2DSubsystemDiagnosticsTests.cpp
+          exit 1
 
       - name: Build with clang-tidy
         run: cmake --build --preset lint
