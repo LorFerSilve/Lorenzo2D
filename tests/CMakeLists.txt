@@ -3,7 +3,7 @@ include(CMakeParseArguments)
 function(l2d_add_regression_test target)
     set(options)
     set(oneValueArguments SOURCE TIMEOUT)
-    set(multiValueArguments LABELS PRIVATE_INCLUDE_DIRECTORIES)
+    set(multiValueArguments LABELS PRIVATE_INCLUDE_DIRECTORIES ARGUMENTS)
 
     cmake_parse_arguments(
         L2D_TEST
@@ -67,7 +67,7 @@ function(l2d_add_regression_test target)
     l2d_enable_coverage(${target})
     l2d_enable_clang_tidy(${target})
 
-    add_test(NAME ${target} COMMAND ${target})
+    add_test(NAME ${target} COMMAND ${target} ${L2D_TEST_ARGUMENTS})
     set_tests_properties(
         ${target}
         PROPERTIES
@@ -115,6 +115,9 @@ l2d_add_regression_test(
     Lorenzo2DStressValidation
     SOURCE Lorenzo2DStressValidation.cpp
     LABELS headless stress stress-smoke diagnostics determinism physics navigation renderer assets audio ui save
+    ARGUMENTS
+        --profile smoke
+        --json "${CMAKE_CURRENT_BINARY_DIR}/Lorenzo2DStressValidation.json"
     TIMEOUT 180
 )
 
