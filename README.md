@@ -42,6 +42,7 @@ current support claims are documented separately:
   projected bounds, depth ordering, and streaming-region culling.
 - [`docs/ui.md`](docs/ui.md), [`docs/audio.md`](docs/audio.md), and
   [`docs/saves.md`](docs/saves.md) document the 1.0 game-facing services.
+- [`docs/diagnostics.md`](docs/diagnostics.md) documents the Phase 11 profiling, counters, and diagnostic-report foundation.
 - [`docs/level-format.md`](docs/level-format.md) documents JSON level version 8,
   asset-backed prefabs, component codecs, and legacy migration.
 
