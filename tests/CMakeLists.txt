@@ -121,6 +121,16 @@ l2d_add_regression_test(
     TIMEOUT 180
 )
 
+l2d_add_regression_test(
+    Lorenzo2DFuzzValidation
+    SOURCE Lorenzo2DFuzzValidation.cpp
+    LABELS headless fuzz malformed-input determinism serialization save tilemap physics navigation ui assets resources
+    ARGUMENTS
+        --seed 0x4c324446555a5a31
+        --cases 96
+    TIMEOUT 120
+)
+
 # The former broad regression executable is split by subsystem so a failure maps
 # directly to a focused source file and CTest target.
 l2d_add_regression_test(
