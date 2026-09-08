@@ -67,8 +67,15 @@ This phase should be completed before adding another large subsystem.
   handles, dynamic physics/query churn, navigation replans, fixed-step replay, asset lifetime, UI,
   audio, and near-limit save persistence. Pull-request CI executes the smoke profile, while heavier
   profiles are available for manual and future nightly validation with optional JSON reports.
-- Fuzz/property validation, broader subsystem-integrated replay, nightly CI, branch protection, and
-  the 1.0 API audit remain required before Phase 11 can be completed.
+- **11.5 Fuzz/malformed-input validation:** a deterministic seedable property runner covers
+  save-game JSON, level/prefab deserialization, Tiled JSON, physics queries, navigation-grid
+  bounds/costs, UI bounds/pointer sequences, and resource lookup. Level/Tiled parsers now enforce
+  configurable byte envelopes, relative resource lookup cannot escape configured roots, and
+  parser failures preserve prior destination state.
+- **Repository policy:** `master` is protected by an active repository ruleset requiring pull
+  requests, all seven CI gates, an up-to-date branch, and blocking force-pushes/deletion.
+- Broader subsystem-integrated replay, nightly CI, and the 1.0 API audit remain required before
+  Phase 11 can be completed.
 
 ### Scope
 
