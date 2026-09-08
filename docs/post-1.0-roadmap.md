@@ -81,9 +81,16 @@ This phase should be completed before adding another large subsystem.
   and soak stress, ASan/UBSan standard stress, four fixed-seed 2,048-case fuzz passes, and
   benchmark trend capture. JSON/CSV/log artifacts are retained for 21 days without turning noisy
   wall-clock benchmark values into hard pass/fail thresholds.
+- **11.8 Public API/failure-path audit:** all 77 installed headers were audited for ownership,
+  lifetime, mutability, silent fallback, validation, units, transactionality, workload bounds, and
+  concurrency. Borrowed input snapshots reject temporaries, checked compatibility/render/camera
+  variants expose failure, level instantiation now rolls back only its appended batch, and retained
+  1.x escape hatches have explicit contracts. The measured Phase 11 production baseline and limits
+  are published.
 - **Repository policy:** `master` is protected by an active repository ruleset requiring pull
   requests, all seven CI gates, an up-to-date branch, and blocking force-pushes/deletion.
-- The 1.0 public-API/failure-path audit remains required before Phase 11 can be completed.
+- **Phase 11 status: complete.** The production-hardening definition of done is satisfied without
+  promoting support claims beyond the evidence recorded in the support matrix.
 
 ### Scope
 
@@ -200,6 +207,9 @@ Phase 11 is complete only when:
 - no unresolved sanitizer or reproducible determinism failures remain;
 - performance results and known production limits are documented;
 - the support matrix is updated only where evidence justifies a promotion.
+
+All Phase 11 definition-of-done items are satisfied by the 11.1-11.8 implementation slices,
+repository policy, installed-package consumers, and the published production baseline.
 
 ---
 
@@ -625,9 +635,8 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-The next implementation phase is **Phase 11 — Production hardening, diagnostics, and stress
-validation**.
+The next implementation phase is **Phase 12 — Rendering 2.0**.
 
-Before implementing new rendering/editor complexity, Phase 11 should establish profiling,
-stress/fuzz validation, long deterministic replay, nightly CI, and branch-protection policy. The
-results of Phase 11 should be used to refine the scope and performance targets of later phases.
+Phase 11 now provides the diagnostics, stress/fuzz/replay evidence, nightly validation, repository
+policy, API failure contracts, and production baseline needed to evaluate Phase 12 rendering changes
+against measured behavior rather than an unobserved engine baseline.
