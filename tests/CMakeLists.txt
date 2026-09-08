@@ -91,6 +91,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DApiFailureAuditTests
+    SOURCE Lorenzo2DApiFailureAuditTests.cpp
+    LABELS headless api compatibility failure-path core input scene renderer serialization
+    TIMEOUT 60
+)
+
+l2d_add_regression_test(
     Lorenzo2DDiagnosticsTests
     SOURCE Lorenzo2DDiagnosticsTests.cpp
     LABELS headless diagnostics profiling determinism
