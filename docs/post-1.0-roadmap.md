@@ -56,8 +56,13 @@ This phase should be completed before adding another large subsystem.
 
 - **11.1 Diagnostics foundation:** named bounded profiler, rolling frame aggregation, standard
   counters, deterministic report format, tests, example, documentation, and package-consumer
-  coverage are implemented on the Phase 11 diagnostics branch.
-- Subsystem counter/timing wiring, stress/soak workloads, fuzzing, replay diagnostics, nightly CI,
+  coverage are implemented.
+- **11.2 Deterministic replay foundation:** bounded input/state traces, canonical 64-bit hashing,
+  first-divergence detection, long-trace regressions, and package-consumer coverage are implemented.
+- **11.3 Subsystem diagnostics wiring:** additive adapters connect scene, physics, navigation,
+  render/tilemap, asset, audio, and persistence telemetry to the standard counters, with stable
+  profiler scope names and focused regression coverage.
+- Stress/soak workloads, fuzz/property validation, subsystem-integrated long replay, nightly CI,
   branch protection, and the 1.0 API audit remain required before Phase 11 can be completed.
 
 ### Scope

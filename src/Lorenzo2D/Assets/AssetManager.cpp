@@ -280,6 +280,16 @@ namespace l2d
         return m_animationClips.size();
     }
 
+    std::size_t AssetManager::loadedAssetCount() const noexcept
+    {
+        return m_fonts.size() + m_textures.size() + m_soundBuffers.size() + m_animationClips.size();
+    }
+
+    std::size_t AssetManager::liveAssetSlotCount() const noexcept
+    {
+        return m_liveFonts.size() + m_liveTextures.size() + m_liveSoundBuffers.size();
+    }
+
     void AssetManager::clearFonts()
     {
         for (const auto& entry : m_fonts)

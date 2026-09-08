@@ -191,6 +191,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Core/WindowEvents.cpp
     src/Lorenzo2D/Diagnostics/Diagnostics.cpp
     src/Lorenzo2D/Diagnostics/DeterministicReplay.cpp
+    src/Lorenzo2D/Diagnostics/SubsystemDiagnostics.cpp
     src/Lorenzo2D/ECS/Component.cpp
     src/Lorenzo2D/ECS/GameObject.cpp
     src/Lorenzo2D/ECS/Transform.cpp

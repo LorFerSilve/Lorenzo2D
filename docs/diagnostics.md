@@ -98,8 +98,65 @@ fixed percentile policy to the core engine.
 
 Counter additions saturate at `uint64_t` maximum instead of wrapping.
 
-This initial slice supplies the shared counter contract. Later Phase 11 slices wire these counters
-into the individual engine subsystems and stress scenarios.
+## Subsystem diagnostics adapters
+
+`SubsystemDiagnostics.hpp` maps existing engine telemetry into the standard counters without adding
+global state or making subsystems depend on the diagnostics module.
+
+The accumulator functions are additive. A typical per-frame/reporting interval starts with
+`DiagnosticCounters::reset()`, then calls each relevant accumulator once per subsystem instance or
+render pass:
+
+- `accumulateSceneDiagnostics()` adds active game objects and active components. Components on
+  inactive or destroy-queued objects are excluded.
+- `accumulatePhysicsDiagnostics()` adds the active collider proxy count from the most recent valid
+  physics broad-phase step.
+- `accumulateRenderQueueDiagnostics()` adds scene objects submitted to a render queue.
+- `accumulateTileMapRenderDiagnostics()` adds tilemap draw calls and submitted tiles from
+  `TileMapRenderStats`.
+- `accumulateAssetDiagnostics()` adds loaded registry assets plus named live-binding slots.
+- `accumulateAudioDiagnostics()` adds active sound voices.
+
+Because the functions accumulate rather than overwrite, multiple scenes, physics worlds, tilemaps,
+or render passes can contribute to one report.
+
+Some telemetry is operation-scoped rather than retained by the subsystem. Record those events when
+they occur:
+
+```cpp
+l2d::recordPhysicsQueries(counters, queryCount);
+l2d::recordNavigationPathDiagnostics(path, counters, wasReplan);
+l2d::recordSaveWriteDiagnostics(counters, serializedBytes);
+l2d::recordSaveReadDiagnostics(counters, loadedBytes);
+```
+
+`recordNavigationPathDiagnostics()` adds the pathfinder's `visitedNodes` to
+`navigation_expansions`; it increments `navigation_replans` only when the caller explicitly marks
+the operation as a replan. This avoids guessing gameplay semantics inside the pathfinder.
+
+`LiveAssets` currently means named live-binding slots created through `liveFont()`,
+`liveTexture()`, or `liveSoundBuffer()`. It does not attempt to count every historical asset
+generation still retained by external snapshot handles.
+
+Physics-query and save-byte counters are explicit recorder calls in this slice. The engine does not
+install implicit global observers, so applications remain free to keep diagnostics disabled and pay
+no hidden synchronization cost.
+
+### Standard timing scope names
+
+`diagnostic_scope` defines stable names for the common Phase 11 profiler categories:
+
+- `FixedStep`;
+- `Render`;
+- `Physics`;
+- `Navigation`;
+- `Asset`;
+- `Ui`;
+- `Audio`;
+- `Save`.
+
+They are ordinary `std::string_view` constants and can be passed directly to `Profiler::record()`
+or `Profiler::scope()`.
 
 ## Diagnostic reports
 
@@ -173,7 +230,7 @@ scope.
 
 ## Phase 11 progression
 
-The diagnostics and replay foundations are only the first vertical slices. Phase 11 still requires
-subsystem wiring, stress/soak workloads, fuzz/property tests, subsystem-integrated long deterministic
-replay, nightly CI, branch protection, and a public-API/failure-path audit before the phase can be
-marked implemented.
+The diagnostics, replay, and subsystem-wiring foundations are now in place. Phase 11 still requires
+stress/soak workloads, fuzz/property tests, subsystem-integrated long deterministic replay, nightly
+CI, branch protection, and a public-API/failure-path audit before the phase can be marked
+implemented.
