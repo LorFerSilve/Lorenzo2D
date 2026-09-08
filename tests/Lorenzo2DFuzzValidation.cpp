@@ -84,8 +84,8 @@ namespace
         return seed ^ hash;
     }
 
-    [[noreturn]] void failCase(std::string_view scenario, std::uint64_t seed,
-                               std::size_t caseIndex, std::string_view message)
+    [[noreturn]] void failCase(std::string_view scenario, std::uint64_t seed, std::size_t caseIndex,
+                               std::string_view message)
     {
         std::ostringstream output;
         output << scenario << " failed at case " << caseIndex << " with seed " << seed << ": "
@@ -158,8 +158,9 @@ namespace
             if (!input.empty())
             {
                 const std::size_t index = random.index(input.size());
-                input[index] = static_cast<char>(
-                    static_cast<unsigned char>(input[index]) ^ static_cast<unsigned char>(1u << random.index(7u)));
+                input[index] =
+                    static_cast<char>(static_cast<unsigned char>(input[index]) ^
+                                      static_cast<unsigned char>(1u << random.index(7u)));
             }
             break;
         default:
@@ -231,8 +232,8 @@ namespace
                             const std::optional<l2d::NavigationCell2D>& right)
     {
         if (left.has_value() != right.has_value()) return false;
-        return !left || (left->walkable == right->walkable &&
-                         left->traversalCost == right->traversalCost);
+        return !left ||
+               (left->walkable == right->walkable && left->traversalCost == right->traversalCost);
     }
 
     bool pathWithin(const std::filesystem::path& candidate, const std::filesystem::path& root)
@@ -502,8 +503,8 @@ namespace
             const sf::Vector2f badPoint =
                 random.bit() ? sf::Vector2f{badCoordinate, 0.f} : sf::Vector2f{0.f, badCoordinate};
 
-            requireCase(queries.raycastAll(badPoint, {0.f, 0.f}).empty(), Scenario, seed,
-                        caseIndex, "invalid raycast coordinate did not fail closed");
+            requireCase(queries.raycastAll(badPoint, {0.f, 0.f}).empty(), Scenario, seed, caseIndex,
+                        "invalid raycast coordinate did not fail closed");
             requireCase(queries.pointQuery(badPoint).empty(), Scenario, seed, caseIndex,
                         "invalid point query did not fail closed");
             requireCase(queries.overlapCircle({0.f, 0.f}, badRadius).empty(), Scenario, seed,
@@ -514,9 +515,9 @@ namespace
                         Scenario, seed, caseIndex, "invalid circle cast-all did not fail closed");
             requireCase(queries.overlapBox({0.f, 0.f}, {badDimension, 10.f}).empty(), Scenario,
                         seed, caseIndex, "invalid box overlap did not fail closed");
-            requireCase(!queries.castBox({-30.f, 0.f}, {30.f, 0.f}, {10.f, badDimension})
-                             .has_value(),
-                        Scenario, seed, caseIndex, "invalid box cast did not fail closed");
+            requireCase(
+                !queries.castBox({-30.f, 0.f}, {30.f, 0.f}, {10.f, badDimension}).has_value(),
+                Scenario, seed, caseIndex, "invalid box cast did not fail closed");
             requireCase(queries.overlapCapsule({0.f, 0.f}, 5.f, 9.f).empty(), Scenario, seed,
                         caseIndex, "invalid capsule geometry did not fail closed");
             requireCase(!queries.castCapsule({-30.f, 0.f}, {30.f, 0.f}, 5.f, 9.f).has_value(),
@@ -602,9 +603,9 @@ namespace
             const float badWorld = random.bit() ? nan : infinity;
             requireCase(!grid.worldToCell({badWorld, 0.f}).has_value(), Scenario, seed, caseIndex,
                         "non-finite world coordinate mapped to a cell");
-            requireCase(!grid.contains({std::numeric_limits<int>::min(),
-                                        std::numeric_limits<int>::max()}),
-                        Scenario, seed, caseIndex, "extreme cell coordinate was accepted");
+            requireCase(
+                !grid.contains({std::numeric_limits<int>::min(), std::numeric_limits<int>::max()}),
+                Scenario, seed, caseIndex, "extreme cell coordinate was accepted");
         }
     }
 
@@ -643,9 +644,9 @@ namespace
 
             l2d::UiButton2D invalidButton = button;
             invalidButton.id = "invalid-" + std::to_string(caseIndex);
-            invalidButton.style.characterSize = random.bit() ? 0u : invalidButton.style.characterSize;
-            if (invalidButton.style.characterSize != 0u)
-                invalidButton.style.textOffset.x = nan;
+            invalidButton.style.characterSize =
+                random.bit() ? 0u : invalidButton.style.characterSize;
+            if (invalidButton.style.characterSize != 0u) invalidButton.style.textOffset.x = nan;
             requireCase(!l2d::UiCanvas2D::isValidButton(invalidButton), Scenario, seed, caseIndex,
                         "generated invalid button was considered valid");
             requireCase(!canvas.addButton(std::move(invalidButton)), Scenario, seed, caseIndex,
@@ -697,9 +698,13 @@ namespace
         requireCase(locator.locate(tree.outside()).has_value(), Scenario, seed, 0u,
                     "documented absolute-path lookup stopped working");
 
-        const std::array<std::string, 7u> fixed = {
-            "", ".", "..", "../escape.txt", "assets/../assets/ok.txt", "assets//ok.txt",
-            "assets/../../escape.txt"};
+        const std::array<std::string, 7u> fixed = {"",
+                                                   ".",
+                                                   "..",
+                                                   "../escape.txt",
+                                                   "assets/../assets/ok.txt",
+                                                   "assets//ok.txt",
+                                                   "assets/../../escape.txt"};
 
         for (std::size_t caseIndex = 0u; caseIndex < cases; ++caseIndex)
         {
@@ -749,7 +754,8 @@ namespace
         std::cout << "Usage: Lorenzo2DFuzzValidation [--seed N] [--cases N] "
                      "[--scenario NAME] [--help]\n";
         std::cout << "Scenarios:";
-        for (const Scenario& scenario : Scenarios) std::cout << ' ' << scenario.name;
+        for (const Scenario& scenario : Scenarios)
+            std::cout << ' ' << scenario.name;
         std::cout << '\n';
     }
 }
@@ -841,7 +847,8 @@ int main(int argc, char** argv)
 
     if (failures != 0u)
     {
-        std::cerr << failures << " fuzz/property scenario(s) failed. Reproduce with --seed " << seed;
+        std::cerr << failures << " fuzz/property scenario(s) failed. Reproduce with --seed "
+                  << seed;
         if (selectedScenario) std::cerr << " --scenario " << *selectedScenario;
         std::cerr << " --cases " << cases << ".\n";
         return 1;
