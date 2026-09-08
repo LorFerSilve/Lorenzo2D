@@ -87,3 +87,10 @@ Do not choose pass/fail timing thresholds from one machine or one run. To make a
 
 Algorithmic telemetry such as candidate-pair counts or draw calls is often more stable than wall
 clock time and should be preferred when it represents the intended contract.
+
+## Nightly trend artifacts
+
+Phase 11.7 runs `Lorenzo2DBenchmarks` from the scheduled extended-validation workflow and retains
+its JSON, CSV, and console output for 21 days. The executable must complete successfully, but the
+reported milliseconds are not compared against a threshold. This provides regression trend evidence
+without converting hosted-runner noise into a merge or nightly correctness gate.
