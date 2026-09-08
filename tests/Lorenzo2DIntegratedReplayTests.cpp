@@ -177,8 +177,9 @@ namespace
         schedulerConfig.maximumTicksPerFrame = 4u;
         l2d::FixedStepScheduler scheduler(schedulerConfig);
 
-        constexpr std::array<double, 3u> ChunkedFramePattern = {
-            FixedDeltaTime * 2.0, FixedDeltaTime * 0.5, FixedDeltaTime * 1.5};
+        constexpr std::array<double, 4u> ChunkedFramePattern = {
+            FixedDeltaTime * 0.5, FixedDeltaTime * 0.5, FixedDeltaTime,
+            FixedDeltaTime * 2.0};
 
         std::size_t recordedTicks = 0u;
         std::size_t frameIndex = 0u;
