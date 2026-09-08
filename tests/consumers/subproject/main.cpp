@@ -3,6 +3,7 @@
 #include <Lorenzo2D/Assets/ResourceLocator.hpp>
 #include <Lorenzo2D/Core/Version.hpp>
 #include <Lorenzo2D/Core/InputMap.hpp>
+#include <Lorenzo2D/Diagnostics/DeterministicReplay.hpp>
 #include <Lorenzo2D/Diagnostics/Diagnostics.hpp>
 #include <Lorenzo2D/ECS/Transform.hpp>
 #include <Lorenzo2D/Movement/CharacterMotor2D.hpp>
@@ -103,6 +104,14 @@ int main()
         diagnosticFrameStarted && diagnosticRecorded && diagnosticFrameEnded &&
         diagnosticSnapshot.frameIndex == 1u && diagnosticSnapshot.timings.size() == 1u;
 
+    l2d::DeterministicHasher64 replayHasher;
+    replayHasher.appendString("consumer-state");
+    replayHasher.appendUInt64(diagnosticSnapshot.frameIndex);
+    l2d::ReplayTrace replayTrace;
+    const bool replayRecorded = replayTrace.record(0u, {}, replayHasher.value());
+    const bool replayConfigured =
+        replayRecorded && l2d::compareReplayTraces(replayTrace, replayTrace).equivalent();
+
     l2d::CircleCollider2D collider(2.f);
     l2d::CapsuleCollider2D capsule(2.f, 8.f);
     l2d::ConvexPolygonCollider2D polygon;
@@ -137,7 +146,7 @@ int main()
                    tileAdded && tileDataImported && tileColliders.empty() && isometricPick &&
                    codecRegistered && levelSaved && resourceRootAdded && saveValueSet &&
                    saveWritten && saveRead && saveLoaded == save && uiConfigured && uiHit &&
-                   audioConfigured && diagnosticsConfigured && inputConfigured &&
+                   audioConfigured && diagnosticsConfigured && replayConfigured && inputConfigured &&
                    collider.id() != l2d::InvalidColliderId && capsule.height() == 8.f &&
                    polygon.vertices().size() == 3u && queryFilter.categoryMask != 0u &&
                    l2d::CharacterMotor2D::isValidConfig(motorConfig) &&
