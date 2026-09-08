@@ -123,8 +123,8 @@ namespace l2d
 
             if (expectedTick.tick != actualTick.tick)
             {
-                return {ReplayDivergence::Tick,
-                        std::min(expectedTick.tick, actualTick.tick), index};
+                return {ReplayDivergence::Tick, std::min(expectedTick.tick, actualTick.tick),
+                        index};
             }
 
             if (expectedTick.inputBytes != actualTick.inputBytes)
@@ -136,9 +136,9 @@ namespace l2d
 
         if (expectedTicks.size() != actualTicks.size())
         {
-            const std::uint64_t divergenceTick =
-                expectedTicks.size() > sharedSize ? expectedTicks[sharedSize].tick
-                                                  : actualTicks[sharedSize].tick;
+            const std::uint64_t divergenceTick = expectedTicks.size() > sharedSize
+                                                     ? expectedTicks[sharedSize].tick
+                                                     : actualTicks[sharedSize].tick;
             return {ReplayDivergence::Length, divergenceTick, sharedSize};
         }
 
