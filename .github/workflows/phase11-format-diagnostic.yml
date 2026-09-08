@@ -1,0 +1,27 @@
+name: Phase 11 format diagnostic
+
+on:
+  push:
+    branches:
+      - diag/phase11-format
+
+jobs:
+  format-diff:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 -m pip install --break-system-packages clang-format==22.1.3
+      - name: Format Phase 11 files
+        run: |
+          clang-format -i \
+            benchmarks/Lorenzo2DDiagnosticsBenchmarks.cpp \
+            src/Lorenzo2D/Diagnostics/Diagnostics.cpp \
+            tests/Lorenzo2DDiagnosticsTests.cpp \
+            tests/consumers/package/main.cpp \
+            tests/consumers/subproject/main.cpp
+          git diff -- \
+            benchmarks/Lorenzo2DDiagnosticsBenchmarks.cpp \
+            src/Lorenzo2D/Diagnostics/Diagnostics.cpp \
+            tests/Lorenzo2DDiagnosticsTests.cpp \
+            tests/consumers/package/main.cpp \
+            tests/consumers/subproject/main.cpp
