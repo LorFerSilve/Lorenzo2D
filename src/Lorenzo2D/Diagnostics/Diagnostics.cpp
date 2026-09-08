@@ -66,8 +66,8 @@ namespace l2d
     bool Profiler::isValidConfig(const ProfilerConfig& config) noexcept
     {
         return config.sampleWindow > 0u && config.sampleWindow <= MaxSampleWindow &&
-               config.maxScopes > 0u && config.maxScopes <= MaxScopes &&
-               config.maxNameBytes > 0u && config.maxNameBytes <= MaxNameBytes;
+               config.maxScopes > 0u && config.maxScopes <= MaxScopes && config.maxNameBytes > 0u &&
+               config.maxNameBytes <= MaxNameBytes;
     }
 
     void Profiler::setEnabled(bool enabled) noexcept
@@ -220,8 +220,9 @@ namespace l2d
 
         Entry& entry = iterator->second;
         entry.currentMilliseconds = milliseconds;
-        entry.maximumMilliseconds =
-            entry.sampleCount == 0u ? milliseconds : std::max(entry.maximumMilliseconds, milliseconds);
+        entry.maximumMilliseconds = entry.sampleCount == 0u
+                                        ? milliseconds
+                                        : std::max(entry.maximumMilliseconds, milliseconds);
         ++entry.sampleCount;
 
         entry.samplesMilliseconds.push_back(milliseconds);
@@ -244,7 +245,7 @@ namespace l2d
         result.maximumMilliseconds = entry.maximumMilliseconds;
         result.sampleCount = entry.sampleCount;
         result.samplesMilliseconds.assign(entry.samplesMilliseconds.begin(),
-                                           entry.samplesMilliseconds.end());
+                                          entry.samplesMilliseconds.end());
 
         if (!entry.samplesMilliseconds.empty())
         {

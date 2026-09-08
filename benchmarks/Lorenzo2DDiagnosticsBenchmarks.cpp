@@ -45,8 +45,8 @@ namespace
         l2d::Profiler profiler(config);
 
         constexpr std::size_t Frames = 100000u;
-        constexpr std::string_view Names[] = {"frame", "fixed-step", "physics", "navigation",
-                                               "assets", "ui", "audio", "render"};
+        constexpr std::string_view Names[] = {"frame",  "fixed-step", "physics", "navigation",
+                                              "assets", "ui",         "audio",   "render"};
 
         const Clock::time_point started = Clock::now();
 
@@ -56,8 +56,7 @@ namespace
 
             for (std::size_t index = 0u; index < std::size(Names); ++index)
             {
-                const double milliseconds =
-                    static_cast<double>((frame + index) % 17u) * 0.05;
+                const double milliseconds = static_cast<double>((frame + index) % 17u) * 0.05;
                 if (!profiler.record(Names[index], milliseconds)) return {};
                 if (!profiler.record(Names[index], 0.01)) return {};
             }
@@ -81,10 +80,10 @@ int main()
     const Result aggregation = benchmarkFrameAggregation();
 
     std::cout << "Lorenzo2D " << l2d::VersionString << " diagnostics benchmark\n"
-              << "disabled scopes: " << disabled.milliseconds << " ms checksum="
-              << disabled.checksum << '\n'
-              << "frame aggregation: " << aggregation.milliseconds << " ms checksum="
-              << aggregation.checksum << '\n';
+              << "disabled scopes: " << disabled.milliseconds
+              << " ms checksum=" << disabled.checksum << '\n'
+              << "frame aggregation: " << aggregation.milliseconds
+              << " ms checksum=" << aggregation.checksum << '\n';
 
     return aggregation.checksum == 0u ? 1 : 0;
 }

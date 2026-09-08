@@ -141,8 +141,7 @@ namespace
         counters.set(l2d::DiagnosticCounter::ActiveEntities, 42u);
         counters.set(l2d::DiagnosticCounter::DrawCalls, 7u);
 
-        const l2d::DiagnosticSnapshot snapshot =
-            l2d::captureDiagnosticSnapshot(profiler, counters);
+        const l2d::DiagnosticSnapshot snapshot = l2d::captureDiagnosticSnapshot(profiler, counters);
         const std::string first = l2d::DiagnosticReport::toJson(snapshot);
         const std::string second = l2d::DiagnosticReport::toJson(snapshot);
 
