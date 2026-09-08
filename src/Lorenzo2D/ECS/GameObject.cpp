@@ -100,6 +100,23 @@ namespace l2d
         return m_destroyQueued;
     }
 
+    std::size_t GameObject::componentCount() const noexcept
+    {
+        return m_components.size();
+    }
+
+    std::size_t GameObject::activeComponentCount() const noexcept
+    {
+        std::size_t count = 0u;
+
+        for (const std::unique_ptr<Component>& component : m_components)
+        {
+            if (component != nullptr && component->isActive()) ++count;
+        }
+
+        return count;
+    }
+
     void GameObject::update(float deltaTime)
     {
         if (!m_active || m_destroyQueued) return;
