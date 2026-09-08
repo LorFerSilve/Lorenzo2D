@@ -133,7 +133,7 @@ int main()
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::W),
                             l2d::InputCode::keyboard(sf::Keyboard::Scancode::S));
 
-    return l2d::VersionString == "1.0.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
+    return l2d::VersionString == "1.1.0" && position == sf::Vector2f{6.f, 8.f} && frameAdded &&
                    tileAdded && tileDataImported && tileColliders.empty() && isometricPick &&
                    codecRegistered && levelSaved && resourceRootAdded && saveValueSet &&
                    saveWritten && saveRead && saveLoaded == save && uiConfigured && uiHit &&
