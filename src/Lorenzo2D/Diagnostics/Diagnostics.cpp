@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <ostream>
 #include <stdexcept>
 #include <utility>
 
@@ -215,7 +216,6 @@ namespace l2d
         {
             if (m_entries.size() >= m_config.maxScopes) return false;
             iterator = m_entries.emplace(key, Entry{}).first;
-            iterator->second.samplesMilliseconds.reserve(m_config.sampleWindow);
         }
 
         Entry& entry = iterator->second;
@@ -230,7 +230,7 @@ namespace l2d
         if (entry.samplesMilliseconds.size() > m_config.sampleWindow)
         {
             entry.rollingSumMilliseconds -= entry.samplesMilliseconds.front();
-            entry.samplesMilliseconds.erase(entry.samplesMilliseconds.begin());
+            entry.samplesMilliseconds.pop_front();
         }
 
         return true;
@@ -243,7 +243,8 @@ namespace l2d
         result.currentMilliseconds = entry.currentMilliseconds;
         result.maximumMilliseconds = entry.maximumMilliseconds;
         result.sampleCount = entry.sampleCount;
-        result.samplesMilliseconds = entry.samplesMilliseconds;
+        result.samplesMilliseconds.assign(entry.samplesMilliseconds.begin(),
+                                           entry.samplesMilliseconds.end());
 
         if (!entry.samplesMilliseconds.empty())
         {

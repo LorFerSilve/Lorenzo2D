@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <iosfwd>
 #include <map>
 #include <optional>
@@ -83,7 +84,7 @@ namespace l2d
             double maximumMilliseconds = 0.0;
             double rollingSumMilliseconds = 0.0;
             std::uint64_t sampleCount = 0u;
-            std::vector<double> samplesMilliseconds;
+            std::deque<double> samplesMilliseconds;
         };
 
         bool validName(std::string_view name) const noexcept;

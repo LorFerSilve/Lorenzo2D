@@ -32,6 +32,10 @@ UI hit-testing/update workload and repeated typed save serialization/deserializa
 512-entry document. Audio playback timing is intentionally excluded because device scheduling is
 not a stable blocking microbenchmark.
 
+Phase 11 diagnostics foundation additionally builds `Lorenzo2DDiagnosticsBenchmarks`. It records
+the cost of disabled scoped profiling and bounded per-frame aggregation across the standard
+subsystem timing names. These numbers are trend diagnostics only and are not pass/fail thresholds.
+
 ## Building and running
 
 ```sh
@@ -40,6 +44,7 @@ cmake --build --preset benchmarks
 ./build/benchmarks/benchmarks/Lorenzo2DBenchmarks
 ./build/benchmarks/benchmarks/Lorenzo2DIsometricBenchmarks
 ./build/benchmarks/benchmarks/Lorenzo2DPhase10Benchmarks
+./build/benchmarks/benchmarks/Lorenzo2DDiagnosticsBenchmarks
 ```
 
 The main executable always writes its human-readable table to standard output. Optional
