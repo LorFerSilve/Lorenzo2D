@@ -33,7 +33,7 @@ namespace l2d
     void accumulatePhysicsDiagnostics(const PhysicsWorld2D& world, DiagnosticCounters& counters);
     void accumulateRenderQueueDiagnostics(const RenderQueue2D& queue, DiagnosticCounters& counters);
     void accumulateTileMapRenderDiagnostics(const TileMapRenderStats& stats,
-                                             DiagnosticCounters& counters);
+                                            DiagnosticCounters& counters);
     void accumulateAssetDiagnostics(const AssetManager& assets, DiagnosticCounters& counters);
     void accumulateAudioDiagnostics(const AudioSystem& audio, DiagnosticCounters& counters);
 
