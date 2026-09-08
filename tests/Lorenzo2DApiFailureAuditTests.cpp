@@ -122,8 +122,9 @@ namespace
         L2D_REQUIRE_EQUAL(context.depthFor(position), 0.f);
 
         const l2d::RenderContext2D identity{1.f, nullptr, l2d::RenderPass2D::World};
-        L2D_REQUIRE_EQUAL(identity.tryWorldToRender(position),
-                          std::optional<sf::Vector2f>(position));
+        const auto identityProjected = identity.tryWorldToRender(position);
+        L2D_REQUIRE(identityProjected.has_value());
+        L2D_REQUIRE_EQUAL(*identityProjected, position);
 
         const float nan = std::numeric_limits<float>::quiet_NaN();
         L2D_REQUIRE(!identity.tryWorldToRender({nan, 0.f}).has_value());
