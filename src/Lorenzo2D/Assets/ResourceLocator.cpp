@@ -82,7 +82,17 @@ namespace l2d
             if (!isWithinRoot(candidate, root)) continue;
 
             error.clear();
-            if (std::filesystem::exists(candidate, error) && !error) return candidate;
+            if (!std::filesystem::exists(candidate, error) || error) continue;
+
+            error.clear();
+            const Path resolvedRoot = std::filesystem::weakly_canonical(root, error);
+            if (error) continue;
+
+            error.clear();
+            const Path resolvedCandidate = std::filesystem::weakly_canonical(candidate, error);
+            if (error || !isWithinRoot(resolvedCandidate, resolvedRoot)) continue;
+
+            return candidate;
         }
 
         return std::nullopt;
