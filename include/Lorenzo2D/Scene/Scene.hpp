@@ -34,6 +34,9 @@ namespace l2d
         const std::string& name() const;
         const std::string& getName() const;
 
+        // References and raw pointers returned by Scene are borrowed and are
+        // invalidated when their object is destroyed or the Scene is cleared.
+        // Use GameObjectHandle when identity must survive deferred work.
         GameObject& createGameObject(const std::string& name = "GameObject");
 
         GameObjectHandle createHandle(GameObject& gameObject);
