@@ -5,6 +5,22 @@
 
 namespace l2d
 {
+    namespace
+    {
+        bool isWithinRoot(const std::filesystem::path& candidate,
+                          const std::filesystem::path& root)
+        {
+            auto candidateIterator = candidate.begin();
+            for (auto rootIterator = root.begin(); rootIterator != root.end();
+                 ++rootIterator, ++candidateIterator)
+            {
+                if (candidateIterator == candidate.end() || *candidateIterator != *rootIterator)
+                    return false;
+            }
+            return true;
+        }
+    }
+
     bool ResourceLocator::addRoot(Path root)
     {
         const std::optional<Path> normalized = normalizeAbsolute(root);
@@ -64,12 +80,10 @@ namespace l2d
         for (const Path& root : m_roots)
         {
             Path candidate = (root / resource).lexically_normal();
-            error.clear();
+            if (!isWithinRoot(candidate, root)) continue;
 
-            if (std::filesystem::exists(candidate, error) && !error)
-            {
-                return candidate;
-            }
+            error.clear();
+            if (std::filesystem::exists(candidate, error) && !error) return candidate;
         }
 
         return std::nullopt;
