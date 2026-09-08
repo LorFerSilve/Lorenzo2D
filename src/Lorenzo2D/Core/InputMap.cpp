@@ -56,6 +56,18 @@ namespace l2d
         m_consumedReleaseFrames.clear();
     }
 
+    void InputMap::clearSnapshot() noexcept
+    {
+        m_snapshot = nullptr;
+        m_consumedPressFrames.clear();
+        m_consumedReleaseFrames.clear();
+    }
+
+    bool InputMap::hasSnapshot() const noexcept
+    {
+        return m_snapshot != nullptr;
+    }
+
     bool InputMap::bindButton(const std::string& actionName, InputCode inputCode)
     {
         if (!inputCode.isValid() || inputCode.control == InputControlType::Axis ||
