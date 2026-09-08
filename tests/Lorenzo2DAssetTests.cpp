@@ -7,6 +7,7 @@
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Image.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <SFML/Window/Context.hpp>
 
 #include <chrono>
 #include <filesystem>
@@ -479,6 +480,16 @@ namespace
 
 int main()
 {
+    // Asset tests create many standalone GPU resources without a window. Keep one explicit
+    // context active for the whole process so sanitizer/Xvfb runs do not depend on SFML's
+    // transient shared-context fallback between individual resource operations.
+    sf::Context graphicsContext;
+    if (!graphicsContext.setActive(true))
+    {
+        std::cerr << "Failed to activate the asset-test graphics context.\n";
+        return 2;
+    }
+
     int failures = 0;
 
     runTest("generic handle ownership and value semantics",
