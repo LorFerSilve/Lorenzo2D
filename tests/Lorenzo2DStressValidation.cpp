@@ -189,20 +189,20 @@ namespace
     {
         if (name == "smoke")
         {
-            return {"smoke", 64u, 64u, 8u, 256u, 96u, 8u, 4u, 32u, 2u, 48u, 600u, 8u,
-                    64u, 64u, 256u, 64u, 8u, 128u, 64u, 4u, 2u};
+            return {"smoke", 64u, 64u, 8u,  256u, 96u, 8u, 4u,   32u, 2u, 48u,
+                    600u,    8u,  64u, 64u, 256u, 64u, 8u, 128u, 64u, 4u, 2u};
         }
 
         if (name == "standard")
         {
-            return {"standard", 128u, 96u, 64u, 1024u, 512u, 24u, 16u, 256u, 4u, 128u,
-                    10000u, 16u, 1000u, 256u, 5000u, 512u, 32u, 4000u, 768u, 32u, 8u};
+            return {"standard", 128u, 96u,   64u,  1024u, 512u, 24u, 16u,   256u, 4u,  128u,
+                    10000u,     16u,  1000u, 256u, 5000u, 512u, 32u, 4000u, 768u, 32u, 8u};
         }
 
         if (name == "soak")
         {
-            return {"soak", 128u, 96u, 1000u, 2048u, 512u, 240u, 32u, 256u, 16u, 128u,
-                    432000u, 32u, 10000u, 512u, 50000u, 4096u, 64u, 4000u, 768u, 128u, 32u};
+            return {"soak",  128u, 96u,    1000u, 2048u,  512u,  240u, 32u,   256u, 16u,  128u,
+                    432000u, 32u,  10000u, 512u,  50000u, 4096u, 64u,  4000u, 768u, 128u, 32u};
         }
 
         throw std::invalid_argument("Unknown stress profile: " + std::string(name));
@@ -288,16 +288,14 @@ namespace
     std::pair<std::uint64_t, std::uint64_t> stressTileMap(const StressConfig& config)
     {
         require(config.tileHeight == 0u ||
-                    config.tileWidth <=
-                        std::numeric_limits<std::size_t>::max() / config.tileHeight,
+                    config.tileWidth <= std::numeric_limits<std::size_t>::max() / config.tileHeight,
                 "Tile workload overflow");
         const std::size_t tileCount = config.tileWidth * config.tileHeight;
 
         l2d::Scene scene("stress-tilemap");
         l2d::TileMap tileMap;
         tileMap.setRenderChunkSize({16u, 16u});
-        const l2d::TileMap::Layout layout(config.tileHeight,
-                                          std::string(config.tileWidth, '#'));
+        const l2d::TileMap::Layout layout(config.tileHeight, std::string(config.tileWidth, '#'));
         tileMap.loadFromLayout(scene, layout);
 
         const l2d::TileMapBuildStats& build = tileMap.buildStats();
@@ -317,9 +315,8 @@ namespace
         const std::size_t regionRows = std::min<std::size_t>(24u, config.tileHeight);
         require(regionColumns > 0u && regionRows > 0u, "Tilemap stream region is empty");
 
-        sf::View view({0.f, 0.f},
-                      {static_cast<float>(regionColumns) * tileSizeX,
-                       static_cast<float>(regionRows) * tileSizeY});
+        sf::View view({0.f, 0.f}, {static_cast<float>(regionColumns) * tileSizeX,
+                                   static_cast<float>(regionRows) * tileSizeY});
 
         std::uint64_t checksum = toUint64(fullStats.submittedTileCount);
         l2d::DiagnosticCounters counters;
@@ -331,13 +328,11 @@ namespace
             const std::size_t firstColumn = (change * 7u) % columnRange;
             const std::size_t firstRow = (change * 11u) % rowRange;
 
-            require(tileMap.setStreamRegion(
-                        {firstColumn, firstRow, regionColumns, regionRows}),
+            require(tileMap.setStreamRegion({firstColumn, firstRow, regionColumns, regionRows}),
                     "Tilemap rejected a bounded stream region");
 
             view.setCenter(
-                {(static_cast<float>(firstColumn) +
-                  static_cast<float>(regionColumns) * 0.5f) *
+                {(static_cast<float>(firstColumn) + static_cast<float>(regionColumns) * 0.5f) *
                      tileSizeX,
                  (static_cast<float>(firstRow) + static_cast<float>(regionRows) * 0.5f) *
                      tileSizeY});
@@ -422,20 +417,17 @@ namespace
         l2d::DiagnosticCounters counters;
         l2d::accumulateSceneDiagnostics(scene, counters);
         l2d::accumulateRenderQueueDiagnostics(queue, counters);
-        require(counters.value(l2d::DiagnosticCounter::ActiveEntities) ==
-                    toUint64(expectedActive),
+        require(counters.value(l2d::DiagnosticCounter::ActiveEntities) == toUint64(expectedActive),
                 "Active-entity diagnostics drift under renderable churn");
         require(counters.value(l2d::DiagnosticCounter::ActiveComponents) ==
                     toUint64(expectedActive),
                 "Active-component diagnostics drift under renderable churn");
-        require(counters.value(l2d::DiagnosticCounter::RenderedItems) ==
-                    toUint64(expectedActive),
+        require(counters.value(l2d::DiagnosticCounter::RenderedItems) == toUint64(expectedActive),
                 "Render-queue diagnostics drift under renderable churn");
 
         checksum = saturatingAdd(checksum, toUint64(expectedActive));
-        const std::uint64_t operations =
-            saturatingAdd(saturatingMultiply(config.renderables, rebuilds),
-                          toUint64(destroyedHandles.size()));
+        const std::uint64_t operations = saturatingAdd(
+            saturatingMultiply(config.renderables, rebuilds), toUint64(destroyedHandles.size()));
         return {operations, checksum};
     }
 
@@ -450,7 +442,8 @@ namespace
         basePositions.reserve(config.physicsColliders);
 
         std::size_t columns = 1u;
-        while (columns < config.physicsColliders / columns) ++columns;
+        while (columns < config.physicsColliders / columns)
+            ++columns;
         const float spacing = 13.f;
 
         for (std::size_t index = 0u; index < config.physicsColliders; ++index)
@@ -486,8 +479,7 @@ namespace
             for (std::size_t index = 0u; index < objects.size(); ++index)
             {
                 sf::Vector2f position = basePositions[index];
-                if (tick % 2u == 1u && index % 8u == 1u && index % columns != 0u)
-                    position.x -= 4.f;
+                if (tick % 2u == 1u && index % 8u == 1u && index % columns != 0u) position.x -= 4.f;
 
                 objects[index]->transform.setPosition(position);
                 bodies[index]->setVelocity({0.f, 0.f});
@@ -508,8 +500,7 @@ namespace
                 const std::size_t row = query % std::max<std::size_t>(1u, objects.size() / columns);
                 const float y = static_cast<float>(row) * spacing;
                 const auto hit =
-                    queries.raycast({-16.f, y},
-                                    {static_cast<float>(columns) * spacing + 16.f, y});
+                    queries.raycast({-16.f, y}, {static_cast<float>(columns) * spacing + 16.f, y});
                 if (hit) checksum = saturatingAdd(checksum, hit->colliderId);
                 l2d::recordPhysicsQueries(counters);
             }
@@ -572,11 +563,9 @@ namespace
             }
         }
 
-        const std::uint64_t expectedReplans =
-            saturatingMultiply(config.navigationAgents,
-                               config.navigationReplansPerAgent > 0u
-                                   ? config.navigationReplansPerAgent - 1u
-                                   : 0u);
+        const std::uint64_t expectedReplans = saturatingMultiply(
+            config.navigationAgents,
+            config.navigationReplansPerAgent > 0u ? config.navigationReplansPerAgent - 1u : 0u);
         require(counters.value(l2d::DiagnosticCounter::NavigationExpansions) > 0u,
                 "Navigation expansion diagnostics remained zero");
         require(counters.value(l2d::DiagnosticCounter::NavigationReplans) == expectedReplans,
@@ -586,8 +575,7 @@ namespace
                 checksum};
     }
 
-    l2d::ReplayTrace runFixedStepReplay(const StressConfig& config,
-                                        std::uint64_t& finalChecksum)
+    l2d::ReplayTrace runFixedStepReplay(const StressConfig& config, std::uint64_t& finalChecksum)
     {
         l2d::Scene scene("stress-fixed-step");
         std::vector<StressComponent*> components;
@@ -693,11 +681,10 @@ namespace
             auto clip = std::make_shared<l2d::AnimationClip>("stress.clip");
             require(clip->addFrame({{0, 0}, {16, 16}}, 0.1f),
                     "Stress animation frame creation failed");
-            require(assets.storeAnimationClip(
-                        "stress.clip", l2d::AnimationClipHandle(std::move(clip))),
-                    "Animation replacement failed");
-            const l2d::AnimationClipHandle clipSnapshot =
-                assets.getAnimationClip("stress.clip");
+            require(
+                assets.storeAnimationClip("stress.clip", l2d::AnimationClipHandle(std::move(clip))),
+                "Animation replacement failed");
+            const l2d::AnimationClipHandle clipSnapshot = assets.getAnimationClip("stress.clip");
             require(static_cast<bool>(clipSnapshot), "Animation snapshot was empty");
 
             require(assets.loadedAssetCount() == 2u, "Loaded-asset count drift during replacement");
@@ -768,8 +755,7 @@ namespace
             release.released = true;
             canvas.update(release);
             require(canvas.wasActivated(id), "UI activation drift under churn");
-            require(!canvas.pressedButton().has_value(),
-                    "UI retained pressed state after release");
+            require(!canvas.pressedButton().has_value(), "UI retained pressed state after release");
 
             if (interaction % 31u == 0u)
             {
@@ -802,8 +788,7 @@ namespace
 
         while (emitted < config.audioVoices)
         {
-            const std::size_t batch =
-                std::min(config.audioBatchSize, config.audioVoices - emitted);
+            const std::size_t batch = std::min(config.audioBatchSize, config.audioVoices - emitted);
             std::vector<l2d::AudioVoiceId> voices;
             voices.reserve(batch);
 
@@ -818,8 +803,7 @@ namespace
 
             l2d::DiagnosticCounters counters;
             l2d::accumulateAudioDiagnostics(audio, counters);
-            require(counters.value(l2d::DiagnosticCounter::ActiveAudioVoices) ==
-                        toUint64(batch),
+            require(counters.value(l2d::DiagnosticCounter::ActiveAudioVoices) == toUint64(batch),
                     "Active-audio-voice diagnostic drift");
 
             for (const l2d::AudioVoiceId voice : voices)
@@ -888,8 +872,7 @@ namespace
             checksum = saturatingAdd(checksum, toUint64(serialized.size()));
         }
 
-        const std::uint64_t expectedBytes =
-            saturatingMultiply(baseline.size(), config.saveCycles);
+        const std::uint64_t expectedBytes = saturatingMultiply(baseline.size(), config.saveCycles);
         require(counters.value(l2d::DiagnosticCounter::SaveBytesWritten) == expectedBytes,
                 "Save-byte-written diagnostic drift");
         require(counters.value(l2d::DiagnosticCounter::SaveBytesRead) == expectedBytes,
@@ -915,8 +898,7 @@ namespace
             require(!error && !temporaryExists,
                     "Temporary save artifact leaked or could not be inspected");
             error.clear();
-            const bool backupExists =
-                std::filesystem::exists(file.path().string() + ".bak", error);
+            const bool backupExists = std::filesystem::exists(file.path().string() + ".bak", error);
             require(!error && !backupExists,
                     "Backup save artifact leaked or could not be inspected");
         }
@@ -963,8 +945,7 @@ namespace
                 if (character < 0x20u)
                 {
                     output << "\\u00" << std::hex << std::setw(2) << std::setfill('0')
-                           << static_cast<unsigned int>(character) << std::dec
-                           << std::setfill(' ');
+                           << static_cast<unsigned int>(character) << std::dec << std::setfill(' ');
                 }
                 else
                 {
@@ -984,9 +965,8 @@ namespace
         std::ofstream output(path, std::ios::binary | std::ios::trunc);
         if (!output) return false;
 
-        const bool passed =
-            std::all_of(results.begin(), results.end(),
-                        [](const ScenarioResult& result) { return result.passed; });
+        const bool passed = std::all_of(results.begin(), results.end(),
+                                        [](const ScenarioResult& result) { return result.passed; });
 
         output << "{\n"
                << "  \"format_version\": 1,\n"
@@ -1000,8 +980,7 @@ namespace
             const ScenarioResult& result = results[index];
             output << "    {\"name\":" << jsonEscape(result.name)
                    << ",\"passed\":" << (result.passed ? "true" : "false")
-                   << ",\"operations\":" << result.operations
-                   << ",\"checksum\":" << result.checksum
+                   << ",\"operations\":" << result.operations << ",\"checksum\":" << result.checksum
                    << ",\"milliseconds\":" << std::fixed << std::setprecision(3)
                    << result.milliseconds << ",\"failure\":" << jsonEscape(result.failure) << "}";
             if (index + 1u != results.size()) output << ',';
@@ -1065,7 +1044,8 @@ int main(int argc, char** argv)
         return 2;
     }
 
-    using Scenario = std::pair<std::string, std::function<std::pair<std::uint64_t, std::uint64_t>()>>;
+    using Scenario =
+        std::pair<std::string, std::function<std::pair<std::uint64_t, std::uint64_t>()>>;
     const std::vector<Scenario> scenarios = {
         {"tilemap-streaming", [&config]() { return stressTileMap(config); }},
         {"renderables-handles", [&config]() { return stressRenderables(config); }},
@@ -1081,8 +1061,7 @@ int main(int argc, char** argv)
     if (options.scenario)
     {
         const bool known =
-            std::any_of(scenarios.begin(), scenarios.end(),
-                        [&options](const Scenario& scenario)
+            std::any_of(scenarios.begin(), scenarios.end(), [&options](const Scenario& scenario)
                         { return scenario.first == *options.scenario; });
         if (!known)
         {
@@ -1100,9 +1079,9 @@ int main(int argc, char** argv)
         if (options.scenario && scenario.first != *options.scenario) continue;
 
         ScenarioResult result = runScenario(scenario.first, scenario.second);
-        std::cout << (result.passed ? "[PASS] " : "[FAIL] ") << result.name << "  "
-                  << std::fixed << std::setprecision(3) << result.milliseconds << " ms  operations="
-                  << result.operations << " checksum=" << result.checksum;
+        std::cout << (result.passed ? "[PASS] " : "[FAIL] ") << result.name << "  " << std::fixed
+                  << std::setprecision(3) << result.milliseconds
+                  << " ms  operations=" << result.operations << " checksum=" << result.checksum;
         if (!result.passed) std::cout << "  " << result.failure;
         std::cout << '\n';
         results.push_back(std::move(result));
@@ -1114,9 +1093,8 @@ int main(int argc, char** argv)
         return 2;
     }
 
-    const bool passed =
-        std::all_of(results.begin(), results.end(),
-                    [](const ScenarioResult& result) { return result.passed; });
+    const bool passed = std::all_of(results.begin(), results.end(),
+                                    [](const ScenarioResult& result) { return result.passed; });
 
     std::cout << "Lorenzo2D " << l2d::VersionString << " stress profile " << config.name << ": "
               << (passed ? "PASS" : "FAIL") << " (" << results.size() << " scenario(s))\n";
