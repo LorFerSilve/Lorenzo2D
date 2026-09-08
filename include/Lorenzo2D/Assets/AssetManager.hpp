@@ -70,6 +70,9 @@ namespace l2d
         bool unloadAnimationClip(const std::string& name);
         std::size_t animationClipCount() const;
 
+        std::size_t loadedAssetCount() const noexcept;
+        std::size_t liveAssetSlotCount() const noexcept;
+
         // Clearing or destroying the manager releases only registry ownership.
         // Existing handles keep their asset generations alive.
         void clearFonts();
