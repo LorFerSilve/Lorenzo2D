@@ -866,7 +866,8 @@ namespace l2d
         if (!validLoadLimits(limits)) return false;
 
         std::string content;
-        if (!readBoundedInput(input, content, limits.maxInputBytes) || content.empty()) return false;
+        if (!readBoundedInput(input, content, limits.maxInputBytes) || content.empty())
+            return false;
 
         std::istringstream bounded(content);
         bounded >> std::ws;
@@ -939,7 +940,8 @@ namespace l2d
         if (!validLoadLimits(limits)) return false;
 
         std::string content;
-        if (!readBoundedInput(input, content, limits.maxInputBytes) || content.empty()) return false;
+        if (!readBoundedInput(input, content, limits.maxInputBytes) || content.empty())
+            return false;
 
         try
         {
