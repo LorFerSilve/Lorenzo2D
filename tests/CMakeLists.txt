@@ -104,6 +104,13 @@ l2d_add_regression_test(
     TIMEOUT 30
 )
 
+l2d_add_regression_test(
+    Lorenzo2DSubsystemDiagnosticsTests
+    SOURCE Lorenzo2DSubsystemDiagnosticsTests.cpp
+    LABELS headless diagnostics profiling ecs physics navigation renderer assets audio save
+    TIMEOUT 60
+)
+
 # The former broad regression executable is split by subsystem so a failure maps
 # directly to a focused source file and CTest target.
 l2d_add_regression_test(
