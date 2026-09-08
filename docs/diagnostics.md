@@ -117,6 +117,53 @@ std::cerr << l2d::DiagnosticReport::toJson(snapshot);
 
 The report format has its own `DiagnosticReport::FormatVersion`.
 
+## Deterministic replay foundation
+
+Phase 11 also provides a bounded replay trace for finding the first simulation divergence.
+
+`ReplayTrace` stores strictly increasing tick identifiers, opaque input bytes, and one compact
+64-bit state hash per tick. `ReplayTraceConfig` bounds:
+
+- total retained ticks;
+- input bytes per tick;
+- total retained input bytes.
+
+Failed records leave the existing trace unchanged. Input bytes are intentionally opaque: a game
+defines its own canonical encoding and can feed the captured bytes back into its simulation during
+replay.
+
+`DeterministicHasher64` provides a stable FNV-1a-based 64-bit hash builder for canonical state
+fields. Integer values use an explicit byte order and strings are length-delimited, avoiding
+platform-memory-layout and string-concatenation ambiguity.
+
+Do not hash raw object memory, padding, pointer values, container addresses, or unordered iteration.
+Append stable IDs and canonical scalar fields in a documented order. For floating-point state,
+choose an explicit project contract such as fixed-point/quantized integers or a documented bitwise
+representation before hashing.
+
+`compareReplayTraces(expected, actual)` reports whether traces are equivalent and, on failure, the
+first divergent tick plus the divergence category: tick sequence, input payload, state hash, or
+trace length.
+
+```cpp
+l2d::DeterministicHasher64 state;
+state.appendString("player");
+state.appendInt64(playerXFixed);
+state.appendInt64(playerYFixed);
+
+l2d::ReplayTrace trace;
+trace.record(tick, encodedInput, state.value());
+
+const auto comparison = l2d::compareReplayTraces(reference, trace);
+if (!comparison.equivalent())
+{
+    // comparison.firstDivergenceTick identifies the earliest mismatch.
+}
+```
+
+This is the replay primitive, not yet the complete Phase 11 soak harness. Later slices still need to
+wire real engine input/state capture into long-running deterministic simulations.
+
 ## Threading and ownership
 
 `Profiler` and `DiagnosticCounters` are not internally synchronized. A game or tool should give
@@ -126,6 +173,7 @@ scope.
 
 ## Phase 11 progression
 
-This diagnostics foundation is only the first vertical slice. Phase 11 still requires subsystem
-wiring, stress/soak workloads, fuzz/property tests, long deterministic replay, nightly CI, branch
-protection, and a public-API/failure-path audit before the phase can be marked implemented.
+The diagnostics and replay foundations are only the first vertical slices. Phase 11 still requires
+subsystem wiring, stress/soak workloads, fuzz/property tests, subsystem-integrated long deterministic
+replay, nightly CI, branch protection, and a public-API/failure-path audit before the phase can be
+marked implemented.

@@ -1,3 +1,4 @@
+#include <Lorenzo2D/Diagnostics/DeterministicReplay.hpp>
 #include <Lorenzo2D/Diagnostics/Diagnostics.hpp>
 
 #include <iostream>
@@ -21,6 +22,17 @@ int main()
 
     const l2d::DiagnosticSnapshot snapshot =
         l2d::captureDiagnosticSnapshot(profiler, counters);
+
+    l2d::DeterministicHasher64 stateHasher;
+    stateHasher.appendString("phase11-example");
+    stateHasher.appendUInt64(snapshot.frameIndex);
+
+    l2d::ReplayTrace replay;
+    if (!replay.record(0u, {}, stateHasher.value())) return 1;
+
+    const l2d::ReplayComparison replayCheck = l2d::compareReplayTraces(replay, replay);
+    if (!replayCheck.equivalent()) return 1;
+
     std::cout << l2d::DiagnosticReport::toJson(snapshot);
     return 0;
 }
