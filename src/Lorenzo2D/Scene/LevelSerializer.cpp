@@ -9,6 +9,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -23,6 +24,31 @@ namespace l2d
     namespace
     {
         using Json = nlohmann::ordered_json;
+
+        bool validLoadLimits(const LevelLoadLimits& limits)
+        {
+            return limits.maxInputBytes > 0u;
+        }
+
+        bool readBoundedInput(std::istream& input, std::string& content, std::size_t maximumBytes)
+        {
+            if (!input || maximumBytes == 0u) return false;
+
+            content.clear();
+            std::array<char, 4096u> buffer{};
+            while (input)
+            {
+                input.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+                const std::streamsize readCount = input.gcount();
+                if (readCount <= 0) break;
+
+                const std::size_t count = static_cast<std::size_t>(readCount);
+                if (count > maximumBytes || content.size() > maximumBytes - count) return false;
+                content.append(buffer.data(), count);
+            }
+
+            return !input.bad();
+        }
 
         Json vectorJson(sf::Vector2f value)
         {
@@ -832,22 +858,37 @@ namespace l2d
 
     bool LevelSerializer::load(std::istream& input, LevelDocument& level)
     {
-        input >> std::ws;
-        if (input.peek() == '{') return loadJson(input, level);
+        return load(input, level, {});
+    }
+
+    bool LevelSerializer::load(std::istream& input, LevelDocument& level, LevelLoadLimits limits)
+    {
+        if (!validLoadLimits(limits)) return false;
+
+        std::string content;
+        if (!readBoundedInput(input, content, limits.maxInputBytes) || content.empty()) return false;
+
+        std::istringstream bounded(content);
+        bounded >> std::ws;
+        if (bounded.peek() == '{')
+        {
+            std::istringstream jsonInput(content);
+            return loadJson(jsonInput, level, limits);
+        }
 
         LevelDocument parsed;
         std::uint32_t version = 0;
         std::size_t objectCount = 0;
 
-        if (!parseLine(input, "LORENZO2D_LEVEL",
+        if (!parseLine(bounded, "LORENZO2D_LEVEL",
                        [&](std::istream& line)
                        {
                            return static_cast<bool>(line >> version) &&
                                   version >= MinimumSupportedVersion && version <= 3u;
                        }) ||
-            !parseLine(input, "level", [&](std::istream& line)
+            !parseLine(bounded, "level", [&](std::istream& line)
                        { return static_cast<bool>(line >> std::quoted(parsed.name)); }) ||
-            !parseLine(input, "objects",
+            !parseLine(bounded, "objects",
                        [&](std::istream& line) { return static_cast<bool>(line >> objectCount); }))
         {
             return false;
@@ -860,14 +901,12 @@ namespace l2d
         for (std::size_t index = 0; index < objectCount; ++index)
         {
             Prefab prefab;
-
-            if (!readObject(input, prefab, version)) return false;
-
+            if (!readObject(bounded, prefab, version)) return false;
             parsed.objects.push_back(std::move(prefab));
         }
 
-        input >> std::ws;
-        if (!input.eof()) return false;
+        bounded >> std::ws;
+        if (!bounded.eof()) return false;
 
         level = std::move(parsed);
         return true;
@@ -891,9 +930,20 @@ namespace l2d
 
     bool LevelSerializer::loadJson(std::istream& input, LevelDocument& level)
     {
+        return loadJson(input, level, {});
+    }
+
+    bool LevelSerializer::loadJson(std::istream& input, LevelDocument& level,
+                                   LevelLoadLimits limits)
+    {
+        if (!validLoadLimits(limits)) return false;
+
+        std::string content;
+        if (!readBoundedInput(input, content, limits.maxInputBytes) || content.empty()) return false;
+
         try
         {
-            Json root = Json::parse(input, nullptr, false);
+            Json root = Json::parse(content, nullptr, false);
             if (root.is_discarded() || !root.is_object() ||
                 root.value("format", std::string{}) != "Lorenzo2DLevel" ||
                 root.value("version", std::uint32_t{0u}) < 4u ||
@@ -931,8 +981,14 @@ namespace l2d
 
     bool LevelSerializer::loadFromFile(const std::string& filepath, LevelDocument& level)
     {
+        return loadFromFile(filepath, level, {});
+    }
+
+    bool LevelSerializer::loadFromFile(const std::string& filepath, LevelDocument& level,
+                                       LevelLoadLimits limits)
+    {
         std::ifstream input(filepath);
-        return input.is_open() && load(input, level);
+        return input.is_open() && load(input, level, limits);
     }
 
     std::vector<GameObjectHandle> LevelSerializer::instantiate(Scene& scene,
