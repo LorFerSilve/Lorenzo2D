@@ -251,7 +251,8 @@ namespace l2d
         }
 
         for (std::size_t index = firstIndex; index < m_gameObjects.size(); ++index)
-            if (m_gameObjects[index] != nullptr) m_gameObjectsById.erase(m_gameObjects[index]->id());
+            if (m_gameObjects[index] != nullptr)
+                m_gameObjectsById.erase(m_gameObjects[index]->id());
 
         m_gameObjects.erase(m_gameObjects.begin() + static_cast<std::ptrdiff_t>(firstIndex),
                             m_gameObjects.end());
