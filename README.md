@@ -43,6 +43,7 @@ current support claims are documented separately:
 - [`docs/ui.md`](docs/ui.md), [`docs/audio.md`](docs/audio.md), and
   [`docs/saves.md`](docs/saves.md) document the 1.0 game-facing services.
 - [`docs/diagnostics.md`](docs/diagnostics.md) documents the Phase 11 profiling, counters, and diagnostic-report foundation.
+- [`docs/stress-validation.md`](docs/stress-validation.md) documents bounded smoke, standard, and accelerated soak validation profiles.
 - [`docs/level-format.md`](docs/level-format.md) documents JSON level version 8,
   asset-backed prefabs, component codecs, and legacy migration.
 
@@ -226,6 +227,23 @@ rules for introducing blocking performance budgets.
 
 Multi-config generators may place the executable in a configuration-specific
 subdirectory.
+
+### Stress and soak validation
+
+With `L2D_BUILD_TESTS=ON`, `Lorenzo2DStressValidation` provides fixed bounded workload profiles.
+CTest runs only the headless `smoke` profile; larger profiles remain explicit so normal pull-request
+latency stays bounded:
+
+```sh
+./build/bin/Lorenzo2DStressValidation --profile smoke
+./build/bin/Lorenzo2DStressValidation --profile standard
+./build/bin/Lorenzo2DStressValidation --profile soak --json build/stress-soak.json
+```
+
+The runner fails on correctness, lifetime, diagnostic-counter, persistence, or deterministic replay
+violations rather than machine-dependent timing thresholds. See
+[`docs/stress-validation.md`](docs/stress-validation.md) for exact workload sizes and scenario
+contracts.
 
 ### Use as a CMake dependency
 

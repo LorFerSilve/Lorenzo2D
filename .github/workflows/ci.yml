@@ -121,15 +121,23 @@ jobs:
             --no-tests=error \
             -L headless
 
-      - name: Run Xvfb-partitioned tests (Linux virtual display)
+      - name: Run Xvfb-partitioned tests (isolated virtual displays)
         if: runner.os == 'Linux'
-        run: >-
-          xvfb-run --auto-servernum
-          ctest --test-dir build
-          -C ${{ matrix.build_type }}
-          --output-on-failure
-          --no-tests=error
-          -L xvfb
+        run: |
+          mapfile -t xvfb_tests < <(
+            ctest --test-dir build -C ${{ matrix.build_type }} --show-only -L xvfb |
+              sed -n 's/^[[:space:]]*Test[[:space:]]*#[0-9][0-9]*:[[:space:]]*//p'
+          )
+
+          if (( ${#xvfb_tests[@]} == 0 )); then
+            echo "No Xvfb tests were registered."
+            exit 1
+          fi
+
+          for test_name in "${xvfb_tests[@]}"; do
+            echo "Running ${test_name} on a fresh Xvfb server"
+            xvfb-run --auto-servernum               ctest --test-dir build                 -C ${{ matrix.build_type }}                 --output-on-failure                 --no-tests=error                 --tests-regex "^${test_name}$"
+          done
 
   consumer-integration:
     name: Linux GCC consumer integration
@@ -365,13 +373,22 @@ jobs:
             --no-tests=error \
             -L headless
 
-      - name: Run Xvfb coverage partition
-        run: >-
-          xvfb-run --auto-servernum
-          ctest --test-dir build/coverage
-          --output-on-failure
-          --no-tests=error
-          -L xvfb
+      - name: Run Xvfb coverage partition (isolated virtual displays)
+        run: |
+          mapfile -t xvfb_tests < <(
+            ctest --test-dir build/coverage --show-only -L xvfb |
+              sed -n 's/^[[:space:]]*Test[[:space:]]*#[0-9][0-9]*:[[:space:]]*//p'
+          )
+
+          if (( ${#xvfb_tests[@]} == 0 )); then
+            echo "No Xvfb coverage tests were registered."
+            exit 1
+          fi
+
+          for test_name in "${xvfb_tests[@]}"; do
+            echo "Running ${test_name} on a fresh Xvfb server"
+            xvfb-run --auto-servernum               ctest --test-dir build/coverage                 --output-on-failure                 --no-tests=error                 --tests-regex "^${test_name}$"
+          done
 
       - name: Generate coverage report
         run: cmake --build --preset coverage-report
