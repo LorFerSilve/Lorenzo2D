@@ -48,6 +48,9 @@ namespace l2d
         static bool loadFromFile(const std::string& filepath, LevelDocument& level,
                                  LevelLoadLimits limits);
 
+        // Instantiation is transactional for scene objects created by this
+        // call: failure removes the complete appended batch without sweeping
+        // unrelated objects that were already queued for destruction.
         static std::vector<GameObjectHandle> instantiate(Scene& scene, const LevelDocument& level);
         static std::vector<GameObjectHandle> instantiate(
             Scene& scene, const LevelDocument& level, AssetManager& assets,
