@@ -47,6 +47,8 @@ current support claims are documented separately:
 - [`docs/fuzz-validation.md`](docs/fuzz-validation.md) documents deterministic malformed-input/property validation and parser workload envelopes.
 - [`docs/replay-validation.md`](docs/replay-validation.md) documents subsystem-integrated replay and the deterministic simulation boundary.
 - [`docs/nightly-validation.md`](docs/nightly-validation.md) documents scheduled stress/soak, sanitizer, fuzz, and benchmark-trend validation.
+- [`docs/api-failure-audit.md`](docs/api-failure-audit.md) records the 1.x installed-header ownership, lifetime, failure, mutability, and concurrency audit.
+- [`docs/phase11-production-baseline.md`](docs/phase11-production-baseline.md) publishes the measured Phase 11 stress/sanitizer/fuzz/benchmark evidence and bounded workload envelopes.
 - [`docs/level-format.md`](docs/level-format.md) documents JSON level version 8,
   asset-backed prefabs, component codecs, and legacy migration.
 
