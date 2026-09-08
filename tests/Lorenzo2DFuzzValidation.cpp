@@ -269,6 +269,10 @@ namespace
                 std::ofstream file(m_outside);
                 file << "outside";
             }
+
+            error.clear();
+            std::filesystem::create_directory_symlink(m_base, m_root / "escape-link", error);
+            m_symlinkCreated = !error;
         }
 
         ~TemporaryResourceTree()
@@ -287,10 +291,16 @@ namespace
             return m_outside;
         }
 
+        bool symlinkCreated() const
+        {
+            return m_symlinkCreated;
+        }
+
       private:
         std::filesystem::path m_base;
         std::filesystem::path m_root;
         std::filesystem::path m_outside;
+        bool m_symlinkCreated = false;
     };
 
     void runSaveJson(std::uint64_t seed, std::size_t cases)
@@ -697,6 +707,9 @@ namespace
                     "relative resource escaped configured root");
         requireCase(locator.locate(tree.outside()).has_value(), Scenario, seed, 0u,
                     "documented absolute-path lookup stopped working");
+        if (tree.symlinkCreated())
+            requireCase(!locator.locate("escape-link/escape.txt").has_value(), Scenario, seed, 0u,
+                        "symlink escaped configured resource root");
 
         const std::array<std::string, 7u> fixed = {"",
                                                    ".",
