@@ -237,6 +237,26 @@ namespace l2d
         m_gameObjects.erase(newEnd, m_gameObjects.end());
     }
 
+    void Scene::rollbackGameObjectsFrom(std::size_t firstIndex)
+    {
+        if (firstIndex >= m_gameObjects.size()) return;
+
+        if (m_dispatchDepth > 0u)
+        {
+            for (std::size_t index = firstIndex; index < m_gameObjects.size(); ++index)
+                if (m_gameObjects[index] != nullptr) m_gameObjects[index]->destroy();
+
+            m_destroySweepDeferred = true;
+            return;
+        }
+
+        for (std::size_t index = firstIndex; index < m_gameObjects.size(); ++index)
+            if (m_gameObjects[index] != nullptr) m_gameObjectsById.erase(m_gameObjects[index]->id());
+
+        m_gameObjects.erase(m_gameObjects.begin() + static_cast<std::ptrdiff_t>(firstIndex),
+                            m_gameObjects.end());
+    }
+
     std::size_t Scene::destroyQueuedGameObjectCount() const
     {
         std::size_t count = 0;
