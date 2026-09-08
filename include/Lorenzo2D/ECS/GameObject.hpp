@@ -5,6 +5,7 @@
 
 #include <SFML/Graphics/RenderWindow.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -53,6 +54,9 @@ namespace l2d
 
         void destroy();
         bool isDestroyQueued() const;
+
+        std::size_t componentCount() const noexcept;
+        std::size_t activeComponentCount() const noexcept;
 
         template <typename T, typename... Args> T& addComponent(Args&&... args)
         {
