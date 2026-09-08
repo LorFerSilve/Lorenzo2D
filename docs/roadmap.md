@@ -27,8 +27,9 @@ available feature.
 | 9 | isometric projection, picking, culling, depth, and placement | Implemented |
 | 10 | four project templates, UI, audio, saves, documentation, and 1.0 hardening | Implemented |
 
-Optional online multiplayer, mobile lifecycle/distribution, scripting, and a native editor follow
-the desktop genre baseline rather than blocking it.
+The original 1.0 desktop baseline is complete. Continued development is tracked in
+[the post-1.0 roadmap](post-1.0-roadmap.md), beginning with Phase 11 production hardening and
+continuing through the planned Lorenzo2D 2.0 preparation phase.
 
 ## Phase completion rule
 
