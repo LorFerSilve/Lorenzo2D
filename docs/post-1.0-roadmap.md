@@ -66,7 +66,8 @@ This phase should be completed before adding another large subsystem.
   representative standard, and accelerated soak profiles across tile streaming, renderables and
   handles, dynamic physics/query churn, navigation replans, fixed-step replay, asset lifetime, UI,
   audio, and near-limit save persistence. Pull-request CI executes the smoke profile, while heavier
-  profiles are available for manual and future nightly validation with optional JSON reports.
+  profiles remain available manually and now run through the scheduled Phase 11.7 workflow with
+  retained JSON reports.
 - **11.5 Fuzz/malformed-input validation:** a deterministic seedable property runner covers
   save-game JSON, level/prefab deserialization, Tiled JSON, physics queries, navigation-grid
   bounds/costs, UI bounds/pointer sequences, and resource lookup. Level/Tiled parsers now enforce
