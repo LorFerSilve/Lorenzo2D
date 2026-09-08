@@ -44,6 +44,7 @@ current support claims are documented separately:
   [`docs/saves.md`](docs/saves.md) document the 1.0 game-facing services.
 - [`docs/diagnostics.md`](docs/diagnostics.md) documents the Phase 11 profiling, counters, and diagnostic-report foundation.
 - [`docs/stress-validation.md`](docs/stress-validation.md) documents bounded smoke, standard, and accelerated soak validation profiles.
+- [`docs/fuzz-validation.md`](docs/fuzz-validation.md) documents deterministic malformed-input/property validation and parser workload envelopes.
 - [`docs/level-format.md`](docs/level-format.md) documents JSON level version 8,
   asset-backed prefabs, component codecs, and legacy migration.
 
