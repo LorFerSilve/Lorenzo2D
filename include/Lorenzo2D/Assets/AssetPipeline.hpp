@@ -47,6 +47,10 @@ namespace l2d
     // File watching is explicit and polling-based. Image decoding happens on
     // worker threads; GPU texture publication happens in poll() on the caller's
     // thread, keeping SFML context ownership predictable.
+    // AssetPipeline borrows AssetManager; the manager must outlive the
+    // pipeline. Request decoding may execute on worker threads, but pipeline
+    // state and poll()/watch/scan operations are caller-thread APIs and are
+    // not safe for concurrent mutation.
     class AssetPipeline
     {
       public:
