@@ -327,8 +327,11 @@ jobs:
       - name: Configure static analysis
         run: cmake --preset lint
 
-      - name: Check formatting
-        run: cmake --build build/lint --target format-check
+      - name: Print stress review formatting diff
+        run: |
+          clang-format -i tests/Lorenzo2DStressValidation.cpp
+          git diff -- tests/Lorenzo2DStressValidation.cpp
+          exit 1
 
       - name: Build with clang-tidy
         run: cmake --build --preset lint
