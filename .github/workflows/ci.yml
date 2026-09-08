@@ -332,24 +332,8 @@ jobs:
       - name: Configure static analysis
         run: cmake --preset lint
 
-      - name: Check formatting and print exact diff
-        run: |
-          set +e
-          cmake --build build/lint --target format-check
-          status=$?
-          if (( status != 0 )); then
-            for file in \
-              src/Lorenzo2D/Assets/ResourceLocator.cpp \
-              src/Lorenzo2D/Scene/LevelSerializer.cpp \
-              tests/Lorenzo2DFuzzValidation.cpp; do
-              formatted="${RUNNER_TEMP}/$(basename "${file}").formatted"
-              clang-format "${file}" > "${formatted}"
-              echo "::group::clang-format diff: ${file}"
-              diff -u "${file}" "${formatted}" || true
-              echo "::endgroup::"
-            done
-          fi
-          exit "${status}"
+      - name: Check formatting
+        run: cmake --build build/lint --target format-check
 
       - name: Build with clang-tidy
         run: cmake --build --preset lint
