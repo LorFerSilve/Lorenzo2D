@@ -14,6 +14,7 @@
 
 namespace l2d
 {
+    class LevelSerializer;
     class PhysicsWorld2D;
     struct RenderContext2D;
     class SceneManager;
@@ -77,6 +78,7 @@ namespace l2d
         void beginDispatch();
         void endDispatch();
         void destroyQueuedGameObjectsImmediately();
+        void rollbackGameObjectsFrom(std::size_t firstIndex);
         void advanceFixedUpdateGeneration();
         bool isFixedStepParticipant(const GameObject& gameObject) const;
 
@@ -94,6 +96,7 @@ namespace l2d
         std::shared_ptr<detail::SceneHandleState> m_handleState;
         SceneManager* m_ownerManager = nullptr;
 
+        friend class LevelSerializer;
         friend class PhysicsWorld2D;
         friend class SceneManager;
         friend class TileMap;
