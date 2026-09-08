@@ -1002,7 +1002,6 @@ namespace l2d
         }
 
         const std::size_t rollbackIndex = scene.gameObjectCount();
-        const std::size_t rollbackIndex = scene.gameObjectCount();
         std::vector<GameObjectHandle> handles;
         handles.reserve(level.objects.size());
 
@@ -1031,6 +1030,7 @@ namespace l2d
         if (!isValidLevel(level))
             throw std::invalid_argument("Cannot instantiate an invalid level document.");
 
+        const std::size_t rollbackIndex = scene.gameObjectCount();
         std::vector<GameObjectHandle> handles;
         handles.reserve(level.objects.size());
 
