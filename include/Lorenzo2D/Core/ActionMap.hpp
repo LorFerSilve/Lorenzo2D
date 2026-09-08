@@ -12,8 +12,8 @@ namespace l2d
       public:
         // Checked variants expose invalid names/keys instead of silently
         // discarding the failure through the legacy void adapter.
-        bool tryBindAction(const std::string& actionName, Key key);
-        bool tryClearAction(const std::string& actionName);
+        [[nodiscard]] bool tryBindAction(const std::string& actionName, Key key);
+        [[nodiscard]] bool tryClearAction(const std::string& actionName);
 
         void bindAction(const std::string& actionName, Key key);
         void clearAction(const std::string& actionName);
