@@ -29,7 +29,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DInputTests` | Device codes, typed actions, layouts, deadzones, contexts, fixed-tick edges, reconnects, and pointer projection | `headless` | 30 s |
 | `Lorenzo2DEcsSceneTests` | Component mutation, activation, scene dispatch, handles, indexing, and deferred destruction | `headless` | 90 s |
 | `Lorenzo2DPhysicsIntegrationTests` | Scene-to-physics fixed-tick participation and render-cadence independence | `headless` | 90 s |
-| `Lorenzo2DTilemapTests` | Atlas mappings, chunk statistics, view culling, collision merging, reload ownership, moves, and file loading | `headless` | 90 s |
+| `Lorenzo2DTilemapTests` | Atlas mappings, chunk statistics, view culling, collision merging, reload ownership, moves, and file loading | `xvfb` | 90 s |
 | `Lorenzo2DTimingAccountingTests` | Cumulative fixed-step and frame-clamp accounting | `headless` | 30 s |
 | `Lorenzo2DPhysicsBodyTests` | Body configuration, integration, impulses, restitution, and friction | `headless` | 90 s |
 | `Lorenzo2DPhysicsCollisionTests` | Manifolds, filters, sensors, contacts, grounded state, and extreme values | `headless` | 120 s |
@@ -46,7 +46,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DSaveTests` | Versioned save JSON, workload limits, transactional file replacement, and malformed input | `headless` | 30 s |
 | `Lorenzo2DUiTests` | Button bounds, pointer transitions, capture, overlap ordering, and invalid input | `headless` | 30 s |
 | `Lorenzo2DAudioTests` | Null-device playback options, voice lifecycle, buses, and sound-buffer asset binding | `headless` | 30 s |
-| `Lorenzo2DRendererTests` | Camera/transform numeric safety, contexts, projections, pass filtering, deterministic depth, sprite origins/flips, and physics independence | `headless` | 60 s |
+| `Lorenzo2DRendererTests` | Camera/transform numeric safety, contexts, projections, pass filtering, deterministic depth, sprite origins/flips, and physics independence | `xvfb` | 60 s |
 
 The previous broad regression targets mixed unrelated core, scene, physics,
 and tilemap behavior. Their individual cases are now owned by focused suites;
@@ -94,11 +94,10 @@ Every regression executable must declare exactly one runtime label:
 - `headless`: CI unsets `DISPLAY` and `WAYLAND_DISPLAY` before execution.
 - `xvfb`: CI executes the suite through Xvfb on Linux.
 
-`Lorenzo2DAssetTests` and `Lorenzo2DAnimationTests` use the Xvfb partition
-because they construct SFML texture or font resources. The harness, core, ECS,
-physics, tilemap, resource, serialization, timing, and renderer suites contain
-no window, graphics-context, texture, or font construction and are executed
-with display variables removed.
+`Lorenzo2DAssetTests`, `Lorenzo2DAnimationTests`, `Lorenzo2DTilemapTests`,
+`Lorenzo2DSerializationTests`, and `Lorenzo2DRendererTests` use the Xvfb partition
+because their current execution path may construct or exercise SFML graphics resources. The
+remaining suites are executed with display variables removed.
 
 Subsystem labels such as `test-support`, `timing`, `ecs`, `scene`, `physics`,
 `tilemap`, `assets`, `resources`, `serialization`, `animation`, `renderer`,
