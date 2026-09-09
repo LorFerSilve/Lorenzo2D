@@ -81,7 +81,8 @@ namespace l2d
         void beginDispatch();
         void endDispatch();
         void destroyQueuedGameObjectsImmediately();
-        void rollbackGameObjectsFrom(std::size_t firstIndex);
+        std::vector<GameObjectId> snapshotGameObjectIds() const;
+        void rollbackToGameObjectSnapshot(const std::vector<GameObjectId>& preservedIds);
         void advanceFixedUpdateGeneration();
         bool isFixedStepParticipant(const GameObject& gameObject) const;
 
