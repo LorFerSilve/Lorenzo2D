@@ -182,8 +182,8 @@ void main()
     {
         auto shader = std::make_shared<l2d::Shader2D>();
         L2D_REQUIRE(shader->loadFragmentSource(OptionalUniformFragmentSource));
-        L2D_REQUIRE(shader->setUniformLayout(
-            {{"optional_value", l2d::ShaderUniformType2D::Float, false}}));
+        L2D_REQUIRE(
+            shader->setUniformLayout({{"optional_value", l2d::ShaderUniformType2D::Float, false}}));
 
         l2d::Material2D redMaterial;
         L2D_REQUIRE(redMaterial.setShader(shader));
