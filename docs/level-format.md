@@ -60,9 +60,10 @@ rigid bodies, the shared character motor, top-down/grid-step/platformer controll
 tuning, and
 box/circle/capsule/convex-polygon colliders. Sprite textures and animation clips
 are stable `AssetId` strings. Instantiate asset-backed documents with an `AssetManager`; a missing
-required asset rejects and rolls back the complete operation. Batch instantiation is transactional
-for objects appended by that call, and rollback does not sweep unrelated objects that were already
-queued for destruction before the call.
+required asset rejects and rolls back the complete operation. Batch instantiation snapshots
+pre-existing `GameObjectId` values and removes Scene objects created after that snapshot on failure,
+so rollback remains stable even if a codec compacts the Scene by sweeping queued destruction.
+Pre-existing queued objects are not swept merely because the level call fails.
 
 ## Custom component codecs
 
