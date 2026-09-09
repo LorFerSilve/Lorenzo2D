@@ -4,9 +4,10 @@ Lorenzo2D 0.8 separates logical world coordinates from presentation. The
 render-context and ordering APIs are additive: the previous interpolation-alpha
 and z-order calls remain source-compatible adapters.
 
-Phase 12 starts the Rendering 2.0 layer with public `Shader2D` and `Material2D` state while
-preserving the existing no-material draw path. See [rendering-2.0.md](rendering-2.0.md) for the
-uniform schema, lifetime, blend, validation, and failure contracts.
+Phase 12 starts the Rendering 2.0 layer with public `Shader2D`, `Material2D`, and
+`RenderSurface2D` state while preserving the existing simple window-render path. See
+[rendering-2.0.md](rendering-2.0.md) for shader/material contracts, off-screen target lifetimes,
+compositing, validation, and failure semantics.
 
 ## Render contexts and passes
 
@@ -146,8 +147,9 @@ contract rather than a general concurrent API.
 a loaded `Shader2D` plus typed uniform/texture values. Trivial sprites still render through the
 original default path when no material is assigned.
 
-The Phase 12.1 material path is intentionally not a render graph and does not yet change tilemap
-batching or the existing lightweight post-process overlay stack.
+The Phase 12.1 material path is intentionally not a render graph. Phase 12.2 adds bounded
+off-screen `RenderSurface2D` resources and generic-target camera/post-process overloads, but it
+still does not change Scene's legacy `RenderWindow` component dispatch or tilemap batching.
 
 ## Particles and post-processing
 
