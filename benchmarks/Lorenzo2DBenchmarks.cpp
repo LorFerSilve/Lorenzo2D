@@ -509,7 +509,6 @@ namespace
                        });
     }
 
-
     l2d::TextureHandle makeSpriteBenchmarkAtlas()
     {
         const sf::Image image({32u, 16u}, sf::Color::White);
@@ -536,10 +535,9 @@ namespace
             {
                 sprites.emplace_back(*atlas);
                 sf::Sprite& sprite = sprites.back();
-                sprite.setTextureRect(
-                    {{static_cast<int>((row + column) % 2u) * 16, 0}, {16, 16}});
-                sprite.setPosition({static_cast<float>(column) * TileSize,
-                                    static_cast<float>(row) * TileSize});
+                sprite.setTextureRect({{static_cast<int>((row + column) % 2u) * 16, 0}, {16, 16}});
+                sprite.setPosition(
+                    {static_cast<float>(column) * TileSize, static_cast<float>(row) * TileSize});
             }
         }
 
@@ -571,8 +569,8 @@ namespace
             {
                 l2d::SpriteBatchSubmission2D submission;
                 submission.texture = atlas;
-                submission.textureRect =
-                    {{static_cast<int>((row + column) % 2u) * 16, 0}, {16, 16}};
+                submission.textureRect = {{static_cast<int>((row + column) % 2u) * 16, 0},
+                                          {16, 16}};
                 submission.position = {static_cast<float>(column) * TileSize,
                                        static_cast<float>(row) * TileSize};
 
