@@ -359,3 +359,10 @@ l2d_add_regression_test(
         "${PROJECT_SOURCE_DIR}/src/Lorenzo2D/Renderer"
     TIMEOUT 60
 )
+
+l2d_add_regression_test(
+    Lorenzo2DMaterialTests
+    SOURCE Lorenzo2DMaterialTests.cpp
+    LABELS xvfb renderer shader material phase12
+    TIMEOUT 60
+)

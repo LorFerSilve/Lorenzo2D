@@ -4,6 +4,10 @@ Lorenzo2D 0.8 separates logical world coordinates from presentation. The
 render-context and ordering APIs are additive: the previous interpolation-alpha
 and z-order calls remain source-compatible adapters.
 
+Phase 12 starts the Rendering 2.0 layer with public `Shader2D` and `Material2D` state while
+preserving the existing no-material draw path. See [rendering-2.0.md](rendering-2.0.md) for the
+uniform schema, lifetime, blend, validation, and failure contracts.
+
 ## Render contexts and passes
 
 `RenderContext2D` travels through `SceneManager`, `Scene`, `GameObject`, and
@@ -135,6 +139,15 @@ event reports transitively invalidated dependents.
 `AssetPipeline` borrows its `AssetManager`; the manager must outlive the pipeline. Apart from the
 documented background decode work, pipeline/watch/event/dependency mutation is a caller-thread
 contract rather than a general concurrent API.
+
+## Shader/material compatibility
+
+`SpriteRenderer` may optionally bind a `Material2D`. A material can own blend state alone or bind
+a loaded `Shader2D` plus typed uniform/texture values. Trivial sprites still render through the
+original default path when no material is assigned.
+
+The Phase 12.1 material path is intentionally not a render graph and does not yet change tilemap
+batching or the existing lightweight post-process overlay stack.
 
 ## Particles and post-processing
 

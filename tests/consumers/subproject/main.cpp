@@ -22,7 +22,9 @@
 #include <Lorenzo2D/Physics/DistanceJoint2D.hpp>
 #include <Lorenzo2D/Renderer/Camera2D.hpp>
 #include <Lorenzo2D/Renderer/IsometricProjection2D.hpp>
+#include <Lorenzo2D/Renderer/Material2D.hpp>
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
+#include <Lorenzo2D/Renderer/Shader2D.hpp>
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
 #include <Lorenzo2D/Scene/ComponentCodecRegistry.hpp>
@@ -150,6 +152,13 @@ int main()
     l2d::Camera2D camera({100.f, 100.f});
     const bool cameraConfigured = camera.trySetCenter(position);
 
+    l2d::Shader2D shaderDefinition;
+    const bool shaderLayoutConfigured = shaderDefinition.setUniformLayout(
+        {{"consumer_value", l2d::ShaderUniformType2D::Float, true}});
+    l2d::Material2D material;
+    const bool materialConfigured =
+        material.setBlendMode(l2d::MaterialBlendMode2D::Multiply) && material.isComplete();
+
     l2d::InputSnapshot inputSnapshot;
     l2d::InputMap inputMap(inputSnapshot);
     l2d::InputContextStack inputContexts(inputSnapshot);
@@ -187,7 +196,8 @@ int main()
                    l2d::gridDirectionFromInput({1.f, 0.f}) == l2d::GridDirection2D::Right &&
                    joint.id() != l2d::InvalidJointId && checkedRenderPosition.has_value() &&
                    *checkedRenderPosition == position && cameraConfigured &&
-                   checkedCompatibilityAction &&
+                   shaderLayoutConfigured && shaderDefinition.uniformCount() == 1u &&
+                   materialConfigured && checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0

@@ -49,6 +49,7 @@ current support claims are documented separately:
 - [`docs/nightly-validation.md`](docs/nightly-validation.md) documents scheduled stress/soak, sanitizer, fuzz, and benchmark-trend validation.
 - [`docs/api-failure-audit.md`](docs/api-failure-audit.md) records the 1.x installed-header ownership, lifetime, failure, mutability, and concurrency audit.
 - [`docs/phase11-production-baseline.md`](docs/phase11-production-baseline.md) publishes the measured Phase 11 stress/sanitizer/fuzz/benchmark evidence and bounded workload envelopes.
+- [`docs/rendering-2.0.md`](docs/rendering-2.0.md) documents the Phase 12 shader/material contract, typed uniforms, blend state, lifetimes, and failure semantics.
 - [`docs/level-format.md`](docs/level-format.md) documents JSON level version 8,
   asset-backed prefabs, component codecs, and legacy migration.
 
@@ -62,7 +63,7 @@ current support claims are documented separately:
 - Unified mouse/touch pointers with camera-aware world conversion and drag state
 - Game objects, transforms, polymorphic components, tags, deterministic layered/depth ordering, and deferred deletion
 - Scenes, scene switching, object queries, and lifetime-aware object handles
-- Context-aware circle/rectangle/sprite rendering, sprite anchors/flips, coordinate projections, and sprite-sheet animation
+- Context-aware circle/rectangle/sprite rendering, sprite anchors/flips, coordinate projections, sprite-sheet animation, and optional validated shader/material state
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
 - Layered orthogonal/isometric tile data with metadata, objects, ASCII/Tiled import,
   asset-backed rendering, streamed chunks, and merged collision geometry
