@@ -221,6 +221,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Renderer/Camera2D.cpp
     src/Lorenzo2D/Renderer/CircleRenderer.cpp
     src/Lorenzo2D/Renderer/DebugOverlay.cpp
+    src/Lorenzo2D/Renderer/Material2D.cpp
     src/Lorenzo2D/Renderer/OrthographicCameraController2D.cpp
     src/Lorenzo2D/Renderer/ParticleEmitter2D.cpp
     src/Lorenzo2D/Renderer/PostProcessStack2D.cpp
@@ -229,6 +230,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Renderer/RenderOrder2D.cpp
     src/Lorenzo2D/Renderer/RenderQueue2D.cpp
     src/Lorenzo2D/Renderer/RenderSortKey2D.cpp
+    src/Lorenzo2D/Renderer/Shader2D.cpp
     src/Lorenzo2D/Renderer/SpriteRenderer.cpp
     src/Lorenzo2D/Scene/GameObjectHandle.cpp
     src/Lorenzo2D/Scene/ComponentCodecRegistry.cpp
