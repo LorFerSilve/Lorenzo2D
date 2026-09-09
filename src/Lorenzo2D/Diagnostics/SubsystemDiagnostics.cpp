@@ -6,7 +6,8 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Navigation/AStarPathfinder2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
-#include <Lorenzo2D/Renderer/RenderQueue2D.hpp>\n#include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
+#include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+#include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
 
