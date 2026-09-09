@@ -11,6 +11,7 @@
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
 #include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+#include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
 
@@ -73,16 +74,21 @@ namespace
         renderStats.drawCallCount = 4u;
         renderStats.submittedTileCount = 12u;
 
+        l2d::SpriteBatchDrawResult2D batchResult;
+        batchResult.drawCallCount = 2u;
+        batchResult.renderedSpriteCount = 5u;
+
         l2d::DiagnosticCounters counters;
         l2d::recordNavigationPathDiagnostics(path, counters, true);
         l2d::accumulateTileMapRenderDiagnostics(renderStats, counters);
+        l2d::accumulateSpriteBatchDiagnostics(batchResult, counters);
 
         L2D_REQUIRE(path.succeeded());
         L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::NavigationExpansions),
                           path.visitedNodes);
         L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::NavigationReplans), 1u);
-        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::DrawCalls), 4u);
-        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::RenderedItems), 12u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::DrawCalls), 6u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::RenderedItems), 17u);
     }
 
     void testAssetAudioAndSaveAccumulation()

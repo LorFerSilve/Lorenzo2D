@@ -12,6 +12,7 @@ namespace l2d
     class RenderQueue2D;
     class Scene;
     struct NavigationPath2D;
+    struct SpriteBatchDrawResult2D;
     struct TileMapRenderStats;
 
     namespace diagnostic_scope
@@ -34,6 +35,8 @@ namespace l2d
     void accumulateRenderQueueDiagnostics(const RenderQueue2D& queue, DiagnosticCounters& counters);
     void accumulateTileMapRenderDiagnostics(const TileMapRenderStats& stats,
                                             DiagnosticCounters& counters);
+    void accumulateSpriteBatchDiagnostics(const SpriteBatchDrawResult2D& result,
+                                          DiagnosticCounters& counters);
     void accumulateAssetDiagnostics(const AssetManager& assets, DiagnosticCounters& counters);
     void accumulateAudioDiagnostics(const AudioSystem& audio, DiagnosticCounters& counters);
 

@@ -15,10 +15,15 @@
 #include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
+#include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
 #include <Lorenzo2D/Tilemap/AsciiTileMapImporter.hpp>
 
+#include <SFML/Graphics/Image.hpp>
+#include <SFML/Graphics/RenderTexture.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/View.hpp>
 
 #include <chrono>
@@ -27,6 +32,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -503,11 +509,98 @@ namespace
                        });
     }
 
+    l2d::TextureHandle makeSpriteBenchmarkAtlas()
+    {
+        const sf::Image image({32u, 16u}, sf::Color::White);
+        auto texture = std::make_shared<sf::Texture>();
+        if (!texture->loadFromImage(image))
+            throw std::runtime_error("unable to create sprite batching benchmark atlas");
+        return l2d::TextureHandle(std::move(texture));
+    }
+
+    BenchmarkResult benchmarkIndividualSpriteDraws(std::size_t iterations)
+    {
+        constexpr std::size_t Columns = 64u;
+        constexpr std::size_t Rows = 32u;
+        constexpr std::size_t SpriteCount = Columns * Rows;
+        constexpr float TileSize = 16.f;
+
+        const l2d::TextureHandle atlas = makeSpriteBenchmarkAtlas();
+        std::vector<sf::Sprite> sprites;
+        sprites.reserve(SpriteCount);
+
+        for (std::size_t row = 0u; row < Rows; ++row)
+        {
+            for (std::size_t column = 0u; column < Columns; ++column)
+            {
+                sprites.emplace_back(*atlas);
+                sf::Sprite& sprite = sprites.back();
+                sprite.setTextureRect({{static_cast<int>((row + column) % 2u) * 16, 0}, {16, 16}});
+                sprite.setPosition(
+                    {static_cast<float>(column) * TileSize, static_cast<float>(row) * TileSize});
+            }
+        }
+
+        sf::RenderTexture target({1024u, 512u});
+        return measure(iterations,
+                       [&target, &sprites]()
+                       {
+                           target.clear(sf::Color::Black);
+                           for (const sf::Sprite& sprite : sprites)
+                               target.draw(sprite);
+                           target.display();
+                           return sprites.size();
+                       });
+    }
+
+    BenchmarkResult benchmarkBatchedSpriteDraws(std::size_t iterations)
+    {
+        constexpr std::size_t Columns = 64u;
+        constexpr std::size_t Rows = 32u;
+        constexpr std::size_t SpriteCount = Columns * Rows;
+        constexpr float TileSize = 16.f;
+
+        const l2d::TextureHandle atlas = makeSpriteBenchmarkAtlas();
+        l2d::SpriteBatch2D batch;
+
+        for (std::size_t row = 0u; row < Rows; ++row)
+        {
+            for (std::size_t column = 0u; column < Columns; ++column)
+            {
+                l2d::SpriteBatchSubmission2D submission;
+                submission.texture = atlas;
+                submission.textureRect = {{static_cast<int>((row + column) % 2u) * 16, 0},
+                                          {16, 16}};
+                submission.position = {static_cast<float>(column) * TileSize,
+                                       static_cast<float>(row) * TileSize};
+
+                if (!batch.submit(std::move(submission)).succeeded())
+                    throw std::runtime_error("unable to populate sprite batching benchmark");
+            }
+        }
+
+        if (batch.submissionCount() != SpriteCount || batch.batchCount() != 1u)
+            throw std::runtime_error("sprite batching benchmark did not collapse to one batch");
+
+        sf::RenderTexture target({1024u, 512u});
+        return measure(iterations,
+                       [&target, &batch]()
+                       {
+                           target.clear(sf::Color::Black);
+                           const l2d::SpriteBatchDrawResult2D result = batch.draw(target);
+                           if (!result.succeeded())
+                               throw std::runtime_error("sprite batching benchmark draw failed");
+                           target.display();
+                           return result.renderedSpriteCount + result.drawCallCount;
+                       });
+    }
+
     std::vector<BenchmarkEntry> runBenchmarks()
     {
         constexpr std::size_t sceneIterations = 120u;
         constexpr std::size_t inputIterations = 120u;
         constexpr std::size_t renderQueueIterations = 120u;
+        constexpr std::size_t spriteDrawIterations = 20u;
         constexpr std::size_t physicsIterations = 30u;
         constexpr std::size_t physicsQuerySnapshotIterations = 50u;
         constexpr std::size_t physicsQueryBatchIterations = 100u;
@@ -527,6 +620,10 @@ namespace
                            benchmarkRenderQueueBuild(renderQueueIterations)});
         entries.push_back({"projected depth full sort", renderQueueIterations,
                            benchmarkProjectedDepthSort(renderQueueIterations)});
+        entries.push_back({"individual atlas sprite draws", spriteDrawIterations,
+                           benchmarkIndividualSpriteDraws(spriteDrawIterations)});
+        entries.push_back({"batched atlas sprite draws", spriteDrawIterations,
+                           benchmarkBatchedSpriteDraws(spriteDrawIterations)});
         entries.push_back(
             {"physics uniform grid", physicsIterations,
              benchmarkPhysics(l2d::PhysicsBroadPhaseMode2D::UniformGrid, physicsIterations)});

@@ -234,6 +234,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Renderer/RenderSurface2D.cpp
     src/Lorenzo2D/Renderer/Shader2D.cpp
     src/Lorenzo2D/Renderer/ShaderPostProcessChain2D.cpp
+    src/Lorenzo2D/Renderer/SpriteBatch2D.cpp
     src/Lorenzo2D/Renderer/SpriteRenderer.cpp
     src/Lorenzo2D/Scene/GameObjectHandle.cpp
     src/Lorenzo2D/Scene/ComponentCodecRegistry.cpp

@@ -49,6 +49,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes \
             ninja-build \
+            xauth \
+            xvfb \
             xorg-dev \
             libharfbuzz-dev \
             libfreetype-dev \
@@ -112,7 +114,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          ./build/nightly-release/bin/Lorenzo2DBenchmarks \
+          xvfb-run --auto-servernum ./build/nightly-release/bin/Lorenzo2DBenchmarks \
             --json artifacts/benchmarks.json \
             --csv artifacts/benchmarks.csv \
             2>&1 | tee artifacts/benchmarks.log

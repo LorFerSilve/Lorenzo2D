@@ -243,8 +243,13 @@ render graph.
   workspaces, explicit preflight/failure reporting, deterministic pass reordering/enabling, and
   direct `RenderPipeline2D` integration. The lightweight `PostProcessStack2D` color-overlay path
   remains available unchanged, and a public Phase 12 example demonstrates the new workflow.
-- Remaining Phase 12 work includes batching/atlas paths, camera/layer composition, render statistics,
-  and measured batching benchmarks.
+- **12.5 Ordered sprite batching/atlas-friendly submission:** public `SpriteBatch2D` adds a bounded
+  opt-in six-vertex sprite submission path that coalesces only adjacent texture/material-compatible
+  items, preserving deterministic visible ordering. Atlas rectangles, stable failure reporting,
+  structural/actual draw statistics, diagnostics integration, a public example, installed-package
+  consumption, and nightly individual-vs-batched atlas trend benchmarks are included.
+- Remaining Phase 12 work includes camera/layer composition and the complete render-statistics
+  surface, including shader-switch and culling telemetry.
 
 ### Scope
 
@@ -661,8 +666,8 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-Continue **Phase 12 — Rendering 2.0** with **12.5 batching and atlas-friendly submission**. The
-shader/material, off-screen, ordered-pass, and full-screen post-processing paths now form a coherent
-presentation pipeline; the next slice should reduce draw-call/state-switch cost for compatible
-sprites and tiles while preserving deterministic ordering, simple non-material rendering, and
-measurable diagnostics.
+Continue **Phase 12 — Rendering 2.0** with **12.6 camera/layer composition and render
+diagnostics**. The shader/material, off-screen, ordered-pass, post-processing, and explicit
+sprite-batching paths now form a coherent presentation pipeline; the next slice should formalize
+multi-camera/layer composition and complete render telemetry without disturbing deterministic
+ordering or the existing simple rendering path.

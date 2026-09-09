@@ -28,6 +28,7 @@
 #include <Lorenzo2D/Renderer/RenderSurface2D.hpp>
 #include <Lorenzo2D/Renderer/Shader2D.hpp>
 #include <Lorenzo2D/Renderer/ShaderPostProcessChain2D.hpp>
+#include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
 #include <Lorenzo2D/Scene/ComponentCodecRegistry.hpp>
@@ -186,6 +187,11 @@ int main()
         shaderPostProcess.addPass(shaderPostProcessPass) && shaderPostProcess.passCount() == 1u &&
         l2d::ShaderPostProcessChain2D::isValidPass(shaderPostProcessPass);
 
+    l2d::SpriteBatch2D spriteBatch;
+    const bool spriteBatchConfigured = spriteBatch.empty() && spriteBatch.submissionCount() == 0u &&
+                                       spriteBatch.batchCount() == 0u &&
+                                       spriteBatch.stats().submittedVertexCount == 0u;
+
     l2d::InputSnapshot inputSnapshot;
     l2d::InputMap inputMap(inputSnapshot);
     l2d::InputContextStack inputContexts(inputSnapshot);
@@ -225,7 +231,8 @@ int main()
                    *checkedRenderPosition == position && cameraConfigured &&
                    shaderLayoutConfigured && shaderDefinition.uniformCount() == 1u &&
                    materialConfigured && renderSurfaceConfigured && renderPipelineConfigured &&
-                   shaderPostProcessConfigured && checkedCompatibilityAction &&
+                   shaderPostProcessConfigured && spriteBatchConfigured &&
+                   checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0

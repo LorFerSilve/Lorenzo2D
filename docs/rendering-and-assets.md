@@ -152,8 +152,9 @@ off-screen `RenderSurface2D` resources and generic-target camera/post-process ov
 adds a bounded ordered `RenderPipeline2D`: explicit backbuffer/surface outputs, read-only published
 surface inputs, clear/present policies, and a dedicated RenderWindow+Scene compatibility bridge.
 Phase 12.4 adds `ShaderPostProcessChain2D` for ordered full-screen material/shader passes with
-bounded reusable ping-pong surfaces. None of these slices auto-schedule dependencies or change
-tilemap batching.
+bounded reusable ping-pong surfaces. Phase 12.5 adds the separate opt-in `SpriteBatch2D` path:
+adjacent submissions sharing one texture lease and material identity collapse into a vertex-array
+draw without reordering. Existing SpriteRenderer and tilemap batching remain unchanged.
 
 ## Particles and post-processing
 
@@ -173,5 +174,6 @@ destination view. Materials normally bind the source sampler with
 shaders, incomplete materials, and workspace failures are reported explicitly.
 
 See `Lorenzo2DPhase4Example` for the lightweight overlay path,
-`Lorenzo2DPhase12PostProcessExample` for the shader/render-pipeline path, and
+`Lorenzo2DPhase12PostProcessExample` for the shader/render-pipeline path,
+`Lorenzo2DPhase12BatchingExample` for the atlas batching path, and
 [`isometric.md`](isometric.md) for the Phase 9 projection workflow.
