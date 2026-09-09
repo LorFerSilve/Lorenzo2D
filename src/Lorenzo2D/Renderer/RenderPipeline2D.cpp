@@ -164,11 +164,10 @@ namespace l2d
         return true;
     }
 
-    bool RenderPipeline2D::addPass(RenderPipelinePass2D pass,
-                                   RenderPipelineCallback2D callback)
+    bool RenderPipeline2D::addPass(RenderPipelinePass2D pass, RenderPipelineCallback2D callback)
     {
-        if (m_executing || m_passes.size() >= MaximumPassCount || !callback ||
-            !isValidPass(pass) || !isPassNameAvailable(pass.name, std::nullopt))
+        if (m_executing || m_passes.size() >= MaximumPassCount || !callback || !isValidPass(pass) ||
+            !isPassNameAvailable(pass.name, std::nullopt))
         {
             return false;
         }
@@ -179,8 +178,8 @@ namespace l2d
 
     bool RenderPipeline2D::addLegacyScenePass(RenderPipelinePass2D pass)
     {
-        if (m_executing || m_passes.size() >= MaximumPassCount ||
-            !isValidLegacyScenePass(pass) || !isPassNameAvailable(pass.name, std::nullopt))
+        if (m_executing || m_passes.size() >= MaximumPassCount || !isValidLegacyScenePass(pass) ||
+            !isPassNameAvailable(pass.name, std::nullopt))
         {
             return false;
         }
@@ -193,8 +192,8 @@ namespace l2d
     {
         if (m_executing || index >= m_passes.size()) return false;
 
-        const bool valid = m_passes[index].legacyScene ? isValidLegacyScenePass(pass)
-                                                      : isValidPass(pass);
+        const bool valid =
+            m_passes[index].legacyScene ? isValidLegacyScenePass(pass) : isValidPass(pass);
         if (!valid || !isPassNameAvailable(pass.name, index)) return false;
 
         m_passes[index].pass = std::move(pass);
@@ -286,12 +285,11 @@ namespace l2d
                pass.inputs.empty() && !pass.present.enabled;
     }
 
-    RenderPipelineResult2D RenderPipeline2D::preflight(
-        sf::RenderTarget& backbuffer, bool legacySceneAvailable,
-        const RenderPipelineFrame2D& frame) const
+    RenderPipelineResult2D RenderPipeline2D::preflight(sf::RenderTarget& backbuffer,
+                                                       bool legacySceneAvailable,
+                                                       const RenderPipelineFrame2D& frame) const
     {
-        if (!isValidFrame(frame))
-            return failureResult(RenderPipelineFailure2D::InvalidFrame);
+        if (!isValidFrame(frame)) return failureResult(RenderPipelineFailure2D::InvalidFrame);
 
         std::vector<const RenderSurface2D*> outputsPublishedEarlier;
 
@@ -301,10 +299,9 @@ namespace l2d
             const RenderPipelinePass2D& passConfig = record.pass;
             if (!passConfig.enabled) continue;
 
-            const bool valid = record.legacyScene ? isValidLegacyScenePass(passConfig)
-                                                  : isValidPass(passConfig);
-            if (!valid)
-                return failureResult(RenderPipelineFailure2D::InvalidPass, index);
+            const bool valid =
+                record.legacyScene ? isValidLegacyScenePass(passConfig) : isValidPass(passConfig);
+            if (!valid) return failureResult(RenderPipelineFailure2D::InvalidPass, index);
 
             if (record.legacyScene && !legacySceneAvailable)
                 return failureResult(RenderPipelineFailure2D::LegacySceneRequired, index);
@@ -347,12 +344,12 @@ namespace l2d
         return {};
     }
 
-    RenderPipelineResult2D RenderPipeline2D::executeImpl(
-        sf::RenderTarget& backbuffer, sf::RenderWindow* legacyWindow, Scene* legacyScene,
-        const RenderPipelineFrame2D& frame)
+    RenderPipelineResult2D RenderPipeline2D::executeImpl(sf::RenderTarget& backbuffer,
+                                                         sf::RenderWindow* legacyWindow,
+                                                         Scene* legacyScene,
+                                                         const RenderPipelineFrame2D& frame)
     {
-        if (m_executing)
-            return failureResult(RenderPipelineFailure2D::ReentrantExecution);
+        if (m_executing) return failureResult(RenderPipelineFailure2D::ReentrantExecution);
 
         const bool legacyAvailable = legacyWindow != nullptr && legacyScene != nullptr;
         RenderPipelineResult2D result = preflight(backbuffer, legacyAvailable, frame);
@@ -384,7 +381,8 @@ namespace l2d
 
                 for (const RenderSurface2DConstHandle& input : passConfig.inputs)
                 {
-                    if (!input->ready() || input->target() == nullptr || input->texture() == nullptr)
+                    if (!input->ready() || input->target() == nullptr ||
+                        input->texture() == nullptr)
                     {
                         m_executing = false;
                         return failureResult(RenderPipelineFailure2D::InputUnavailable, index,
@@ -418,8 +416,8 @@ namespace l2d
                     }
                 }
 
-                const RenderContext2D context{
-                    frame.interpolationAlpha, frame.projection, passConfig.contextPass};
+                const RenderContext2D context{frame.interpolationAlpha, frame.projection,
+                                              passConfig.contextPass};
 
                 if (record.legacyScene)
                 {
@@ -453,8 +451,7 @@ namespace l2d
                     }
 
                     if (passConfig.present.enabled &&
-                        !passConfig.surface->present(backbuffer,
-                                                     passConfig.present.presentation))
+                        !passConfig.surface->present(backbuffer, passConfig.present.presentation))
                     {
                         m_executing = false;
                         return failureResult(RenderPipelineFailure2D::SurfacePresentFailed, index,
