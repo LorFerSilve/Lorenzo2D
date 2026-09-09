@@ -68,7 +68,7 @@ namespace l2d
     struct RenderPipelinePass2D
     {
         std::string name;
-        RenderPass2D pass = RenderPass2D::World;
+        RenderPass2D contextPass = RenderPass2D::World;
         RenderPipelinePassTarget2D target = RenderPipelinePassTarget2D::Backbuffer;
         RenderSurface2DHandle surface;
         std::vector<RenderSurface2DConstHandle> inputs;
