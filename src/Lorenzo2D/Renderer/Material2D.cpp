@@ -153,8 +153,7 @@ namespace l2d
 
     bool Material2D::isComplete() const noexcept
     {
-        if (!m_shader)
-            return m_uniforms.empty();
+        if (!m_shader) return m_uniforms.empty();
 
         if (!m_shader->loaded()) return false;
 
@@ -241,8 +240,8 @@ namespace l2d
         return spec != nullptr && spec->type == type;
     }
 
-    std::optional<ShaderUniformType2D>
-    Material2D::typeOf(const MaterialUniformValue2D& value) noexcept
+    std::optional<ShaderUniformType2D> Material2D::typeOf(
+        const MaterialUniformValue2D& value) noexcept
     {
         return std::visit(
             [](const auto& typedValue) -> std::optional<ShaderUniformType2D>
