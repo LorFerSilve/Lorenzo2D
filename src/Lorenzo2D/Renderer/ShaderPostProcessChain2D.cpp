@@ -169,7 +169,8 @@ namespace l2d
 
     void ShaderPostProcessChain2D::resetWorkspace()
     {
-        for (auto& workspace : m_workspace) workspace.reset();
+        for (auto& workspace : m_workspace)
+            workspace.reset();
     }
 
     ShaderPostProcessResult2D ShaderPostProcessChain2D::apply(const RenderSurface2D& source,
