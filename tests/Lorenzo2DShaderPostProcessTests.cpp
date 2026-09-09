@@ -4,6 +4,7 @@
 #include <Lorenzo2D/Renderer/ShaderPostProcessChain2D.hpp>
 
 #include <SFML/Graphics/Image.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/View.hpp>
 
