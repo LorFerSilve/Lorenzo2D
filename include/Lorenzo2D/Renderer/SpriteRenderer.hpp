@@ -2,6 +2,7 @@
 
 #include <Lorenzo2D/Assets/AssetHandle.hpp>
 #include <Lorenzo2D/ECS/Component.hpp>
+#include <Lorenzo2D/Renderer/Material2D.hpp>
 
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Sprite.hpp>
@@ -54,6 +55,12 @@ namespace l2d
         bool isFlippedX() const;
         bool isFlippedY() const;
 
+        // Optional Phase 12 material path. A null handle restores the original
+        // default SFML draw state; trivial sprites never need a material.
+        void setMaterial(Material2DHandle material);
+        [[nodiscard]] Material2DHandle material() const noexcept;
+        void clearMaterial();
+
         // Logical bottom-centre in world space, independent from visual flips.
         sf::Vector2f worldFootPoint(float interpolationAlpha = 1.f) const;
 
@@ -70,6 +77,7 @@ namespace l2d
         LiveTextureHandle m_liveTexture;
         std::uint64_t m_liveGeneration = 0;
         sf::Sprite m_sprite;
+        Material2DHandle m_material;
 
         sf::Vector2f m_sizeScale;
         SpriteOriginPreset2D m_originPreset = SpriteOriginPreset2D::TopLeft;
