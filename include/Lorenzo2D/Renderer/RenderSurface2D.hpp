@@ -41,20 +41,22 @@ namespace l2d
     // thread/context discipline.
     //
     // Pointers returned by target()/texture() are borrowed and are invalidated
-    // by the next successful create() or reset().
+    // by the next successful create() or reset(). The owning object itself has
+    // stable identity: copying and moving are disabled so relocation cannot
+    // silently invalidate borrowed pointers or generation observers.
     class RenderSurface2D
     {
       public:
         static constexpr unsigned int MaximumDimension = 8192u;
         static constexpr std::uint64_t MaximumPixels = 33554432ull;
 
-        RenderSurface2D() = default;
+        RenderSurface2D();
         ~RenderSurface2D();
 
         RenderSurface2D(const RenderSurface2D&) = delete;
         RenderSurface2D& operator=(const RenderSurface2D&) = delete;
-        RenderSurface2D(RenderSurface2D&&) noexcept;
-        RenderSurface2D& operator=(RenderSurface2D&&) noexcept;
+        RenderSurface2D(RenderSurface2D&&) = delete;
+        RenderSurface2D& operator=(RenderSurface2D&&) = delete;
 
         [[nodiscard]] static bool isValidSize(sf::Vector2u size) noexcept;
         [[nodiscard]] static bool isValidConfig(const RenderSurfaceConfig2D& config) noexcept;
