@@ -79,8 +79,7 @@ namespace l2d
                                                PreparedSubmission2D* prepared) noexcept
         {
             sf::IntRect rectangle;
-            const SpriteBatchFailure2D rectangleFailure =
-                resolveTextureRect(submission, rectangle);
+            const SpriteBatchFailure2D rectangleFailure = resolveTextureRect(submission, rectangle);
             if (rectangleFailure != SpriteBatchFailure2D::None) return rectangleFailure;
 
             if (!finite(submission.position) || !finite(submission.scale) ||
@@ -95,21 +94,18 @@ namespace l2d
             const float width = static_cast<float>(rectangle.size.x);
             const float height = static_cast<float>(rectangle.size.y);
             const std::array<sf::Vector2f, SpriteBatch2D::VerticesPerSprite> localPositions = {
-                sf::Vector2f{0.f, 0.f}, sf::Vector2f{0.f, height},
-                sf::Vector2f{width, height}, sf::Vector2f{0.f, 0.f},
-                sf::Vector2f{width, height}, sf::Vector2f{width, 0.f}};
+                sf::Vector2f{0.f, 0.f}, sf::Vector2f{0.f, height},   sf::Vector2f{width, height},
+                sf::Vector2f{0.f, 0.f}, sf::Vector2f{width, height}, sf::Vector2f{width, 0.f}};
 
             const float left = static_cast<float>(rectangle.position.x);
             const float top = static_cast<float>(rectangle.position.y);
             const float right = static_cast<float>(rectangle.position.x + rectangle.size.x);
             const float bottom = static_cast<float>(rectangle.position.y + rectangle.size.y);
             const std::array<sf::Vector2f, SpriteBatch2D::VerticesPerSprite> textureCoordinates = {
-                sf::Vector2f{left, top}, sf::Vector2f{left, bottom},
-                sf::Vector2f{right, bottom}, sf::Vector2f{left, top},
-                sf::Vector2f{right, bottom}, sf::Vector2f{right, top}};
+                sf::Vector2f{left, top}, sf::Vector2f{left, bottom},  sf::Vector2f{right, bottom},
+                sf::Vector2f{left, top}, sf::Vector2f{right, bottom}, sf::Vector2f{right, top}};
 
-            const double radians =
-                static_cast<double>(submission.rotationDegrees) * Pi / 180.0;
+            const double radians = static_cast<double>(submission.rotationDegrees) * Pi / 180.0;
             const double cosine = std::cos(radians);
             const double sine = std::sin(radians);
 
@@ -279,8 +275,7 @@ namespace l2d
         for (std::size_t index = 0u; index < m_batches.size(); ++index)
         {
             const Batch& batch = m_batches[index];
-            if (!batch.texture)
-                return drawFailure(SpriteBatchFailure2D::TextureUnavailable, index);
+            if (!batch.texture) return drawFailure(SpriteBatchFailure2D::TextureUnavailable, index);
             if (batch.material && !batch.material->isComplete())
                 return drawFailure(SpriteBatchFailure2D::MaterialIncomplete, index);
         }
