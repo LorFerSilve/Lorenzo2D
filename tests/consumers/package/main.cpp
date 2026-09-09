@@ -197,8 +197,7 @@ int main()
                    joint.id() != l2d::InvalidJointId && checkedRenderPosition.has_value() &&
                    *checkedRenderPosition == position && cameraConfigured &&
                    shaderLayoutConfigured && shaderDefinition.uniformCount() == 1u &&
-                   materialConfigured &&
-                   checkedCompatibilityAction &&
+                   materialConfigured && checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0
