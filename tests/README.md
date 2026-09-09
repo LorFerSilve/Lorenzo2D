@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The focused regression executables use a small first-party harness. Thirty-six focused suites
+The focused regression executables use a small first-party harness. Thirty-seven focused suites
 share assertion and named-test execution support through `TestSupport.hpp`. The separately
 registered `Lorenzo2DStressValidation` and `Lorenzo2DFuzzValidation` executables are
 self-reporting Phase 11 runners. Stress validation supports standard/soak profiles and JSON output;
@@ -53,6 +53,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DSaveTests` | Versioned save JSON, workload limits, transactional file replacement, and malformed input | `headless` | 30 s |
 | `Lorenzo2DUiTests` | Button bounds, pointer transitions, capture, overlap ordering, and invalid input | `headless` | 30 s |
 | `Lorenzo2DAudioTests` | Null-device playback options, voice lifecycle, buses, and sound-buffer asset binding | `headless` | 30 s |
+| `Lorenzo2DMaterialTests` | Shader compilation/reload, uniform-layout validation, typed material state, blend configuration, and optional SpriteRenderer material binding | `xvfb` | 60 s |
 | `Lorenzo2DRendererTests` | Camera/transform numeric safety, contexts, projections, pass filtering, deterministic depth, sprite origins/flips, and physics independence | `xvfb` | 60 s |
 
 The previous broad regression targets mixed unrelated core, scene, physics,
