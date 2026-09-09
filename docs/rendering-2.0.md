@@ -304,6 +304,10 @@ their index but are skipped and do not contribute to `completedPasses`.
 Pipeline mutation is rejected while `execute()` is active. Recursive execution on the same pipeline
 returns `ReentrantExecution` instead of entering a second render traversal.
 
+Each pass also receives isolated target-view state: the target's incoming `sf::View` is restored when
+the pass exits, including callback failure and exception unwinding. A callback may apply a camera for
+its own draw work without leaking that view into later passes.
+
 ### Frame context and projection lifetime
 
 `RenderPipelineFrame2D` supplies interpolation alpha and an optional coordinate projection once per
