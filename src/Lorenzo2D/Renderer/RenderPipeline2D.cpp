@@ -4,6 +4,7 @@
 
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/View.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -50,6 +51,27 @@ namespace l2d
             result.completedPasses = completedPasses;
             return result;
         }
+
+        class ScopedRenderView2D final
+        {
+          public:
+            explicit ScopedRenderView2D(sf::RenderTarget& target)
+                : m_target(target), m_view(target.getView())
+            {
+            }
+
+            ~ScopedRenderView2D()
+            {
+                m_target.setView(m_view);
+            }
+
+            ScopedRenderView2D(const ScopedRenderView2D&) = delete;
+            ScopedRenderView2D& operator=(const ScopedRenderView2D&) = delete;
+
+          private:
+            sf::RenderTarget& m_target;
+            sf::View m_view;
+        };
     }
 
     std::string_view renderPipelineFailureName(RenderPipelineFailure2D failure) noexcept
@@ -376,6 +398,8 @@ namespace l2d
                                              result.completedPasses);
                     }
                 }
+
+                ScopedRenderView2D viewGuard(*target);
 
                 if (passConfig.clear.enabled)
                 {
