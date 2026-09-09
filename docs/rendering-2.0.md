@@ -272,3 +272,8 @@ single-owner graphics-thread/context operations. Config validation/default const
 
 Games must not retain `target()` or `texture()` pointers across successful reallocation/reset.
 Use the owning `RenderSurface2D` or `RenderSurface2DHandle` as the lifetime anchor.
+
+`RenderSurface2D` itself is intentionally neither copyable nor movable. Stable object identity keeps
+borrowed target/texture pointers and allocation-generation observers tied to one lifetime anchor;
+moving an allocated surface would otherwise invalidate those observers without an unambiguous
+monotonic generation transition.
