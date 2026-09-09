@@ -16,8 +16,7 @@ namespace l2d
     {
         ShaderPostProcessResult2D failureResult(
             ShaderPostProcessFailure2D failure,
-            std::optional<std::size_t> failedPass = std::nullopt,
-            std::size_t completedPasses = 0u)
+            std::optional<std::size_t> failedPass = std::nullopt, std::size_t completedPasses = 0u)
         {
             ShaderPostProcessResult2D result;
             result.failure = failure;

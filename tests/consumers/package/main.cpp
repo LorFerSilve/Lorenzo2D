@@ -183,8 +183,7 @@ int main()
     shaderPostProcessPass.name = "consumer-post-process";
     shaderPostProcessPass.material = std::make_shared<l2d::Material2D>();
     const bool shaderPostProcessConfigured =
-        shaderPostProcess.addPass(shaderPostProcessPass) &&
-        shaderPostProcess.passCount() == 1u &&
+        shaderPostProcess.addPass(shaderPostProcessPass) && shaderPostProcess.passCount() == 1u &&
         l2d::ShaderPostProcessChain2D::isValidPass(shaderPostProcessPass);
 
     l2d::InputSnapshot inputSnapshot;

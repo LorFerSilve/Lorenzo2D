@@ -51,10 +51,10 @@ void main()
     {
         auto shader = std::make_shared<l2d::Shader2D>();
         L2D_REQUIRE(shader->loadFragmentSource(TransformFragmentSource));
-        L2D_REQUIRE(shader->setUniformLayout(
-            {{"source_texture", l2d::ShaderUniformType2D::Texture, true},
-             {"scale_value", l2d::ShaderUniformType2D::Float, true},
-             {"bias_value", l2d::ShaderUniformType2D::Float, true}}));
+        L2D_REQUIRE(
+            shader->setUniformLayout({{"source_texture", l2d::ShaderUniformType2D::Texture, true},
+                                      {"scale_value", l2d::ShaderUniformType2D::Float, true},
+                                      {"bias_value", l2d::ShaderUniformType2D::Float, true}}));
         return shader;
     }
 
@@ -130,8 +130,7 @@ void main()
         L2D_REQUIRE(chain.pass(0u) != nullptr);
         L2D_REQUIRE(!chain.pass(0u)->enabled);
         L2D_REQUIRE(chain.removePass(0u));
-        L2D_REQUIRE_EQUAL(chain.passCount(),
-                          l2d::ShaderPostProcessChain2D::MaximumPassCount - 1u);
+        L2D_REQUIRE_EQUAL(chain.passCount(), l2d::ShaderPostProcessChain2D::MaximumPassCount - 1u);
 
         chain.clear();
         L2D_REQUIRE_EQUAL(chain.passCount(), 0u);
@@ -243,8 +242,7 @@ void main()
         L2D_REQUIRE(nearChannel(publishedPixel(destination).r, 96));
 
         L2D_REQUIRE(chain.movePass(1u, 0u));
-        const l2d::ShaderPostProcessResult2D reordered =
-            chain.apply(source, *destination.target());
+        const l2d::ShaderPostProcessResult2D reordered = chain.apply(source, *destination.target());
         L2D_REQUIRE(reordered.succeeded());
         L2D_REQUIRE(nearChannel(publishedPixel(destination).r, 64));
 
@@ -268,13 +266,11 @@ void main()
         const l2d::ShaderPostProcessResult2D feedback = chain.apply(source, *source.target());
         L2D_REQUIRE(feedback.failure == l2d::ShaderPostProcessFailure2D::FeedbackLoop);
 
-        L2D_REQUIRE_EQUAL(
-            l2d::shaderPostProcessFailureName(l2d::ShaderPostProcessFailure2D::None),
-            std::string_view("none"));
-        L2D_REQUIRE_EQUAL(
-            l2d::shaderPostProcessFailureName(
-                l2d::ShaderPostProcessFailure2D::WorkspacePublishFailed),
-            std::string_view("workspace-publish-failed"));
+        L2D_REQUIRE_EQUAL(l2d::shaderPostProcessFailureName(l2d::ShaderPostProcessFailure2D::None),
+                          std::string_view("none"));
+        L2D_REQUIRE_EQUAL(l2d::shaderPostProcessFailureName(
+                              l2d::ShaderPostProcessFailure2D::WorkspacePublishFailed),
+                          std::string_view("workspace-publish-failed"));
         L2D_REQUIRE_EQUAL(
             l2d::shaderPostProcessFailureName(static_cast<l2d::ShaderPostProcessFailure2D>(255)),
             std::string_view("unknown"));
