@@ -128,8 +128,9 @@ prevents render rounding from feeding back into simulation.
   explicit polling/commit point. AssetPipeline follows this rule: image decode may run in workers,
   while publication/watch/dependency state remains caller-thread work.
 - A failed load or configuration change must not partially replace the last valid state.
-- Level batch instantiation removes objects appended by a failed call without sweeping unrelated
-  pre-existing queued destruction.
+- Level batch instantiation snapshots pre-existing GameObject identities and removes Scene objects
+  created after that snapshot when the call fails; unrelated pre-existing queued destruction is not
+  swept merely by rollback.
 - Save-file writes stage output before replacing the previous file; failed loads leave the caller's
   destination document unchanged.
 
