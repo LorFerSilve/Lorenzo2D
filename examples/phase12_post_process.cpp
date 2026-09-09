@@ -99,7 +99,9 @@ class Phase12PostProcessExample final : public l2d::Application
                 [this](const l2d::RenderPipelineExecution2D& execution)
                 {
                     if (execution.inputs.size() != 1u) return false;
-                    return m_postProcess.apply(*execution.inputs.front(), execution.target).succeeded();
+                    const l2d::ShaderPostProcessResult2D result =
+                        m_postProcess.apply(*execution.inputs.front(), execution.target);
+                    return result.succeeded();
                 }))
         {
             throw std::runtime_error("Could not configure the post-process render pass");
