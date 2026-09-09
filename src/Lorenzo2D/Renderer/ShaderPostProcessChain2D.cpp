@@ -14,9 +14,10 @@ namespace l2d
 {
     namespace
     {
-        ShaderPostProcessResult2D failureResult(ShaderPostProcessFailure2D failure,
-                                                std::optional<std::size_t> failedPass = std::nullopt,
-                                                std::size_t completedPasses = 0u)
+        ShaderPostProcessResult2D failureResult(
+            ShaderPostProcessFailure2D failure,
+            std::optional<std::size_t> failedPass = std::nullopt,
+            std::size_t completedPasses = 0u)
         {
             ShaderPostProcessResult2D result;
             result.failure = failure;
@@ -247,8 +248,8 @@ namespace l2d
                 RenderSurface2D& workspace = *m_workspace[ordinal % 2u];
                 if (passConfig.clearOutput && !workspace.clear(passConfig.clearColor))
                 {
-                    return failureResult(ShaderPostProcessFailure2D::WorkspaceClearFailed, passIndex,
-                                         result.completedPasses);
+                    return failureResult(ShaderPostProcessFailure2D::WorkspaceClearFailed,
+                                         passIndex, result.completedPasses);
                 }
 
                 sf::RenderTarget* target = workspace.target();
@@ -287,8 +288,8 @@ namespace l2d
         return result;
     }
 
-    bool ShaderPostProcessChain2D::isPassNameAvailable(std::string_view name,
-                                                       std::optional<std::size_t> skip) const noexcept
+    bool ShaderPostProcessChain2D::isPassNameAvailable(
+        std::string_view name, std::optional<std::size_t> skip) const noexcept
     {
         for (std::size_t index = 0u; index < m_passes.size(); ++index)
         {
