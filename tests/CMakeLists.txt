@@ -380,3 +380,10 @@ l2d_add_regression_test(
     LABELS xvfb renderer render-pass pipeline offscreen phase12
     TIMEOUT 60
 )
+
+l2d_add_regression_test(
+    Lorenzo2DShaderPostProcessTests
+    SOURCE Lorenzo2DShaderPostProcessTests.cpp
+    LABELS xvfb renderer shader post-process phase12
+    TIMEOUT 60
+)

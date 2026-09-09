@@ -241,8 +241,9 @@ Non-finite positions and non-positive/non-finite explicit sizes are also rejecte
 `sf::RenderTarget&` overloads. Existing `sf::RenderWindow&` overloads remain source compatible
 and delegate to the generic target path.
 
-The legacy `PostProcessStack2D` is still only a color-overlay/fade stack. Shader-based full-screen
-post-processing belongs to the configurable pass/post-process slices that follow 12.2.
+The legacy `PostProcessStack2D` remains a color-overlay/fade stack. Phase 12.4 adds the separate
+`ShaderPostProcessChain2D` for full-screen shader passes, so existing lightweight fades do not
+inherit off-screen workspace or shader requirements.
 
 ### Scene/Component compatibility boundary
 
@@ -250,9 +251,8 @@ The 1.x `Component::onRender(sf::RenderWindow& ...)` virtual surface is intentio
 12.2. Replacing that signature with `sf::RenderTarget&` would break existing custom components.
 
 Therefore 12.2 establishes the off-screen resource/compositing contract without silently claiming
-that every existing Scene component can render into it. The next pass-orchestration slice must define
-an additive, explicit submission/migration boundary rather than skipping legacy custom renderers
-silently.
+that every existing Scene component can render into it. Phase 12.3 supplies the additive explicit
+pass-orchestration/legacy bridge rather than skipping custom renderers silently.
 
 ### Failure model
 
@@ -400,3 +400,111 @@ surfaces or mutate shared materials concurrently while execution is active.
 
 The caller still owns final backbuffer publication: `RenderPipeline2D` never calls
 `RenderWindow::display()` or an equivalent backbuffer display operation.
+
+## 12.4 Shader-based post-processing
+
+`ShaderPostProcessChain2D` adds a bounded, ordered full-screen shader path over the 12.1–12.3
+foundations. It consumes one already-published `RenderSurface2D` and writes the final result into any
+`sf::RenderTarget`, including the backbuffer or the output target of a `RenderPipeline2D` callback.
+
+This is deliberately separate from `PostProcessStack2D`. The legacy stack remains the lightweight
+screen-space color-overlay/fade API and does not allocate off-screen surfaces or require shader
+support.
+
+### Pass contract
+
+Each `ShaderPostProcessPass2D` contains:
+
+- a unique non-empty name bounded to 128 bytes;
+- one non-null `Material2DHandle`;
+- enabled/disabled state;
+- optional output clearing and a clear color.
+
+A chain contains at most 16 passes. Insertion order is execution order; `movePass()` is the explicit way to change that order. Structural configuration is CPU-only: a pass may be defined
+before its shader is compiled, but `apply()` rejects enabled passes whose material has no loaded
+shader or is incomplete.
+
+The source texture is the full-screen sprite's current texture. Post-process materials should bind
+their source sampler with `Material2D::setCurrentTexture()`. Other material texture uniforms remain
+available for auxiliary inputs such as noise or lookup textures.
+
+### Published source and no-pass behavior
+
+The source surface must be allocated and have `contentGeneration() > 0`, which means its current
+contents have been published through `RenderSurface2D::display()`. Reading directly from an
+unpublished render texture is rejected with `SourceUnpublished`.
+
+If every pass is disabled, the chain performs a full-screen overwrite copy. Pixel alpha may still reflect backend-specific render-target behavior on software OpenGL implementations.
+This gives callers one stable composition entry point even when an effect is toggled off.
+
+The source surface cannot also be the destination target. That read/write feedback is rejected before
+any draw submission.
+
+### Ping-pong workspace
+
+A single enabled shader pass renders directly into the destination and allocates no internal render
+surface. Two or more enabled passes lazily allocate at most two `RenderSurface2D` workspaces and
+alternate between them.
+
+Workspace properties follow the source pixel size and smoothing flag. Compatible allocations are
+reused across frames; a source-size/filter change causes transactional replacement before drawing.
+`resetWorkspace()` explicitly releases retained GPU resources.
+
+Intermediate passes are published with `display()` before their texture becomes the next pass's
+input. The final destination is not published by the chain: when that destination belongs to a
+`RenderSurface2D` pipeline pass, `RenderPipeline2D` remains responsible for its normal publication
+step.
+
+### Coordinate and view contract
+
+Full-screen work runs in the destination target's default view and scales the source texture to the
+destination pixel extent. The caller's incoming view is restored after every destination/workspace
+draw scope, including exception unwinding.
+
+Post-processing therefore operates in presentation pixels rather than world/projected coordinates.
+World camera/projection state belongs to the pass that produced the source surface.
+
+### Failure reporting
+
+`ShaderPostProcessResult2D` reports a stable failure enum, optional original pass index, and the
+number of fully completed enabled passes. `shaderPostProcessFailureName()` exposes stable diagnostic
+names.
+
+Important failures include:
+
+| Failure | Meaning |
+| --- | --- |
+| `InvalidPass` | an enabled pass no longer satisfies its structural contract |
+| `SourceUnavailable` | the input surface is not allocated |
+| `SourceUnpublished` | the input surface has no published generation |
+| `DestinationUnavailable` | the destination has zero pixel extent |
+| `FeedbackLoop` | source and destination are the same render target |
+| `ShaderUnavailable` | an enabled material has no loaded shader |
+| `MaterialIncomplete` | required/typed material state is incomplete |
+| `WorkspaceAllocationFailed` | a required ping-pong surface could not be allocated |
+| `WorkspaceClearFailed` | an intermediate target could not be cleared |
+| `MaterialApplyFailed` | material state could not be applied for a full-screen draw |
+| `WorkspacePublishFailed` | an intermediate render surface could not be published |
+
+Preflight validates source, destination, feedback, shader availability, and material completeness
+before workspace allocation or destination drawing. Once GPU draw submission starts, partial output
+is not transactionally reversible.
+
+### RenderPipeline2D integration
+
+A typical pipeline first renders new target-capable content into a `RenderSurface2D`, then declares
+that published surface as a read-only input of a backbuffer callback pass. The callback invokes
+`ShaderPostProcessChain2D::apply()` with the declared input and its supplied target.
+
+`Lorenzo2DPhase12PostProcessExample` demonstrates this exact public API path. The chain performs no
+dependency scheduling of its own; surface ordering and publication remain explicit in
+`RenderPipeline2D`.
+
+### Lifetime and concurrency
+
+Passes retain their `Material2DHandle` values. Materials in turn retain shader and texture leases
+according to the 12.1 contract. Internal workspace surfaces are owned by the chain until
+`resetWorkspace()` or destruction.
+
+Configuration, material mutation, workspace allocation, and `apply()` are a single-owner
+render-thread/context contract. Concurrent mutation/application is unsupported.

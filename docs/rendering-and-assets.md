@@ -151,7 +151,9 @@ The Phase 12.1 material path is intentionally not a render graph. Phase 12.2 add
 off-screen `RenderSurface2D` resources and generic-target camera/post-process overloads. Phase 12.3
 adds a bounded ordered `RenderPipeline2D`: explicit backbuffer/surface outputs, read-only published
 surface inputs, clear/present policies, and a dedicated RenderWindow+Scene compatibility bridge.
-It deliberately does not auto-schedule dependencies or change tilemap batching.
+Phase 12.4 adds `ShaderPostProcessChain2D` for ordered full-screen material/shader passes with
+bounded reusable ping-pong surfaces. None of these slices auto-schedule dependencies or change
+tilemap batching.
 
 ## Particles and post-processing
 
@@ -161,8 +163,15 @@ and color/size interpolation. A fixed seed makes effects reproducible in tests.
 
 `PostProcessStack2D` applies ordered alpha, additive, or multiply color passes
 in screen coordinates after scene rendering and restores the previous view.
-It is intentionally a lightweight color-grading/fade layer, not an off-screen
-shader graph.
+It remains the lightweight color-grading/fade layer and does not require an off-screen shader path.
 
-See `Lorenzo2DPhase4Example` for the Phase 4 systems and
+`ShaderPostProcessChain2D` is the separate Phase 12.4 path for shader-based full-screen effects. It
+consumes published `RenderSurface2D` content, executes up to 16 enabled material passes in explicit
+order, uses at most two lazily retained ping-pong surfaces for multi-pass effects, and restores the
+destination view. Materials normally bind the source sampler with
+`Material2D::setCurrentTexture()`. Source/destination feedback, unpublished inputs, unloaded
+shaders, incomplete materials, and workspace failures are reported explicitly.
+
+See `Lorenzo2DPhase4Example` for the lightweight overlay path,
+`Lorenzo2DPhase12PostProcessExample` for the shader/render-pipeline path, and
 [`isometric.md`](isometric.md) for the Phase 9 projection workflow.
