@@ -162,3 +162,11 @@ This slice does not yet implement:
 - 2D lighting.
 
 Those build on this material/state contract in later Phase 12 slices.
+
+## Validation portability
+
+The shader/material regression executable always validates CPU-side uniform-layout and public API
+behavior. Runtime GLSL compilation, material application, and pixel readback cases execute only when
+`Shader2D::isSupported()` is true. Linux/Xvfb CI provides the required shader-capable path and runs
+those GPU cases fully; a runner that exposes no shader capability reports those cases as skipped
+instead of treating unavailable hardware/runtime support as an engine failure.
