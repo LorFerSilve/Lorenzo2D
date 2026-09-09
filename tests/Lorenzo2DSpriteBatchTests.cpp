@@ -174,12 +174,10 @@ namespace
     {
         L2D_REQUIRE_EQUAL(l2d::spriteBatchFailureName(l2d::SpriteBatchFailure2D::None),
                           std::string_view("none"));
-        L2D_REQUIRE_EQUAL(
-            l2d::spriteBatchFailureName(l2d::SpriteBatchFailure2D::CapacityExceeded),
-            std::string_view("capacity-exceeded"));
-        L2D_REQUIRE_EQUAL(
-            l2d::spriteBatchFailureName(static_cast<l2d::SpriteBatchFailure2D>(255)),
-            std::string_view("unknown"));
+        L2D_REQUIRE_EQUAL(l2d::spriteBatchFailureName(l2d::SpriteBatchFailure2D::CapacityExceeded),
+                          std::string_view("capacity-exceeded"));
+        L2D_REQUIRE_EQUAL(l2d::spriteBatchFailureName(static_cast<l2d::SpriteBatchFailure2D>(255)),
+                          std::string_view("unknown"));
     }
 }
 
