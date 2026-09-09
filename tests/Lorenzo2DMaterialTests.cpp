@@ -68,8 +68,8 @@ void main()
         l2d::Shader2D shader;
         L2D_REQUIRE(!shader.loaded());
         L2D_REQUIRE(!shader.loadFragmentSource(""));
-        L2D_REQUIRE(!shader.loadFragmentSource(
-            std::string(l2d::Shader2D::MaximumSourceBytes + 1u, 'x')));
+        L2D_REQUIRE(
+            !shader.loadFragmentSource(std::string(l2d::Shader2D::MaximumSourceBytes + 1u, 'x')));
 
         L2D_REQUIRE(shader.loadFragmentSource(FragmentSource));
         L2D_REQUIRE(shader.loaded());
@@ -136,16 +136,15 @@ void main()
         L2D_REQUIRE(material.setInteger("mode_value", 2));
         L2D_REQUIRE(material.setBoolean("enabled_value", true));
         L2D_REQUIRE(material.setVector2("offset_value", {2.f, 3.f}));
-        L2D_REQUIRE(!material.setVector2(
-            "offset_value", {std::numeric_limits<float>::infinity(), 0.f}));
+        L2D_REQUIRE(
+            !material.setVector2("offset_value", {std::numeric_limits<float>::infinity(), 0.f}));
         L2D_REQUIRE(material.setVector3("direction_value", {1.f, 2.f, 3.f}));
         L2D_REQUIRE(material.setColor("tint_value", sf::Color(200, 160, 120, 255)));
         L2D_REQUIRE(material.setCurrentTexture("texture_value"));
         L2D_REQUIRE(material.isComplete());
         L2D_REQUIRE_EQUAL(material.uniformCount(), 7u);
         L2D_REQUIRE(material.uniformType("texture_value") ==
-                    std::optional<l2d::ShaderUniformType2D>(
-                        l2d::ShaderUniformType2D::Texture));
+                    std::optional<l2d::ShaderUniformType2D>(l2d::ShaderUniformType2D::Texture));
 
         const l2d::TextureHandle invalidTexture;
         L2D_REQUIRE(!material.setTexture("texture_value", invalidTexture));
@@ -185,8 +184,7 @@ void main()
         L2D_REQUIRE(!material.setShader(incompatibleShader));
         L2D_REQUIRE(material.shader() == firstShader);
         L2D_REQUIRE(material.uniformType("alpha_value") ==
-                    std::optional<l2d::ShaderUniformType2D>(
-                        l2d::ShaderUniformType2D::Float));
+                    std::optional<l2d::ShaderUniformType2D>(l2d::ShaderUniformType2D::Float));
 
         material.clearShader();
         L2D_REQUIRE(material.shader() == nullptr);
@@ -225,8 +223,8 @@ int main()
             testShaderSourceLoadingIsBoundedAndTransactional, failures);
     runTest("shader uniform layout validation is transactional",
             testShaderUniformLayoutValidationIsTransactional, failures);
-    runTest("material typed uniforms and completeness",
-            testMaterialTypedUniformsAndCompleteness, failures);
+    runTest("material typed uniforms and completeness", testMaterialTypedUniformsAndCompleteness,
+            failures);
     runTest("shader rebinding rejects incompatible material state",
             testShaderRebindingRejectsIncompatibleMaterialState, failures);
     runTest("sprite material binding is optional", testSpriteRendererMaterialBindingIsOptional,
