@@ -6,7 +6,7 @@
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Navigation/AStarPathfinder2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
-#include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+#include <Lorenzo2D/Renderer/RenderQueue2D.hpp>\n#include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
 
@@ -66,6 +66,13 @@ namespace l2d
     {
         addCount(counters, DiagnosticCounter::DrawCalls, stats.drawCallCount);
         addCount(counters, DiagnosticCounter::RenderedItems, stats.submittedTileCount);
+    }
+
+    void accumulateSpriteBatchDiagnostics(const SpriteBatchDrawResult2D& result,
+                                          DiagnosticCounters& counters)
+    {
+        addCount(counters, DiagnosticCounter::DrawCalls, result.drawCallCount);
+        addCount(counters, DiagnosticCounter::RenderedItems, result.renderedSpriteCount);
     }
 
     void accumulateAssetDiagnostics(const AssetManager& assets, DiagnosticCounters& counters)

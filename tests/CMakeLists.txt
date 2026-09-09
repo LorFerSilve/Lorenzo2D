@@ -387,3 +387,10 @@ l2d_add_regression_test(
     LABELS xvfb renderer shader post-process phase12
     TIMEOUT 60
 )
+
+l2d_add_regression_test(
+    Lorenzo2DSpriteBatchTests
+    SOURCE Lorenzo2DSpriteBatchTests.cpp
+    LABELS xvfb renderer batching atlas phase12
+    TIMEOUT 90
+)
