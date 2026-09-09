@@ -71,6 +71,17 @@ Validation includes:
 `apply(sf::RenderStates&)` refuses incomplete state and only publishes the new RenderStates after
 validation succeeds.
 
+Every declared uniform is written on every shader-backed material application. Omitted optional
+uniforms receive canonical defaults so materials sharing one shader cannot inherit state from a
+previous draw:
+
+- numeric scalars/vectors: zero;
+- boolean: `false`;
+- color: transparent black;
+- texture: the drawable's current texture.
+
+Games that need a different default should set that value explicitly on the material.
+
 ### Texture lifetime
 
 `setTexture()` stores a `TextureHandle`, so the texture lease remains alive with the material.
@@ -117,7 +128,8 @@ Calling `clearMaterial()` restores the original simple SpriteRenderer draw path.
 
 Shader compilation, material mutation, material application, and draw submission are a
 single-owner render-thread/context contract. Sharing a `Shader2D` between materials is supported:
-each material application writes its complete stored uniform set immediately before its draw.
+each material application writes every declared uniform—stored state or a canonical optional
+default—immediately before its draw.
 
 Applications must not concurrently mutate/apply materials sharing one shader without their own
 external synchronization and graphics-context discipline.
