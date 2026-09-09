@@ -508,3 +508,91 @@ according to the 12.1 contract. Internal workspace surfaces are owned by the cha
 
 Configuration, material mutation, workspace allocation, and `apply()` are a single-owner
 render-thread/context contract. Concurrent mutation/application is unsupported.
+
+## 12.5 Ordered sprite batching and atlas-friendly submission
+
+`SpriteBatch2D` adds an explicit opt-in batching path for sprite-heavy rendering without changing
+`SpriteRenderer`, `GameObject::render()`, or the existing deterministic render queue.
+
+The key rule is **adjacent compatibility only**. Submissions are never sorted or moved across another
+submission. Consecutive sprites are coalesced only when they retain the same texture lease and the
+same `Material2DHandle` identity. A later compatible sprite separated by a different texture or
+material starts a new batch instead of being moved backward. This preserves the caller's visible
+submission order and avoids changing component/render semantics in 1.x.
+
+### Submission contract
+
+Each `SpriteBatchSubmission2D` contains:
+
+- one valid `TextureHandle`;
+- an optional atlas `sf::IntRect`;
+- position, scale, origin, and rotation;
+- vertex color;
+- an optional `Material2DHandle`.
+
+The default zero-sized texture rectangle selects the complete texture. Explicit atlas rectangles must
+have a positive size, non-negative origin, and remain fully inside the retained texture. Transform
+inputs and the complete derived vertex positions must remain finite.
+
+The batch is bounded to 16,384 sprite submissions. Invalid submissions and capacity overflow are
+rejected before retained batch geometry or statistics are changed.
+
+### Geometry and atlas behavior
+
+Each accepted sprite is expanded into six triangle vertices. Atlas coordinates are written directly
+into those vertices, so different cells from the same texture can share one draw call. The public
+`Lorenzo2DPhase12BatchingExample` submits 200 alternating atlas cells into one batch.
+
+This slice does **not** generate atlases. It consumes already-existing texture atlases and therefore
+fits both hand-authored atlases and the planned Phase 14 content pipeline.
+
+### Materials and compatibility
+
+A null material uses normal SFML alpha blending. A non-null material is retained and must be complete.
+Material identity is intentionally conservative: two distinct material objects do not batch even when
+their current values happen to be equal.
+
+Material state is applied at `draw()` time. Mutating a retained material after submission but before
+`draw()` changes every queued batch that references that handle. Callers needing different material
+state must use different `Material2D` instances.
+
+Before the first draw call, `draw()` preflights every retained batch for texture/material
+availability. Once GPU submission begins, later backend/material failure cannot transactionally undo
+already completed draws.
+
+### Statistics and diagnostics
+
+`SpriteBatchStats2D` reports submission-side structural telemetry:
+
+- submitted sprites;
+- submitted vertices;
+- batch count;
+- texture switches;
+- material switches.
+
+`SpriteBatchDrawResult2D` reports completed batches, actual draw calls, and rendered sprites for one
+draw invocation. `accumulateSpriteBatchDiagnostics()` maps the actual draw-call and rendered-item
+counts into the existing Phase 11 diagnostic counters.
+
+The nightly benchmark suite records two directly comparable trend probes over the same 2,048 atlas
+sprites: individual SFML sprite draws and the one-batch `SpriteBatch2D` path. These measurements are
+trend artifacts, not hard correctness thresholds.
+
+### Failure reporting
+
+`SpriteBatchFailure2D` has stable names through `spriteBatchFailureName()`. Failures distinguish
+capacity overflow, missing textures, invalid atlas rectangles, invalid transforms, incomplete
+materials, unavailable destinations, and material application failures.
+
+### Lifetime, ordering, and concurrency
+
+The batch retains texture and material handles until `clear()` or destruction. Texture lifetime is
+therefore independent of the asset registry entry that originally supplied the handle.
+
+`SpriteBatch2D` is a single-owner render-thread/context abstraction. Submission, material mutation,
+drawing, and clearing must not race. The target's existing view is used as-is; unlike full-screen
+post-processing, sprite batching does not replace or restore camera state.
+
+The existing `SpriteRenderer` remains the simple component path. Games should use `SpriteBatch2D`
+where they can explicitly define a compatible ordered submission stream; no automatic Scene-level
+batch extraction is performed.
