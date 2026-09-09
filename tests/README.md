@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The focused regression executables use a small first-party harness. Forty focused suites
+The focused regression executables use a small first-party harness. Forty-one focused suites
 share assertion and named-test execution support through `TestSupport.hpp`. The separately
 registered `Lorenzo2DStressValidation` and `Lorenzo2DFuzzValidation` executables are
 self-reporting Phase 11 runners. Stress validation supports standard/soak profiles and JSON output;
@@ -57,6 +57,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DRenderSurfaceTests` | Bounded/transactional off-screen target allocation, pixel publication, surface compositing, self-feedback rejection, generic camera targeting, and post-process targeting | `xvfb` | 60 s |
 | `Lorenzo2DRenderPipelineTests` | Bounded pass configuration, deterministic ordering/reordering, preflight side-effect isolation, read-only surface dependencies, publish/present chaining, callback/reentrancy failure semantics, and the legacy Scene window bridge | `xvfb` | 60 s |
 | `Lorenzo2DShaderPostProcessTests` | Bounded shader-chain configuration, unpublished/input failure isolation, no-pass copy behavior, view restoration, full-screen shader pixels, deterministic multi-pass ping-pong ordering/reuse, feedback rejection, and stable failure names | `xvfb` | 60 s |
+| `Lorenzo2DSpriteBatchTests` | Bounded ordered submissions, atlas-rect validation, compatible coalescing, state-split ordering, pixel output, draw statistics, and stable failure names | `xvfb` | 90 s |
 | `Lorenzo2DRendererTests` | Camera/transform numeric safety, contexts, projections, pass filtering, deterministic depth, sprite origins/flips, and physics independence | `xvfb` | 60 s |
 
 The previous broad regression targets mixed unrelated core, scene, physics,
@@ -110,8 +111,8 @@ Every regression executable must declare exactly one runtime label:
 
 `Lorenzo2DAssetTests`, `Lorenzo2DAnimationTests`, `Lorenzo2DTilemapTests`,
 `Lorenzo2DSerializationTests`, `Lorenzo2DMaterialTests`, `Lorenzo2DRenderSurfaceTests`,
-`Lorenzo2DRenderPipelineTests`, `Lorenzo2DShaderPostProcessTests`, and
-`Lorenzo2DRendererTests` use the Xvfb partition because their current execution path may construct
+`Lorenzo2DRenderPipelineTests`, `Lorenzo2DShaderPostProcessTests`,
+`Lorenzo2DSpriteBatchTests`, and `Lorenzo2DRendererTests` use the Xvfb partition because their current execution path may construct
 or exercise SFML graphics resources. The remaining suites are executed with display variables
 removed.
 
