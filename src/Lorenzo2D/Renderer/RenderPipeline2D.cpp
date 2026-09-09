@@ -104,7 +104,7 @@ namespace l2d
             return false;
         }
 
-        if (!isValidRenderPass(pass.pass) || !isValidTarget(pass.target) ||
+        if (!isValidRenderPass(pass.contextPass) || !isValidTarget(pass.target) ||
             pass.inputs.size() > MaximumInputCount)
         {
             return false;
@@ -348,7 +348,34 @@ namespace l2d
 
                 sf::RenderTarget* target = &backbuffer;
                 if (passConfig.target == RenderPipelinePassTarget2D::Surface)
+                {
+                    if (!passConfig.surface->ready() || passConfig.surface->target() == nullptr ||
+                        passConfig.surface->texture() == nullptr)
+                    {
+                        m_executing = false;
+                        return failureResult(RenderPipelineFailure2D::SurfaceUnavailable, index,
+                                             result.completedPasses);
+                    }
+
                     target = passConfig.surface->target();
+                }
+
+                for (const RenderSurface2DConstHandle& input : passConfig.inputs)
+                {
+                    if (!input->ready() || input->target() == nullptr || input->texture() == nullptr)
+                    {
+                        m_executing = false;
+                        return failureResult(RenderPipelineFailure2D::InputUnavailable, index,
+                                             result.completedPasses);
+                    }
+
+                    if (input->target() == target)
+                    {
+                        m_executing = false;
+                        return failureResult(RenderPipelineFailure2D::FeedbackLoop, index,
+                                             result.completedPasses);
+                    }
+                }
 
                 if (passConfig.clear.enabled)
                 {
@@ -368,7 +395,7 @@ namespace l2d
                 }
 
                 const RenderContext2D context{
-                    frame.interpolationAlpha, frame.projection, passConfig.pass};
+                    frame.interpolationAlpha, frame.projection, passConfig.contextPass};
 
                 if (record.legacyScene)
                 {
