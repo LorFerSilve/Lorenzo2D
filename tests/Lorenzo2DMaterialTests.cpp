@@ -12,6 +12,7 @@
 
 #include "TestSupport.hpp"
 
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
@@ -60,6 +61,18 @@ void main()
 }
 )";
 
+    template <typename Function>
+    void runShaderRuntimeTest(const char* name, Function&& function, int& failures)
+    {
+        if (!l2d::Shader2D::isSupported())
+        {
+            std::cout << "[SKIP] " << name << ": shader runtime is unavailable on this runner\n";
+            return;
+        }
+
+        runTest(name, std::forward<Function>(function), failures);
+    }
+
     std::vector<l2d::ShaderUniformSpec2D> completeLayout()
     {
         return {
@@ -75,8 +88,6 @@ void main()
 
     void testShaderSourceLoadingIsBoundedAndTransactional()
     {
-        L2D_REQUIRE(l2d::Shader2D::isSupported());
-
         l2d::Shader2D shader;
         L2D_REQUIRE(!shader.loaded());
         L2D_REQUIRE(!shader.loadFragmentSource(""));
@@ -270,16 +281,16 @@ int main()
 {
     int failures = 0;
 
-    runTest("shader loading is bounded and transactional",
-            testShaderSourceLoadingIsBoundedAndTransactional, failures);
+    runShaderRuntimeTest("shader loading is bounded and transactional",
+                         testShaderSourceLoadingIsBoundedAndTransactional, failures);
     runTest("shader uniform layout validation is transactional",
             testShaderUniformLayoutValidationIsTransactional, failures);
-    runTest("material typed uniforms and completeness", testMaterialTypedUniformsAndCompleteness,
-            failures);
-    runTest("shared shader resets omitted optional uniforms",
-            testSharedShaderResetsOmittedOptionalUniforms, failures);
-    runTest("shader rebinding rejects incompatible material state",
-            testShaderRebindingRejectsIncompatibleMaterialState, failures);
+    runShaderRuntimeTest("material typed uniforms and completeness",
+                         testMaterialTypedUniformsAndCompleteness, failures);
+    runShaderRuntimeTest("shared shader resets omitted optional uniforms",
+                         testSharedShaderResetsOmittedOptionalUniforms, failures);
+    runShaderRuntimeTest("shader rebinding rejects incompatible material state",
+                         testShaderRebindingRejectsIncompatibleMaterialState, failures);
     runTest("sprite material binding is optional", testSpriteRendererMaterialBindingIsOptional,
             failures);
 
