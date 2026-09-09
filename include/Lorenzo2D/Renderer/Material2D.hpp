@@ -8,6 +8,8 @@
 #include <SFML/System/Vector3.hpp>
 
 #include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
