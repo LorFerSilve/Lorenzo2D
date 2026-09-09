@@ -5,6 +5,7 @@
 
 #include "RendererNumeric.hpp"
 
+#include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Angle.hpp>
 
@@ -172,6 +173,21 @@ namespace l2d
         return m_flippedY;
     }
 
+    void SpriteRenderer::setMaterial(Material2DHandle material)
+    {
+        m_material = std::move(material);
+    }
+
+    Material2DHandle SpriteRenderer::material() const noexcept
+    {
+        return m_material;
+    }
+
+    void SpriteRenderer::clearMaterial()
+    {
+        m_material.reset();
+    }
+
     sf::Vector2f SpriteRenderer::worldFootPoint(float interpolationAlpha) const
     {
         const GameObject* gameObject = owner();
@@ -233,6 +249,14 @@ namespace l2d
             sf::degrees(renderer_detail::normalizedRotationDegrees(state.rotation)));
 
         m_sprite.setScale(spriteState.scale);
+
+        if (m_material)
+        {
+            sf::RenderStates states;
+            if (!m_material->apply(states)) return;
+            window.draw(m_sprite, states);
+            return;
+        }
 
         window.draw(m_sprite);
     }
