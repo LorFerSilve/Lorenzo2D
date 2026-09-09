@@ -242,6 +242,49 @@ namespace
         scene.destroyQueuedGameObjects();
         L2D_REQUIRE_EQUAL(scene.gameObjectCount(), 0u);
     }
+
+    void testLevelRollbackSurvivesDecoderSceneSweep()
+    {
+        l2d::Scene scene;
+        l2d::GameObject& preQueued = scene.createGameObject("pre-queued");
+        preQueued.destroy();
+
+        l2d::ComponentCodecRegistry codecs;
+        L2D_REQUIRE(codecs.registerCodec(
+            "audit.sweep-failure", 1u,
+            [](const l2d::GameObject&) { return std::optional<std::string>("{}"); },
+            [&scene](l2d::GameObject& object, const std::string&)
+            {
+                scene.destroyQueuedGameObjects();
+                scene.createGameObject("decoder-side-effect");
+                object.addComponent<AuditMarker>();
+                return false;
+            }));
+
+        l2d::Prefab prefab;
+        prefab.name = "codec-sweep-failure";
+        prefab.customComponents.push_back({"audit.sweep-failure", 1u, true, "{}"});
+
+        l2d::LevelDocument level;
+        level.objects.push_back(prefab);
+
+        l2d::AssetManager assets;
+        bool rejected = false;
+        try
+        {
+            (void)l2d::LevelSerializer::instantiate(scene, level, assets, &codecs);
+        }
+        catch (const std::invalid_argument&)
+        {
+            rejected = true;
+        }
+
+        L2D_REQUIRE(rejected);
+        L2D_REQUIRE_EQUAL(scene.gameObjectCount(), 0u);
+        L2D_REQUIRE_EQUAL(scene.destroyQueuedGameObjectCount(), 0u);
+        L2D_REQUIRE(scene.findGameObjectByName("codec-sweep-failure") == nullptr);
+        L2D_REQUIRE(scene.findGameObjectByName("decoder-side-effect") == nullptr);
+    }
 }
 
 int main()
@@ -260,6 +303,8 @@ int main()
             testLevelInstantiationRollsBackPartialBatch, failures);
     runTest("level rollback preserves existing destroy queue",
             testLevelRollbackPreservesExistingDestroyQueue, failures);
+    runTest("level rollback survives decoder scene sweep",
+            testLevelRollbackSurvivesDecoderSceneSweep, failures);
 
     return failures == 0 ? 0 : 1;
 }
