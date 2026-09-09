@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderStates.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/View.hpp>
 
@@ -42,12 +43,12 @@ namespace l2d
         return index < m_passes.size() ? &m_passes[index] : nullptr;
     }
 
-    void PostProcessStack2D::apply(sf::RenderWindow& window) const
+    void PostProcessStack2D::apply(sf::RenderTarget& target) const
     {
-        const sf::View previousView = window.getView();
-        window.setView(window.getDefaultView());
+        const sf::View previousView = target.getView();
+        target.setView(target.getDefaultView());
         sf::RectangleShape overlay(
-            {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)});
+            {static_cast<float>(target.getSize().x), static_cast<float>(target.getSize().y)});
 
         for (const PostProcessPass2D& pass : m_passes)
         {
@@ -69,9 +70,14 @@ namespace l2d
                 break;
             }
 
-            window.draw(overlay, states);
+            target.draw(overlay, states);
         }
 
-        window.setView(previousView);
+        target.setView(previousView);
+    }
+
+    void PostProcessStack2D::apply(sf::RenderWindow& window) const
+    {
+        apply(static_cast<sf::RenderTarget&>(window));
     }
 }
