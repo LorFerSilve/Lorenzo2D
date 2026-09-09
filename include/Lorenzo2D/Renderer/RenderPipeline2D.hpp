@@ -125,8 +125,7 @@ namespace l2d
         [[nodiscard]] static bool isValidFrame(const RenderPipelineFrame2D& frame) noexcept;
         [[nodiscard]] static bool isValidPass(const RenderPipelinePass2D& pass) noexcept;
 
-        [[nodiscard]] bool addPass(RenderPipelinePass2D pass,
-                                   RenderPipelineCallback2D callback);
+        [[nodiscard]] bool addPass(RenderPipelinePass2D pass, RenderPipelineCallback2D callback);
         [[nodiscard]] bool addLegacyScenePass(RenderPipelinePass2D pass);
         [[nodiscard]] bool setPass(std::size_t index, RenderPipelinePass2D pass);
         [[nodiscard]] bool setPassEnabled(std::size_t index, bool enabled) noexcept;
@@ -142,15 +141,14 @@ namespace l2d
         // Generic execution supports callback passes against any SFML
         // backbuffer target. Pipelines containing a legacy Scene pass fail
         // preflight with LegacySceneRequired before drawing anything.
-        [[nodiscard]] RenderPipelineResult2D execute(
-            sf::RenderTarget& backbuffer, const RenderPipelineFrame2D& frame = {});
+        [[nodiscard]] RenderPipelineResult2D execute(sf::RenderTarget& backbuffer,
+                                                     const RenderPipelineFrame2D& frame = {});
 
         // Compatibility bridge for the existing Scene/Component
         // RenderWindow virtual contract. The Scene is borrowed only for this
         // call and is never retained by the pipeline.
-        [[nodiscard]] RenderPipelineResult2D execute(
-            sf::RenderWindow& window, Scene& legacyScene,
-            const RenderPipelineFrame2D& frame = {});
+        [[nodiscard]] RenderPipelineResult2D execute(sf::RenderWindow& window, Scene& legacyScene,
+                                                     const RenderPipelineFrame2D& frame = {});
 
       private:
         struct PassRecord
@@ -162,14 +160,14 @@ namespace l2d
 
         [[nodiscard]] bool isPassNameAvailable(std::string_view name,
                                                std::optional<std::size_t> skip) const noexcept;
-        [[nodiscard]] static bool isValidLegacyScenePass(
-            const RenderPipelinePass2D& pass) noexcept;
-        [[nodiscard]] RenderPipelineResult2D preflight(
-            sf::RenderTarget& backbuffer, bool legacySceneAvailable,
-            const RenderPipelineFrame2D& frame) const;
-        [[nodiscard]] RenderPipelineResult2D executeImpl(
-            sf::RenderTarget& backbuffer, sf::RenderWindow* legacyWindow, Scene* legacyScene,
-            const RenderPipelineFrame2D& frame);
+        [[nodiscard]] static bool isValidLegacyScenePass(const RenderPipelinePass2D& pass) noexcept;
+        [[nodiscard]] RenderPipelineResult2D preflight(sf::RenderTarget& backbuffer,
+                                                       bool legacySceneAvailable,
+                                                       const RenderPipelineFrame2D& frame) const;
+        [[nodiscard]] RenderPipelineResult2D executeImpl(sf::RenderTarget& backbuffer,
+                                                         sf::RenderWindow* legacyWindow,
+                                                         Scene* legacyScene,
+                                                         const RenderPipelineFrame2D& frame);
 
         std::vector<PassRecord> m_passes;
         bool m_executing = false;
