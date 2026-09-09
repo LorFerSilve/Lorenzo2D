@@ -183,7 +183,8 @@ namespace l2d
             return true;
         }
 
-        for (const auto& [name, value] : m_uniforms)
+        const auto applyValue =
+            [this](const std::string& name, const MaterialUniformValue2D& value)
         {
             std::visit(
                 [this, &name](const auto& typedValue)
@@ -212,6 +213,46 @@ namespace l2d
                     }
                 },
                 value);
+        };
+
+        const auto applyDefault = [this](const ShaderUniformSpec2D& spec)
+        {
+            switch (spec.type)
+            {
+            case ShaderUniformType2D::Float:
+                m_shader->m_shader.setUniform(spec.name, 0.f);
+                break;
+            case ShaderUniformType2D::Integer:
+                m_shader->m_shader.setUniform(spec.name, 0);
+                break;
+            case ShaderUniformType2D::Boolean:
+                m_shader->m_shader.setUniform(spec.name, false);
+                break;
+            case ShaderUniformType2D::Vector2:
+                m_shader->m_shader.setUniform(spec.name, sf::Vector2f{});
+                break;
+            case ShaderUniformType2D::Vector3:
+                m_shader->m_shader.setUniform(spec.name, sf::Vector3f{});
+                break;
+            case ShaderUniformType2D::Color:
+            {
+                const sf::Glsl::Vec4 transparent = sf::Color::Transparent;
+                m_shader->m_shader.setUniform(spec.name, transparent);
+                break;
+            }
+            case ShaderUniformType2D::Texture:
+                m_shader->m_shader.setUniform(spec.name, sf::Shader::CurrentTexture);
+                break;
+            }
+        };
+
+        for (const ShaderUniformSpec2D& spec : m_shader->uniformLayout())
+        {
+            const auto iterator = m_uniforms.find(spec.name);
+            if (iterator != m_uniforms.end())
+                applyValue(iterator->first, iterator->second);
+            else
+                applyDefault(spec);
         }
 
         next.shader = &m_shader->m_shader;
