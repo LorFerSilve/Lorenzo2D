@@ -75,6 +75,7 @@ namespace l2d
 
         // Complete means every required shader declaration has a compatible
         // material value and every stored value still matches the current layout.
+        // Omitted optional declarations receive canonical defaults at apply().
         [[nodiscard]] bool isComplete() const noexcept;
 
         // Transactionally updates RenderStates only after validation succeeds.
