@@ -434,7 +434,7 @@ The source surface must be allocated and have `contentGeneration() > 0`, which m
 contents have been published through `RenderSurface2D::display()`. Reading directly from an
 unpublished render texture is rejected with `SourceUnpublished`.
 
-If every pass is disabled, the chain performs an exact full-screen copy using overwrite blending.
+If every pass is disabled, the chain performs a full-screen overwrite copy. Pixel alpha may still reflect backend-specific render-target behavior on software OpenGL implementations.
 This gives callers one stable composition entry point even when an effect is toggled off.
 
 The source surface cannot also be the destination target. That read/write feedback is rejected before
