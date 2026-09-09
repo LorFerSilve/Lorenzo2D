@@ -24,6 +24,7 @@
 #include <Lorenzo2D/Renderer/IsometricProjection2D.hpp>
 #include <Lorenzo2D/Renderer/Material2D.hpp>
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
+#include <Lorenzo2D/Renderer/RenderPipeline2D.hpp>
 #include <Lorenzo2D/Renderer/RenderSurface2D.hpp>
 #include <Lorenzo2D/Renderer/Shader2D.hpp>
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
@@ -166,6 +167,16 @@ int main()
                                          renderSurface.target() == nullptr &&
                                          l2d::RenderSurface2D::isValidConfig(renderSurfaceConfig);
 
+    l2d::RenderPipeline2D renderPipeline;
+    l2d::RenderPipelinePass2D renderPipelinePass;
+    renderPipelinePass.name = "consumer-pass";
+    const bool renderPipelineConfigured =
+        renderPipeline.addPass(
+            renderPipelinePass,
+            [](const l2d::RenderPipelineExecution2D&) { return true; }) &&
+        renderPipeline.passCount() == 1u &&
+        l2d::RenderPipeline2D::isValidFrame(l2d::RenderPipelineFrame2D{});
+
     l2d::InputSnapshot inputSnapshot;
     l2d::InputMap inputMap(inputSnapshot);
     l2d::InputContextStack inputContexts(inputSnapshot);
@@ -204,7 +215,8 @@ int main()
                    joint.id() != l2d::InvalidJointId && checkedRenderPosition.has_value() &&
                    *checkedRenderPosition == position && cameraConfigured &&
                    shaderLayoutConfigured && shaderDefinition.uniformCount() == 1u &&
-                   materialConfigured && renderSurfaceConfigured && checkedCompatibilityAction &&
+                   materialConfigured && renderSurfaceConfigured &&
+                   renderPipelineConfigured && checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0
