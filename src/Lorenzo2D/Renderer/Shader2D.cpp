@@ -85,10 +85,10 @@ namespace l2d
 
     const ShaderUniformSpec2D* Shader2D::uniform(std::string_view name) const noexcept
     {
-        const auto iterator = std::lower_bound(
-            m_uniformLayout.begin(), m_uniformLayout.end(), name,
-            [](const ShaderUniformSpec2D& spec, std::string_view value)
-            { return std::string_view(spec.name) < value; });
+        const auto iterator =
+            std::lower_bound(m_uniformLayout.begin(), m_uniformLayout.end(), name,
+                             [](const ShaderUniformSpec2D& spec, std::string_view value)
+                             { return std::string_view(spec.name) < value; });
 
         if (iterator == m_uniformLayout.end() || std::string_view(iterator->name) != name)
             return nullptr;
