@@ -67,7 +67,7 @@ namespace
         L2D_REQUIRE(!l2d::RenderPipeline2D::isValidPass(pass));
 
         pass = backbufferPass("invalid-pass");
-        pass.pass = l2d::RenderPass2D::Count;
+        pass.contextPass = l2d::RenderPass2D::Count;
         L2D_REQUIRE(!l2d::RenderPipeline2D::isValidPass(pass));
 
         pass = backbufferPass("invalid-target");
@@ -311,7 +311,7 @@ namespace
 
         l2d::RenderPipeline2D pipeline;
         l2d::RenderPipelinePass2D legacy = backbufferPass("legacy-world");
-        legacy.pass = l2d::RenderPass2D::World;
+        legacy.contextPass = l2d::RenderPass2D::World;
         legacy.clear = {true, sf::Color::Black};
         L2D_REQUIRE(pipeline.addLegacyScenePass(std::move(legacy)));
         L2D_REQUIRE(pipeline.isLegacyScenePass(0u));
