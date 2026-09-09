@@ -78,9 +78,11 @@ namespace l2d
         [[nodiscard]] bool clear(sf::Color color = sf::Color::Black);
         [[nodiscard]] bool display();
 
-        // Draw the current surface texture into another render target. Natural
-        // pixel size is used when present.size is absent. Self-presentation is
-        // rejected to avoid read/write feedback on the same render texture.
+        // Draw the current surface texture into another render target.
+        // position/size use the destination target's current-view coordinates;
+        // natural pixel size is used when present.size is absent.
+        // Self-presentation is rejected to avoid read/write feedback on the
+        // same render texture.
         [[nodiscard]] bool present(sf::RenderTarget& destination,
                                    const RenderSurfacePresent2D& present = {}) const;
 
