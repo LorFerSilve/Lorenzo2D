@@ -98,4 +98,5 @@ namespace l2d
     };
 
     using RenderSurface2DHandle = std::shared_ptr<RenderSurface2D>;
+    using RenderSurface2DConstHandle = std::shared_ptr<const RenderSurface2D>;
 }
