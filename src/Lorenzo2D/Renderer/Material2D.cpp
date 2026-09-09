@@ -195,20 +195,20 @@ namespace l2d
                                   std::is_same_v<Value, sf::Vector2f> ||
                                   std::is_same_v<Value, sf::Vector3f>)
                     {
-                        m_shader->m_shader.setUniform(name, typedValue);
+                        m_shader->m_shader->setUniform(name, typedValue);
                     }
                     else if constexpr (std::is_same_v<Value, sf::Color>)
                     {
                         const sf::Glsl::Vec4 color = typedValue;
-                        m_shader->m_shader.setUniform(name, color);
+                        m_shader->m_shader->setUniform(name, color);
                     }
                     else if constexpr (std::is_same_v<Value, TextureHandle>)
                     {
-                        m_shader->m_shader.setUniform(name, *typedValue);
+                        m_shader->m_shader->setUniform(name, *typedValue);
                     }
                     else if constexpr (std::is_same_v<Value, MaterialCurrentTexture2D>)
                     {
-                        m_shader->m_shader.setUniform(name, sf::Shader::CurrentTexture);
+                        m_shader->m_shader->setUniform(name, sf::Shader::CurrentTexture);
                     }
                 },
                 value);
@@ -219,28 +219,28 @@ namespace l2d
             switch (spec.type)
             {
             case ShaderUniformType2D::Float:
-                m_shader->m_shader.setUniform(spec.name, 0.f);
+                m_shader->m_shader->setUniform(spec.name, 0.f);
                 break;
             case ShaderUniformType2D::Integer:
-                m_shader->m_shader.setUniform(spec.name, 0);
+                m_shader->m_shader->setUniform(spec.name, 0);
                 break;
             case ShaderUniformType2D::Boolean:
-                m_shader->m_shader.setUniform(spec.name, false);
+                m_shader->m_shader->setUniform(spec.name, false);
                 break;
             case ShaderUniformType2D::Vector2:
-                m_shader->m_shader.setUniform(spec.name, sf::Vector2f{});
+                m_shader->m_shader->setUniform(spec.name, sf::Vector2f{});
                 break;
             case ShaderUniformType2D::Vector3:
-                m_shader->m_shader.setUniform(spec.name, sf::Vector3f{});
+                m_shader->m_shader->setUniform(spec.name, sf::Vector3f{});
                 break;
             case ShaderUniformType2D::Color:
             {
                 const sf::Glsl::Vec4 transparent = sf::Color::Transparent;
-                m_shader->m_shader.setUniform(spec.name, transparent);
+                m_shader->m_shader->setUniform(spec.name, transparent);
                 break;
             }
             case ShaderUniformType2D::Texture:
-                m_shader->m_shader.setUniform(spec.name, sf::Shader::CurrentTexture);
+                m_shader->m_shader->setUniform(spec.name, sf::Shader::CurrentTexture);
                 break;
             }
         };
@@ -254,7 +254,7 @@ namespace l2d
                 applyDefault(spec);
         }
 
-        next.shader = &m_shader->m_shader;
+        next.shader = m_shader->m_shader.get();
         states = next;
         return true;
     }
