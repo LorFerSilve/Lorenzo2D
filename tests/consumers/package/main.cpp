@@ -188,9 +188,9 @@ int main()
         l2d::ShaderPostProcessChain2D::isValidPass(shaderPostProcessPass);
 
     l2d::SpriteBatch2D spriteBatch;
-    const bool spriteBatchConfigured =
-        spriteBatch.empty() && spriteBatch.submissionCount() == 0u &&
-        spriteBatch.batchCount() == 0u && spriteBatch.stats().submittedVertexCount == 0u;
+    const bool spriteBatchConfigured = spriteBatch.empty() && spriteBatch.submissionCount() == 0u &&
+                                       spriteBatch.batchCount() == 0u &&
+                                       spriteBatch.stats().submittedVertexCount == 0u;
 
     l2d::InputSnapshot inputSnapshot;
     l2d::InputMap inputMap(inputSnapshot);
