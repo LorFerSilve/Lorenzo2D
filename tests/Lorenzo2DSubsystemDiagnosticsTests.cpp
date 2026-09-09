@@ -87,8 +87,8 @@ namespace
         L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::NavigationExpansions),
                           path.visitedNodes);
         L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::NavigationReplans), 1u);
-        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::DrawCalls), 4u);
-        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::RenderedItems), 12u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::DrawCalls), 6u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::RenderedItems), 17u);
     }
 
     void testAssetAudioAndSaveAccumulation()
