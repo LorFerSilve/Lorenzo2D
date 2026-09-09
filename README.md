@@ -479,9 +479,12 @@ visual flips that do not mutate the gameplay Transform or collider.
 `ParticleEmitter2D` provides seeded, bounded bursts and continuous emission
 with lifetime, velocity, gravity, color, and size evolution.
 `PostProcessStack2D` applies ordered alpha/add/multiply screen-space color
-passes after scene rendering. See
-[`docs/rendering-and-assets.md`](docs/rendering-and-assets.md) for the complete
-contracts and integration order.
+passes after scene rendering. Phase 12 also provides `Shader2D`, `Material2D`,
+`RenderSurface2D`, `RenderPipeline2D`, and `ShaderPostProcessChain2D` for explicit off-screen
+shader effects without changing the simple rendering path. See
+[`docs/rendering-2.0.md`](docs/rendering-2.0.md) and
+[`docs/rendering-and-assets.md`](docs/rendering-and-assets.md) for the complete contracts and
+integration order.
 
 ## Asset lifetime
 
