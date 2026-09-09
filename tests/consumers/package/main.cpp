@@ -162,9 +162,9 @@ int main()
 
     l2d::RenderSurface2D renderSurface;
     const l2d::RenderSurfaceConfig2D renderSurfaceConfig{{320u, 180u}, false, false};
-    const bool renderSurfaceConfigured =
-        !renderSurface.ready() && renderSurface.target() == nullptr &&
-        l2d::RenderSurface2D::isValidConfig(renderSurfaceConfig);
+    const bool renderSurfaceConfigured = !renderSurface.ready() &&
+                                         renderSurface.target() == nullptr &&
+                                         l2d::RenderSurface2D::isValidConfig(renderSurfaceConfig);
 
     l2d::InputSnapshot inputSnapshot;
     l2d::InputMap inputMap(inputSnapshot);
@@ -204,8 +204,7 @@ int main()
                    joint.id() != l2d::InvalidJointId && checkedRenderPosition.has_value() &&
                    *checkedRenderPosition == position && cameraConfigured &&
                    shaderLayoutConfigured && shaderDefinition.uniformCount() == 1u &&
-                   materialConfigured && renderSurfaceConfigured &&
-                   checkedCompatibilityAction &&
+                   materialConfigured && renderSurfaceConfigured && checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0
