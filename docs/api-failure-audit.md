@@ -95,19 +95,22 @@ Level parsing was already transactional, but scene instantiation had two failure
 2. the asset-aware rollback called `Scene::destroyQueuedGameObjects()`, which could also sweep
    unrelated objects that had been queued before instantiation.
 
-Phase 11.8 records the pre-call scene append boundary and uses an internal targeted rollback:
+Phase 11.8 records the pre-call set of stable `GameObjectId` values and uses an internal
+identity-based rollback:
 
-- every object appended by the failed level call is removed/queued for rollback;
+- every Scene object created after the snapshot is removed/queued if the level call fails;
+- rollback remains correct if a custom decoder destroys/sweeps pre-existing objects and compacts the
+  Scene container;
 - objects that existed before the call are not swept merely because level instantiation failed;
 - both asset-free and asset-aware batch overloads use the same policy.
 
 During an active Scene dispatch, physical destruction remains deferred until the normal dispatch
 boundary. This preserves the Scene mutation rules.
 
-A custom component decoder can still cause arbitrary side effects outside the newly-created object
-(for example by modifying external state captured by the decoder). Lorenzo2D cannot generically undo
-such external effects. Decoder authors are responsible for making those side effects transactional
-when required.
+A custom component decoder can still cause arbitrary side effects outside Scene object creation
+(for example by modifying external state captured by the decoder, or explicitly destroying an
+existing Scene object). Lorenzo2D cannot generically undo or resurrect such external/pre-existing
+effects. Decoder authors are responsible for making those side effects transactional when required.
 
 ### Borrowed Scene and component references
 
@@ -214,7 +217,9 @@ them with migration guidance.
 - checked RenderContext projection failures;
 - checked Camera2D rejection;
 - asset-free batch instantiation rollback;
-- preservation of an unrelated pre-existing Scene destroy queue during codec failure.
+- preservation of an unrelated pre-existing Scene destroy queue during codec failure;
+- identity-stable rollback when a decoder sweeps that queue, compacts the Scene, creates another
+  Scene object, and then rejects the component.
 
 The installed-package and add-subdirectory consumers also compile and execute the additive checked
 APIs.
