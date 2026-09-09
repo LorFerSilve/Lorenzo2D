@@ -14,6 +14,27 @@ namespace l2d
 {
     namespace
     {
+        class RenderTargetViewRestore final
+        {
+          public:
+            explicit RenderTargetViewRestore(sf::RenderTarget& target)
+                : m_target(target), m_view(target.getView())
+            {
+            }
+
+            ~RenderTargetViewRestore()
+            {
+                m_target.setView(m_view);
+            }
+
+            RenderTargetViewRestore(const RenderTargetViewRestore&) = delete;
+            RenderTargetViewRestore& operator=(const RenderTargetViewRestore&) = delete;
+
+          private:
+            sf::RenderTarget& m_target;
+            sf::View m_view;
+        };
+
         bool isValidRenderPass(RenderPass2D pass) noexcept
         {
             switch (pass)
@@ -398,6 +419,8 @@ namespace l2d
                 }
 
                 ScopedRenderView2D viewGuard(*target);
+
+                RenderTargetViewRestore restoreView(*target);
 
                 if (passConfig.clear.enabled)
                 {
