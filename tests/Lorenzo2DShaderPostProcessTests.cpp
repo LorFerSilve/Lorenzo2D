@@ -172,7 +172,7 @@ void main()
     {
         l2d::RenderSurface2D source;
         l2d::RenderSurface2D destination;
-        createPublishedSurface(source, {2u, 2u}, sf::Color(23, 91, 177, 129));
+        createPublishedSurface(source, {2u, 2u}, sf::Color(23, 91, 177));
         createPublishedSurface(destination, {4u, 4u}, sf::Color::Black);
 
         sf::View custom = destination.target()->getView();
@@ -188,8 +188,8 @@ void main()
 
         L2D_REQUIRE(destination.display());
         const sf::Image image = destination.texture()->copyToImage();
-        L2D_REQUIRE_EQUAL(image.getPixel({0u, 0u}), sf::Color(23, 91, 177, 129));
-        L2D_REQUIRE_EQUAL(image.getPixel({3u, 3u}), sf::Color(23, 91, 177, 129));
+        L2D_REQUIRE_EQUAL(image.getPixel({0u, 0u}), sf::Color(23, 91, 177));
+        L2D_REQUIRE_EQUAL(image.getPixel({3u, 3u}), sf::Color(23, 91, 177));
     }
 
     void testSinglePassAppliesShaderFullscreen()
