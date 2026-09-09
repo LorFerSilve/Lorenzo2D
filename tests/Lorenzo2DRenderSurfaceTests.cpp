@@ -187,13 +187,14 @@ int main()
 {
     int failures = 0;
 
-    runTest("render surface validation is CPU-only", testRenderSurfaceValidationIsCpuOnly, failures);
+    runTest("render surface validation is CPU-only", testRenderSurfaceValidationIsCpuOnly,
+            failures);
     runTest("render surface creation and failure are transactional",
             testRenderSurfaceCreationAndFailureAreTransactional, failures);
     runTest("render surface draw and display publish pixels",
             testRenderSurfaceDrawAndDisplayPublishPixels, failures);
-    runTest("render surface presentation chains targets", testRenderSurfacePresentationChainsTargets,
-            failures);
+    runTest("render surface presentation chains targets",
+            testRenderSurfacePresentationChainsTargets, failures);
     runTest("camera and post-process use generic render target",
             testCameraAndPostProcessUseGenericRenderTarget, failures);
 
