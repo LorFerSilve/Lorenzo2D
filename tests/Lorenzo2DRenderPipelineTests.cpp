@@ -7,6 +7,7 @@
 #include <SFML/Graphics/Image.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/View.hpp>
 #include <SFML/Window/VideoMode.hpp>
 
 #include "TestSupport.hpp"
@@ -146,6 +147,41 @@ namespace
         L2D_REQUIRE_EQUAL(order.size(), 2u);
         L2D_REQUIRE_EQUAL(order[0], 3);
         L2D_REQUIRE_EQUAL(order[1], 2);
+    }
+
+    void testPassViewStateIsRestored()
+    {
+        l2d::RenderSurface2D backbuffer;
+        L2D_REQUIRE(backbuffer.create({{8u, 8u}, false, false}));
+
+        const sf::View initialView = backbuffer.target()->getView();
+        bool secondSawInitialView = false;
+
+        l2d::RenderPipeline2D pipeline;
+        L2D_REQUIRE(pipeline.addPass(
+            backbufferPass("change-view"),
+            [](const l2d::RenderPipelineExecution2D& execution)
+            {
+                sf::View changed = execution.target.getView();
+                changed.setCenter({123.f, 456.f});
+                execution.target.setView(changed);
+                return true;
+            }));
+        L2D_REQUIRE(pipeline.addPass(
+            backbufferPass("verify-view"),
+            [&initialView, &secondSawInitialView](const l2d::RenderPipelineExecution2D& execution)
+            {
+                secondSawInitialView =
+                    execution.target.getView().getCenter() == initialView.getCenter() &&
+                    execution.target.getView().getSize() == initialView.getSize();
+                return true;
+            }));
+
+        const l2d::RenderPipelineResult2D result = pipeline.execute(*backbuffer.target());
+        L2D_REQUIRE(result.succeeded());
+        L2D_REQUIRE(secondSawInitialView);
+        L2D_REQUIRE_EQUAL(backbuffer.target()->getView().getCenter(), initialView.getCenter());
+        L2D_REQUIRE_EQUAL(backbuffer.target()->getView().getSize(), initialView.getSize());
     }
 
     void testPreflightRejectsUnavailableOutputBeforeDrawing()
@@ -359,6 +395,7 @@ int main()
             failures);
     runTest("pipeline order disable and move are deterministic",
             testPipelineOrderDisableAndMoveAreDeterministic, failures);
+    runTest("pass view state is restored", testPassViewStateIsRestored, failures);
     runTest("preflight rejects unavailable output before drawing",
             testPreflightRejectsUnavailableOutputBeforeDrawing, failures);
     runTest("surface inputs publish and present in order", testSurfaceInputsPublishAndPresentInOrder,
