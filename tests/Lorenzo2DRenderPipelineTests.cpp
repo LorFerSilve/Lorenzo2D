@@ -7,6 +7,7 @@
 #include <SFML/Graphics/Image.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #include <SFML/Graphics/View.hpp>
 #include <SFML/Window/VideoMode.hpp>
 
@@ -94,7 +95,8 @@ namespace
         for (std::size_t index = 0u; index < l2d::RenderPipeline2D::MaximumPassCount; ++index)
         {
             L2D_REQUIRE(pipeline.addPass(backbufferPass("pass-" + std::to_string(index)),
-                                         [](const l2d::RenderPipelineExecution2D&) { return true; }));
+                                         [](const l2d::RenderPipelineExecution2D&)
+                                         { return true; }));
         }
 
         L2D_REQUIRE_EQUAL(pipeline.passCount(), l2d::RenderPipeline2D::MaximumPassCount);
@@ -158,15 +160,14 @@ namespace
         bool secondSawInitialView = false;
 
         l2d::RenderPipeline2D pipeline;
-        L2D_REQUIRE(pipeline.addPass(
-            backbufferPass("change-view"),
-            [](const l2d::RenderPipelineExecution2D& execution)
-            {
-                sf::View changed = execution.target.getView();
-                changed.setCenter({123.f, 456.f});
-                execution.target.setView(changed);
-                return true;
-            }));
+        L2D_REQUIRE(pipeline.addPass(backbufferPass("change-view"),
+                                     [](const l2d::RenderPipelineExecution2D& execution)
+                                     {
+                                         sf::View changed = execution.target.getView();
+                                         changed.setCenter({123.f, 456.f});
+                                         execution.target.setView(changed);
+                                         return true;
+                                     }));
         L2D_REQUIRE(pipeline.addPass(
             backbufferPass("verify-view"),
             [&initialView, &secondSawInitialView](const l2d::RenderPipelineExecution2D& execution)
@@ -232,8 +233,8 @@ namespace
         firstPass.target = l2d::RenderPipelinePassTarget2D::Surface;
         firstPass.surface = first;
         firstPass.clear = {true, sf::Color::Red};
-        L2D_REQUIRE(pipeline.addPass(
-            std::move(firstPass), [](const l2d::RenderPipelineExecution2D&) { return true; }));
+        L2D_REQUIRE(pipeline.addPass(std::move(firstPass),
+                                     [](const l2d::RenderPipelineExecution2D&) { return true; }));
 
         l2d::RenderPipelinePass2D secondPass = backbufferPass("copy-and-present");
         secondPass.target = l2d::RenderPipelinePassTarget2D::Surface;
@@ -244,13 +245,12 @@ namespace
         secondPass.present.presentation.position = {1.f, 1.f};
         secondPass.present.presentation.size = sf::Vector2f{2.f, 2.f};
 
-        L2D_REQUIRE(pipeline.addPass(
-            std::move(secondPass),
-            [](const l2d::RenderPipelineExecution2D& execution)
-            {
-                return execution.inputs.size() == 1u &&
-                       execution.inputs[0]->present(execution.target);
-            }));
+        L2D_REQUIRE(pipeline.addPass(std::move(secondPass),
+                                     [](const l2d::RenderPipelineExecution2D& execution)
+                                     {
+                                         return execution.inputs.size() == 1u &&
+                                                execution.inputs[0]->present(execution.target);
+                                     }));
 
         const l2d::RenderPipelineResult2D result = pipeline.execute(*backbuffer.target());
         L2D_REQUIRE(result.succeeded());
@@ -278,13 +278,12 @@ namespace
         pass.inputs.push_back(input);
 
         l2d::RenderPipeline2D pipeline;
-        L2D_REQUIRE(pipeline.addPass(
-            std::move(pass),
-            [&executed](const l2d::RenderPipelineExecution2D&)
-            {
-                executed = true;
-                return true;
-            }));
+        L2D_REQUIRE(pipeline.addPass(std::move(pass),
+                                     [&executed](const l2d::RenderPipelineExecution2D&)
+                                     {
+                                         executed = true;
+                                         return true;
+                                     }));
 
         const l2d::RenderPipelineResult2D unpublished = pipeline.execute(*backbuffer.target());
         L2D_REQUIRE(unpublished.failure == l2d::RenderPipelineFailure2D::InputUnavailable);
@@ -310,8 +309,7 @@ namespace
 
         L2D_REQUIRE(pipeline.addPass(
             backbufferPass("failing"),
-            [&pipeline, &nested, &mutationRejected](
-                const l2d::RenderPipelineExecution2D& execution)
+            [&pipeline, &nested, &mutationRejected](const l2d::RenderPipelineExecution2D& execution)
             {
                 nested = pipeline.execute(execution.target);
                 mutationRejected =
@@ -321,13 +319,12 @@ namespace
                 return false;
             }));
 
-        L2D_REQUIRE(pipeline.addPass(
-            backbufferPass("later"),
-            [&laterExecuted](const l2d::RenderPipelineExecution2D&)
-            {
-                laterExecuted = true;
-                return true;
-            }));
+        L2D_REQUIRE(pipeline.addPass(backbufferPass("later"),
+                                     [&laterExecuted](const l2d::RenderPipelineExecution2D&)
+                                     {
+                                         laterExecuted = true;
+                                         return true;
+                                     }));
 
         const l2d::RenderPipelineResult2D result = pipeline.execute(*backbuffer.target());
 
@@ -391,19 +388,19 @@ int main()
 {
     int failures = 0;
 
-    runTest("pipeline validation and limits are CPU-only", testPipelineValidationAndLimitsAreCpuOnly,
-            failures);
+    runTest("pipeline validation and limits are CPU-only",
+            testPipelineValidationAndLimitsAreCpuOnly, failures);
     runTest("pipeline order disable and move are deterministic",
             testPipelineOrderDisableAndMoveAreDeterministic, failures);
     runTest("pass view state is restored", testPassViewStateIsRestored, failures);
     runTest("preflight rejects unavailable output before drawing",
             testPreflightRejectsUnavailableOutputBeforeDrawing, failures);
-    runTest("surface inputs publish and present in order", testSurfaceInputsPublishAndPresentInOrder,
-            failures);
+    runTest("surface inputs publish and present in order",
+            testSurfaceInputsPublishAndPresentInOrder, failures);
     runTest("external input requires published content", testExternalInputRequiresPublishedContent,
             failures);
-    runTest("callback failure and reentrancy are bounded", testCallbackFailureAndReentrancyAreBounded,
-            failures);
+    runTest("callback failure and reentrancy are bounded",
+            testCallbackFailureAndReentrancyAreBounded, failures);
     runTest("legacy scene bridge requires window and dispatches",
             testLegacySceneBridgeRequiresWindowAndDispatches, failures);
     runTest("failure names are stable", testFailureNamesAreStable, failures);
