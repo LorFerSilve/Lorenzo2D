@@ -114,6 +114,11 @@ namespace l2d
 
         bool addLayer(TileMapLayer layer);
         bool replaceLayer(std::size_t index, TileMapLayer layer);
+
+        // Mutable layer access is retained for 1.x compatibility and can
+        // bypass addLayer()/replaceLayer() validation. Callers using these
+        // escape hatches must restore a valid document before consumption and
+        // should verify isValid(); prefer the checked mutators for new code.
         TileMapLayer* layer(std::size_t index);
         const TileMapLayer* layer(std::size_t index) const;
         std::vector<TileMapLayer>& layers();
@@ -127,6 +132,8 @@ namespace l2d
         bool setTile(std::size_t layerIndex, std::size_t row, std::size_t column, TileId tile,
                      TileFlipFlags flags = TileFlipFlags::None);
 
+        // Property values are unconstrained metadata and do not alter the
+        // dimensional invariants enforced by the checked tile/layer mutators.
         PropertyMap& properties();
         const PropertyMap& properties() const;
 

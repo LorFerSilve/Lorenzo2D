@@ -93,12 +93,18 @@ namespace l2d
         updateViewSize();
     }
 
-    void Camera2D::setCenter(sf::Vector2f center)
+    bool Camera2D::trySetCenter(sf::Vector2f center)
     {
-        if (!renderer_detail::isSafeCameraPosition(center)) return;
+        if (!renderer_detail::isSafeCameraPosition(center)) return false;
 
         m_center = clampedCenter(center);
         m_view.setCenter(m_center);
+        return true;
+    }
+
+    void Camera2D::setCenter(sf::Vector2f center)
+    {
+        (void)trySetCenter(center);
     }
 
     const sf::Vector2f& Camera2D::center() const
@@ -106,17 +112,22 @@ namespace l2d
         return m_center;
     }
 
-    void Camera2D::move(sf::Vector2f offset)
+    bool Camera2D::tryMove(sf::Vector2f offset)
     {
         sf::Vector2f nextCenter;
 
         if (!checkedCameraSum(m_center.x, offset.x, nextCenter.x) ||
             !checkedCameraSum(m_center.y, offset.y, nextCenter.y))
         {
-            return;
+            return false;
         }
 
-        setCenter(nextCenter);
+        return trySetCenter(nextCenter);
+    }
+
+    void Camera2D::move(sf::Vector2f offset)
+    {
+        (void)tryMove(offset);
     }
 
     void Camera2D::setSize(sf::Vector2f size)
@@ -157,19 +168,15 @@ namespace l2d
         return m_followSmoothness;
     }
 
-    void Camera2D::follow(sf::Vector2f target, float deltaTime)
+    bool Camera2D::tryFollow(sf::Vector2f target, float deltaTime)
     {
         if (!renderer_detail::isSafeCameraPosition(target) || !std::isfinite(deltaTime) ||
             deltaTime <= 0.f)
         {
-            return;
+            return false;
         }
 
-        if (m_followSmoothness <= 0.f)
-        {
-            setCenter(target);
-            return;
-        }
+        if (m_followSmoothness <= 0.f) return trySetCenter(target);
 
         const double exponent =
             static_cast<double>(m_followSmoothness) * static_cast<double>(deltaTime);
@@ -183,24 +190,32 @@ namespace l2d
                                (static_cast<double>(target.y) - static_cast<double>(m_center.y)) *
                                    t)};
 
-        setCenter(newCenter);
+        return trySetCenter(newCenter);
     }
 
-    void Camera2D::setBounds(sf::Vector2f min, sf::Vector2f max)
+    void Camera2D::follow(sf::Vector2f target, float deltaTime)
+    {
+        (void)tryFollow(target, deltaTime);
+    }
+
+    bool Camera2D::trySetBounds(sf::Vector2f min, sf::Vector2f max)
     {
         if (!renderer_detail::isSafeCameraPosition(min) ||
             !renderer_detail::isSafeCameraPosition(max))
         {
-            return;
+            return false;
         }
 
         m_boundsMin = {std::min(min.x, max.x), std::min(min.y, max.y)};
-
         m_boundsMax = {std::max(min.x, max.x), std::max(min.y, max.y)};
-
         m_hasBounds = true;
+        (void)trySetCenter(m_center);
+        return true;
+    }
 
-        setCenter(m_center);
+    void Camera2D::setBounds(sf::Vector2f min, sf::Vector2f max)
+    {
+        (void)trySetBounds(min, max);
     }
 
     void Camera2D::clearBounds()

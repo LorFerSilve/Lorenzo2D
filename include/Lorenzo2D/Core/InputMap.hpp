@@ -23,9 +23,19 @@ namespace l2d
     {
       public:
         InputMap() = default;
+
+        // InputMap borrows the snapshot; the referenced object must outlive
+        // this map. Rvalues are rejected so a temporary cannot leave a
+        // dangling snapshot pointer.
         explicit InputMap(const InputSnapshot& snapshot) noexcept;
+        InputMap(InputSnapshot&&) = delete;
+        InputMap(const InputSnapshot&&) = delete;
 
         void setSnapshot(const InputSnapshot& snapshot) noexcept;
+        void setSnapshot(InputSnapshot&&) = delete;
+        void setSnapshot(const InputSnapshot&&) = delete;
+        void clearSnapshot() noexcept;
+        [[nodiscard]] bool hasSnapshot() const noexcept;
 
         bool bindButton(const std::string& actionName, InputCode inputCode);
         bool bindAxis1D(const std::string& actionName, InputCode negative, InputCode positive);

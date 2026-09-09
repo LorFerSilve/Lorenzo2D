@@ -15,10 +15,13 @@ namespace l2d
       public:
         explicit Camera2D(sf::Vector2f size = {1280.f, 720.f});
 
-        // Nonfinite or out-of-domain coordinates are rejected.
+        // Nonfinite or out-of-domain coordinates are rejected. Checked
+        // variants report rejection; legacy void adapters remain compatible.
+        [[nodiscard]] bool trySetCenter(sf::Vector2f center);
         void setCenter(sf::Vector2f center);
         const sf::Vector2f& center() const;
 
+        [[nodiscard]] bool tryMove(sf::Vector2f offset);
         void move(sf::Vector2f offset);
 
         // Each axis is kept finite and positive. Extreme values are clamped
@@ -33,9 +36,11 @@ namespace l2d
         void setFollowSmoothness(float smoothness);
         float followSmoothness() const;
 
+        [[nodiscard]] bool tryFollow(sf::Vector2f target, float deltaTime);
         void follow(sf::Vector2f target, float deltaTime);
 
         // Invalid bounds are rejected without changing the current bounds.
+        [[nodiscard]] bool trySetBounds(sf::Vector2f min, sf::Vector2f max);
         void setBounds(sf::Vector2f min, sf::Vector2f max);
         void clearBounds();
 

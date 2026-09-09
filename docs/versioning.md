@@ -47,6 +47,11 @@ The following are compatibility surfaces:
 Private headers under `src`, test helpers, sandbox implementation details, and benchmark scenario
 internals are not public API.
 
+Phase 11.8 audited every installed header in the 1.x package. The resulting hardening uses additive
+checked APIs, compile-time rejection of invalid temporary lifetimes, internal transactionality
+fixes, and documentation; no public 1.x symbol was removed. See
+[api-failure-audit.md](api-failure-audit.md).
+
 ## Persisted-data compatibility
 
 Persisted engine envelopes carry their own format versions. Game save schemas carry a separate

@@ -14,9 +14,19 @@ namespace l2d
     {
       public:
         InputContextStack() = default;
+
+        // The stack and every owned InputMap borrow this snapshot. The source
+        // must outlive the stack; rvalues are rejected to prevent dangling
+        // snapshot pointers.
         explicit InputContextStack(const InputSnapshot& snapshot) noexcept;
+        InputContextStack(InputSnapshot&&) = delete;
+        InputContextStack(const InputSnapshot&&) = delete;
 
         void setSnapshot(const InputSnapshot& snapshot) noexcept;
+        void setSnapshot(InputSnapshot&&) = delete;
+        void setSnapshot(const InputSnapshot&&) = delete;
+        void clearSnapshot() noexcept;
+        [[nodiscard]] bool hasSnapshot() const noexcept;
 
         InputMap& createContext(const std::string& contextName);
         bool removeContext(const std::string& contextName);

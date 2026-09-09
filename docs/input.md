@@ -30,7 +30,12 @@ button or axis cannot remain stuck; reconnecting starts from neutral state.
 
 ## Typed actions
 
-Attach an `InputMap` to the application-owned snapshot and bind buttons or axes:
+Attach an `InputMap` to the application-owned snapshot and bind buttons or axes. The map borrows
+the snapshot: the source object must outlive the map while attached. Temporary snapshots are
+rejected at compile time. `hasSnapshot()` and `clearSnapshot()` make attachment explicit; an
+`InputContextStack` applies the same borrowed lifetime to every owned map.
+
+Bind buttons or axes:
 
 ```cpp
 l2d::InputMap gameplay(l2d::Input::snapshot());
@@ -105,5 +110,7 @@ The conversion accounts for camera transforms, viewports, and the current render
 
 `Input`, `Mouse`, and `ActionMap` remain available as adapters for the 0.5 line. Their limited
 `Key` and `MouseButton` enums are deprecated by policy but do not emit compiler diagnostics yet,
-because the project treats warnings as errors. New game code should use `InputCode`, `InputMap`,
+because the project treats warnings as errors. `ActionMap::tryBindAction()` and
+`tryClearAction()` expose invalid compatibility bindings; the original void methods retain their
+legacy ignore-the-result behavior. New game code should use `InputCode`, `InputMap`,
 `InputContextStack`, and `Pointer`.

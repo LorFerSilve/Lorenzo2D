@@ -60,7 +60,10 @@ rigid bodies, the shared character motor, top-down/grid-step/platformer controll
 tuning, and
 box/circle/capsule/convex-polygon colliders. Sprite textures and animation clips
 are stable `AssetId` strings. Instantiate asset-backed documents with an `AssetManager`; a missing
-required asset rejects and rolls back the complete operation.
+required asset rejects and rolls back the complete operation. Batch instantiation snapshots
+pre-existing `GameObjectId` values and removes Scene objects created after that snapshot on failure,
+so rollback remains stable even if a codec compacts the Scene by sweeping queued destruction.
+Pre-existing queued objects are not swept merely because the level call fails.
 
 ## Custom component codecs
 
@@ -68,6 +71,12 @@ required asset rejects and rolls back the complete operation.
 any JSON value and is delivered to codecs as compact JSON text. Unknown optional records are
 skipped, while an unknown required record or a failing decoder rejects instantiation. This keeps
 saved component versions explicit and prevents silent interpretation of a newer schema.
+
+A decoder receives a mutable newly-created `GameObject`. `LevelSerializer::instantiate()` removes
+the level-created batch when a decoder rejects it, but direct
+`ComponentCodecRegistry::decode()` cannot generically undo arbitrary decoder side effects.
+Decoder code that mutates external/captured state must make those external effects transactional
+itself.
 
 ```cpp
 l2d::ComponentCodecRegistry codecs;

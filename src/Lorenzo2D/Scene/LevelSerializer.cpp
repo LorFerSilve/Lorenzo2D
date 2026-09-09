@@ -1001,13 +1001,22 @@ namespace l2d
             throw std::invalid_argument("Cannot instantiate an invalid level document.");
         }
 
+        const std::vector<GameObjectId> preservedIds = scene.snapshotGameObjectIds();
         std::vector<GameObjectHandle> handles;
         handles.reserve(level.objects.size());
 
-        for (const Prefab& prefab : level.objects)
+        try
         {
-            GameObject& object = instantiatePrefab(scene, prefab);
-            handles.push_back(scene.createHandle(object));
+            for (const Prefab& prefab : level.objects)
+            {
+                GameObject& object = instantiatePrefab(scene, prefab);
+                handles.push_back(scene.createHandle(object));
+            }
+        }
+        catch (...)
+        {
+            scene.rollbackToGameObjectSnapshot(preservedIds);
+            throw;
         }
 
         return handles;
@@ -1021,6 +1030,7 @@ namespace l2d
         if (!isValidLevel(level))
             throw std::invalid_argument("Cannot instantiate an invalid level document.");
 
+        const std::vector<GameObjectId> preservedIds = scene.snapshotGameObjectIds();
         std::vector<GameObjectHandle> handles;
         handles.reserve(level.objects.size());
 
@@ -1048,9 +1058,7 @@ namespace l2d
         }
         catch (...)
         {
-            for (const GameObjectHandle& handle : handles)
-                if (GameObject* object = handle.get()) object->destroy();
-            scene.destroyQueuedGameObjects();
+            scene.rollbackToGameObjectSnapshot(preservedIds);
             throw;
         }
 

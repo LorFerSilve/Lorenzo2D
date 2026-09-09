@@ -2,14 +2,24 @@
 
 namespace l2d
 {
+    bool ActionMap::tryBindAction(const std::string& actionName, Key key)
+    {
+        return m_inputMap.bindButton(actionName, Input::code(key));
+    }
+
+    bool ActionMap::tryClearAction(const std::string& actionName)
+    {
+        return m_inputMap.clearAction(actionName);
+    }
+
     void ActionMap::bindAction(const std::string& actionName, Key key)
     {
-        m_inputMap.bindButton(actionName, Input::code(key));
+        (void)tryBindAction(actionName, key);
     }
 
     void ActionMap::clearAction(const std::string& actionName)
     {
-        m_inputMap.clearAction(actionName);
+        (void)tryClearAction(actionName);
     }
 
     void ActionMap::clearAll()

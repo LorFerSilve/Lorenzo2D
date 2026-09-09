@@ -14,6 +14,7 @@
 
 namespace l2d
 {
+    class LevelSerializer;
     class PhysicsWorld2D;
     struct RenderContext2D;
     class SceneManager;
@@ -33,6 +34,9 @@ namespace l2d
         const std::string& name() const;
         const std::string& getName() const;
 
+        // References and raw pointers returned by Scene are borrowed and are
+        // invalidated when their object is destroyed or the Scene is cleared.
+        // Use GameObjectHandle when identity must survive deferred work.
         GameObject& createGameObject(const std::string& name = "GameObject");
 
         GameObjectHandle createHandle(GameObject& gameObject);
@@ -77,6 +81,8 @@ namespace l2d
         void beginDispatch();
         void endDispatch();
         void destroyQueuedGameObjectsImmediately();
+        std::vector<GameObjectId> snapshotGameObjectIds() const;
+        void rollbackToGameObjectSnapshot(const std::vector<GameObjectId>& preservedIds);
         void advanceFixedUpdateGeneration();
         bool isFixedStepParticipant(const GameObject& gameObject) const;
 
@@ -94,6 +100,7 @@ namespace l2d
         std::shared_ptr<detail::SceneHandleState> m_handleState;
         SceneManager* m_ownerManager = nullptr;
 
+        friend class LevelSerializer;
         friend class PhysicsWorld2D;
         friend class SceneManager;
         friend class TileMap;

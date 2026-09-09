@@ -27,7 +27,10 @@ namespace l2d
         std::size_t size() const;
 
         // Unknown optional components are skipped. Unknown required codecs and
-        // decoder failures reject the object.
+        // decoder failures reject the object. A decoder receives a mutable
+        // object; direct decode() cannot generically undo arbitrary decoder
+        // side effects on failure. LevelSerializer::instantiate() removes the
+        // newly-created level batch when decoding rejects it.
         bool decode(GameObject& object, const SerializedComponentPrefab& component) const;
         std::optional<SerializedComponentPrefab> encode(const GameObject& object,
                                                         const std::string& type,
