@@ -36,9 +36,8 @@ namespace l2d
     {
     };
 
-    using MaterialUniformValue2D =
-        std::variant<float, int, bool, sf::Vector2f, sf::Vector3f, sf::Color, TextureHandle,
-                     MaterialCurrentTexture2D>;
+    using MaterialUniformValue2D = std::variant<float, int, bool, sf::Vector2f, sf::Vector3f,
+                                                sf::Color, TextureHandle, MaterialCurrentTexture2D>;
 
     // Explicit per-draw shader state. Material2D owns sampler texture leases and
     // validates every typed setter against the Shader2D uniform layout.
@@ -71,8 +70,8 @@ namespace l2d
 
         [[nodiscard]] std::size_t uniformCount() const noexcept;
         [[nodiscard]] const MaterialUniformValue2D* uniform(std::string_view name) const noexcept;
-        [[nodiscard]] std::optional<ShaderUniformType2D>
-        uniformType(std::string_view name) const noexcept;
+        [[nodiscard]] std::optional<ShaderUniformType2D> uniformType(
+            std::string_view name) const noexcept;
 
         // Complete means every required shader declaration has a compatible
         // material value and every stored value still matches the current layout.
@@ -88,8 +87,8 @@ namespace l2d
                                       MaterialUniformValue2D value);
         [[nodiscard]] bool uniformMatchesLayout(std::string_view name,
                                                 ShaderUniformType2D type) const noexcept;
-        [[nodiscard]] static std::optional<ShaderUniformType2D>
-        typeOf(const MaterialUniformValue2D& value) noexcept;
+        [[nodiscard]] static std::optional<ShaderUniformType2D> typeOf(
+            const MaterialUniformValue2D& value) noexcept;
         [[nodiscard]] static bool isFinite(sf::Vector2f value) noexcept;
         [[nodiscard]] static bool isFinite(sf::Vector3f value) noexcept;
 
