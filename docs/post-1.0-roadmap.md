@@ -228,9 +228,14 @@ render graph.
   state, required-uniform completeness, blend configuration, and transactional RenderStates
   publication. `SpriteRenderer` can opt into a material while retaining the original simple draw
   path when no material is bound. Focused xvfb regressions and package-consumer coverage are included.
-- Remaining Phase 12 work includes render targets/off-screen rendering, configurable pass
-  orchestration, shader post-processing, batching/atlas paths, camera/layer composition, render
-  statistics, examples, and measured batching benchmarks.
+- **12.2 Render surfaces/off-screen foundation:** public `RenderSurface2D` adds bounded
+  transactional off-screen allocation, borrowed target/texture access, generation tracking, and
+  material-aware compositing into any SFML render target. Camera and the legacy post-process overlay
+  gain additive generic-target overloads. Scene/Component's existing RenderWindow virtual contract
+  remains unchanged until pass orchestration can provide an explicit migration boundary.
+- Remaining Phase 12 work includes configurable pass orchestration, shader post-processing,
+  batching/atlas paths, camera/layer composition, render statistics, examples, and measured batching
+  benchmarks.
 
 ### Scope
 
@@ -647,7 +652,8 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-Continue **Phase 12 — Rendering 2.0** after the shader/material foundation with the render-target and
-off-screen rendering slice. That target abstraction should be established before configurable
-multi-pass composition and shader-based post-processing, so later batching/statistics work can
-measure a stable submission model.
+Continue **Phase 12 — Rendering 2.0** with **12.3 configurable render-pass orchestration**. The
+shader/material and off-screen surface foundations now exist; the next slice should define explicit
+pass inputs/outputs, ordering, clear/present policy, and a backward-compatible boundary for legacy
+RenderWindow-based Scene/component rendering before shader post-processing chains are layered on
+top.

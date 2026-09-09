@@ -7,6 +7,7 @@
 
 namespace sf
 {
+    class RenderTarget;
     class RenderWindow;
 }
 
@@ -38,6 +39,7 @@ namespace l2d
 
         std::size_t passCount() const;
         const PostProcessPass2D* pass(std::size_t index) const;
+        void apply(sf::RenderTarget& target) const;
         void apply(sf::RenderWindow& window) const;
 
       private:

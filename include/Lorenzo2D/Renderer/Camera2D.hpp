@@ -5,6 +5,7 @@
 
 namespace sf
 {
+    class RenderTarget;
     class RenderWindow;
 }
 
@@ -48,6 +49,7 @@ namespace l2d
         const sf::Vector2f& boundsMin() const;
         const sf::Vector2f& boundsMax() const;
 
+        void applyTo(sf::RenderTarget& target) const;
         void applyTo(sf::RenderWindow& window) const;
 
         const sf::View& view() const;

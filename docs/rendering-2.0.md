@@ -170,3 +170,110 @@ behavior. Runtime GLSL compilation, material application, and pixel readback cas
 `Shader2D::isSupported()` is true. Linux/Xvfb CI provides the required shader-capable path and runs
 those GPU cases fully; a runner that exposes no shader capability reports those cases as skipped
 instead of treating unavailable hardware/runtime support as an engine failure.
+
+## 12.2 Render surfaces and off-screen rendering
+
+`RenderSurface2D` is the first explicit off-screen target resource in Rendering 2.0. It owns one
+SFML render texture and exposes:
+
+- bounded, transactionally-created pixel storage;
+- a borrowed `sf::RenderTarget*` for drawing;
+- a borrowed output `sf::Texture*` after `display()`;
+- allocation/content generations;
+- surface-to-target presentation with optional `Material2D` state.
+
+Construction and config validation are CPU-only. The graphics backend is allocated only by
+`create()`.
+
+### Bounded allocation
+
+The initial public envelope is:
+
+- maximum dimension: 8,192 pixels per axis;
+- maximum pixel count: 33,554,432 pixels.
+
+Both limits are validated before touching the graphics backend. Actual GPU/driver limits may be
+lower; backend creation can therefore still fail. Such failure is transactional and preserves the
+previous valid surface, config, texture, and generation.
+
+A successful replacement increments `allocationGeneration()` and resets
+`contentGeneration()`. `reset()` invalidates the current allocation and advances the allocation
+generation. Generations saturate instead of wrapping.
+
+### Drawing and publication
+
+A typical frame is:
+
+```cpp
+l2d::RenderSurface2D surface;
+surface.create({{1280u, 720u}, false, false});
+
+surface.clear(sf::Color::Black);
+surface.target()->draw(drawable);
+surface.display();
+```
+
+`display()` is the publication boundary for the texture contents and increments
+`contentGeneration()`. The target/texture pointers are borrowed and become invalid after a
+successful `create()` replacement or `reset()`.
+
+### Compositing
+
+`present()` draws the published surface texture into any `sf::RenderTarget`, including another
+`RenderSurface2D` target. Presentation supports:
+
+- destination position;
+- optional destination size/scaling;
+- vertex color modulation;
+- optional `Material2D`.
+
+Presentation position and explicit size are expressed in the destination target's **current-view
+coordinates**. Callers that need pixel-space composition should set/use the destination default view
+for that operation.
+
+This makes surface chaining possible before the configurable pass system exists. Presenting a
+surface into its own target is rejected to avoid read/write feedback on the same texture.
+Non-finite positions and non-positive/non-finite explicit sizes are also rejected.
+
+### Camera and lightweight post-process targeting
+
+`Camera2D::applyTo()` and `PostProcessStack2D::apply()` now have additive
+`sf::RenderTarget&` overloads. Existing `sf::RenderWindow&` overloads remain source compatible
+and delegate to the generic target path.
+
+The legacy `PostProcessStack2D` is still only a color-overlay/fade stack. Shader-based full-screen
+post-processing belongs to the configurable pass/post-process slices that follow 12.2.
+
+### Scene/Component compatibility boundary
+
+The 1.x `Component::onRender(sf::RenderWindow& ...)` virtual surface is intentionally unchanged in
+12.2. Replacing that signature with `sf::RenderTarget&` would break existing custom components.
+
+Therefore 12.2 establishes the off-screen resource/compositing contract without silently claiming
+that every existing Scene component can render into it. The next pass-orchestration slice must define
+an additive, explicit submission/migration boundary rather than skipping legacy custom renderers
+silently.
+
+### Failure model
+
+| Operation | Failure behavior |
+| --- | --- |
+| invalid surface size/config | returns `false`; current allocation preserved |
+| GPU/backend creation failure | returns `false`; current allocation preserved |
+| clear/display without allocation | returns `false` |
+| invalid present transform | returns `false`; destination untouched |
+| incomplete presentation material | returns `false`; destination untouched |
+| self-presentation feedback | returns `false` |
+
+### Concurrency and lifetime
+
+Surface creation, destruction, draw submission, `display()`, and presentation are
+single-owner graphics-thread/context operations. Config validation/default construction are CPU-only.
+
+Games must not retain `target()` or `texture()` pointers across successful reallocation/reset.
+Use the owning `RenderSurface2D` or `RenderSurface2DHandle` as the lifetime anchor.
+
+`RenderSurface2D` itself is intentionally neither copyable nor movable. Stable object identity keeps
+borrowed target/texture pointers and allocation-generation observers tied to one lifetime anchor;
+moving an allocated surface would otherwise invalidate those observers without an unambiguous
+monotonic generation transition.
