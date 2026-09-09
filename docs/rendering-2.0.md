@@ -227,6 +227,10 @@ successful `create()` replacement or `reset()`.
 - vertex color modulation;
 - optional `Material2D`.
 
+Presentation position and explicit size are expressed in the destination target's **current-view
+coordinates**. Callers that need pixel-space composition should set/use the destination default view
+for that operation.
+
 This makes surface chaining possible before the configurable pass system exists. Presenting a
 surface into its own target is rejected to avoid read/write feedback on the same texture.
 Non-finite positions and non-positive/non-finite explicit sizes are also rejected.
