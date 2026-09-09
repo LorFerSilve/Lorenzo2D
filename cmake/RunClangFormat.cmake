@@ -42,13 +42,6 @@ foreach(l2d_file IN LISTS l2d_format_files)
 
     if(NOT l2d_result EQUAL 0)
         list(APPEND l2d_format_failures "${l2d_file}")
-        if(l2d_file MATCHES "(Lorenzo2DRenderSurfaceTests\\.cpp|consumers/(package|subproject)/main\\.cpp)$")
-            execute_process(
-                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" "${l2d_file}"
-                OUTPUT_VARIABLE l2d_formatted_output
-            )
-            message(STATUS "L2D_FORMATTED_BEGIN:${l2d_file}\n${l2d_formatted_output}L2D_FORMATTED_END:${l2d_file}")
-        endif()
     endif()
 endforeach()
 
