@@ -27,8 +27,8 @@ done is satisfied, not merely to match a version target.
 
 | Phase | Scope | Status |
 | --- | --- | --- |
-| 11 | production hardening, diagnostics, profiling, fuzzing, stress validation, and CI policy | In progress |
-| 12 | rendering 2.0: shaders, materials, render targets, batching, post-processing, and render diagnostics | Planned |
+| 11 | production hardening, diagnostics, profiling, fuzzing, stress validation, and CI policy | Complete |
+| 12 | rendering 2.0: shaders, materials, render targets, batching, post-processing, and render diagnostics | In progress |
 | 13 | tooling and editor foundation using installed public engine API | Planned |
 | 14 | content pipeline 2.0: asset metadata, import/cook pipeline, dependency graph, and rebuild cache | Planned |
 | 15 | gameplay framework and scripting boundary | Planned |
@@ -238,8 +238,13 @@ render graph.
   inputs, clear/present policies, full-sequence preflight before side effects, stable failure
   reporting, reentrancy/mutation guards, and an explicit RenderWindow+Scene compatibility bridge for
   legacy Component rendering. The pipeline deliberately performs no automatic dependency scheduling.
-- Remaining Phase 12 work includes shader post-processing, batching/atlas paths, camera/layer
-  composition, render statistics, examples, and measured batching benchmarks.
+- **12.4 Shader-based post-processing:** public `ShaderPostProcessChain2D` adds bounded ordered
+  full-screen shader passes over published `RenderSurface2D` input, lazy reusable ping-pong
+  workspaces, explicit preflight/failure reporting, deterministic pass reordering/enabling, and
+  direct `RenderPipeline2D` integration. The lightweight `PostProcessStack2D` color-overlay path
+  remains available unchanged, and a public Phase 12 example demonstrates the new workflow.
+- Remaining Phase 12 work includes batching/atlas paths, camera/layer composition, render statistics,
+  and measured batching benchmarks.
 
 ### Scope
 
@@ -656,7 +661,8 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-Continue **Phase 12 — Rendering 2.0** with **12.4 shader-based post-processing**. The shader/material,
-off-screen surface, and ordered pass foundations now provide explicit published inputs and outputs;
-the next slice should add full-screen shader passes/chains without replacing the existing lightweight
-color-overlay stack, and include at least one public post-processing example.
+Continue **Phase 12 — Rendering 2.0** with **12.5 batching and atlas-friendly submission**. The
+shader/material, off-screen, ordered-pass, and full-screen post-processing paths now form a coherent
+presentation pipeline; the next slice should reduce draw-call/state-switch cost for compatible
+sprites and tiles while preserving deterministic ordering, simple non-material rendering, and
+measurable diagnostics.
