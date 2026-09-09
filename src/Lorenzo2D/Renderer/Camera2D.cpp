@@ -2,6 +2,7 @@
 
 #include "RendererNumeric.hpp"
 
+#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 
 #include <algorithm>
@@ -238,9 +239,14 @@ namespace l2d
         return m_boundsMax;
     }
 
+    void Camera2D::applyTo(sf::RenderTarget& target) const
+    {
+        target.setView(m_view);
+    }
+
     void Camera2D::applyTo(sf::RenderWindow& window) const
     {
-        window.setView(m_view);
+        applyTo(static_cast<sf::RenderTarget&>(window));
     }
 
     const sf::View& Camera2D::view() const
