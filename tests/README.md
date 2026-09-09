@@ -1,6 +1,6 @@
 # Lorenzo2D regression tests
 
-The focused regression executables use a small first-party harness. Thirty-eight focused suites
+The focused regression executables use a small first-party harness. Thirty-nine focused suites
 share assertion and named-test execution support through `TestSupport.hpp`. The separately
 registered `Lorenzo2DStressValidation` and `Lorenzo2DFuzzValidation` executables are
 self-reporting Phase 11 runners. Stress validation supports standard/soak profiles and JSON output;
@@ -55,6 +55,7 @@ timeouts are centralized in `tests/CMakeLists.txt`.
 | `Lorenzo2DAudioTests` | Null-device playback options, voice lifecycle, buses, and sound-buffer asset binding | `headless` | 30 s |
 | `Lorenzo2DMaterialTests` | Shader compilation/reload, uniform-layout validation, typed material state, shared-shader reset behavior, blend configuration, and optional SpriteRenderer material binding; GPU cases self-skip when the runner reports no shader capability | `xvfb` | 60 s |
 | `Lorenzo2DRenderSurfaceTests` | Bounded/transactional off-screen target allocation, pixel publication, surface compositing, self-feedback rejection, generic camera targeting, and post-process targeting | `xvfb` | 60 s |
+| `Lorenzo2DRenderPipelineTests` | Bounded pass configuration, deterministic ordering/reordering, preflight side-effect isolation, read-only surface dependencies, publish/present chaining, callback/reentrancy failure semantics, and the legacy Scene window bridge | `xvfb` | 60 s |
 | `Lorenzo2DRendererTests` | Camera/transform numeric safety, contexts, projections, pass filtering, deterministic depth, sprite origins/flips, and physics independence | `xvfb` | 60 s |
 
 The previous broad regression targets mixed unrelated core, scene, physics,

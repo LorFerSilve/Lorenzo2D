@@ -233,9 +233,13 @@ render graph.
   material-aware compositing into any SFML render target. Camera and the legacy post-process overlay
   gain additive generic-target overloads. Scene/Component's existing RenderWindow virtual contract
   remains unchanged until pass orchestration can provide an explicit migration boundary.
-- Remaining Phase 12 work includes configurable pass orchestration, shader post-processing,
-  batching/atlas paths, camera/layer composition, render statistics, examples, and measured batching
-  benchmarks.
+- **12.3 Configurable render-pass orchestration:** public `RenderPipeline2D` adds bounded
+  deterministic pass ordering, explicit backbuffer/surface outputs, read-only declared surface
+  inputs, clear/present policies, full-sequence preflight before side effects, stable failure
+  reporting, reentrancy/mutation guards, and an explicit RenderWindow+Scene compatibility bridge for
+  legacy Component rendering. The pipeline deliberately performs no automatic dependency scheduling.
+- Remaining Phase 12 work includes shader post-processing, batching/atlas paths, camera/layer
+  composition, render statistics, examples, and measured batching benchmarks.
 
 ### Scope
 
@@ -652,8 +656,7 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-Continue **Phase 12 — Rendering 2.0** with **12.3 configurable render-pass orchestration**. The
-shader/material and off-screen surface foundations now exist; the next slice should define explicit
-pass inputs/outputs, ordering, clear/present policy, and a backward-compatible boundary for legacy
-RenderWindow-based Scene/component rendering before shader post-processing chains are layered on
-top.
+Continue **Phase 12 — Rendering 2.0** with **12.4 shader-based post-processing**. The shader/material,
+off-screen surface, and ordered pass foundations now provide explicit published inputs and outputs;
+the next slice should add full-screen shader passes/chains without replacing the existing lightweight
+color-overlay stack, and include at least one public post-processing example.

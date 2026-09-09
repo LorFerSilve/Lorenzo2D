@@ -148,8 +148,10 @@ a loaded `Shader2D` plus typed uniform/texture values. Trivial sprites still ren
 original default path when no material is assigned.
 
 The Phase 12.1 material path is intentionally not a render graph. Phase 12.2 adds bounded
-off-screen `RenderSurface2D` resources and generic-target camera/post-process overloads, but it
-still does not change Scene's legacy `RenderWindow` component dispatch or tilemap batching.
+off-screen `RenderSurface2D` resources and generic-target camera/post-process overloads. Phase 12.3
+adds a bounded ordered `RenderPipeline2D`: explicit backbuffer/surface outputs, read-only published
+surface inputs, clear/present policies, and a dedicated RenderWindow+Scene compatibility bridge.
+It deliberately does not auto-schedule dependencies or change tilemap batching.
 
 ## Particles and post-processing
 
