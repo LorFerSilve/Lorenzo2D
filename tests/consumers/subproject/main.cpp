@@ -171,9 +171,8 @@ int main()
     l2d::RenderPipelinePass2D renderPipelinePass;
     renderPipelinePass.name = "consumer-pass";
     const bool renderPipelineConfigured =
-        renderPipeline.addPass(
-            renderPipelinePass,
-            [](const l2d::RenderPipelineExecution2D&) { return true; }) &&
+        renderPipeline.addPass(renderPipelinePass,
+                               [](const l2d::RenderPipelineExecution2D&) { return true; }) &&
         renderPipeline.passCount() == 1u &&
         l2d::RenderPipeline2D::isValidFrame(l2d::RenderPipelineFrame2D{});
 
@@ -215,8 +214,8 @@ int main()
                    joint.id() != l2d::InvalidJointId && checkedRenderPosition.has_value() &&
                    *checkedRenderPosition == position && cameraConfigured &&
                    shaderLayoutConfigured && shaderDefinition.uniformCount() == 1u &&
-                   materialConfigured && renderSurfaceConfigured &&
-                   renderPipelineConfigured && checkedCompatibilityAction &&
+                   materialConfigured && renderSurfaceConfigured && renderPipelineConfigured &&
+                   checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0
