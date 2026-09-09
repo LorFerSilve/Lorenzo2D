@@ -271,6 +271,8 @@ namespace l2d
         if (!isValidFrame(frame))
             return failureResult(RenderPipelineFailure2D::InvalidFrame);
 
+        std::vector<const RenderSurface2D*> outputsPublishedEarlier;
+
         for (std::size_t index = 0u; index < m_passes.size(); ++index)
         {
             const PassRecord& record = m_passes[index];
@@ -308,7 +310,16 @@ namespace l2d
 
                 if (input->target() == outputTarget)
                     return failureResult(RenderPipelineFailure2D::FeedbackLoop, index);
+
+                const bool publishedEarlier =
+                    std::find(outputsPublishedEarlier.begin(), outputsPublishedEarlier.end(),
+                              input.get()) != outputsPublishedEarlier.end();
+                if (input->contentGeneration() == 0u && !publishedEarlier)
+                    return failureResult(RenderPipelineFailure2D::InputUnavailable, index);
             }
+
+            if (passConfig.target == RenderPipelinePassTarget2D::Surface)
+                outputsPublishedEarlier.push_back(passConfig.surface.get());
         }
 
         return {};
@@ -361,6 +372,13 @@ namespace l2d
 
                 if (record.legacyScene)
                 {
+                    if (legacyScene == nullptr || legacyWindow == nullptr)
+                    {
+                        m_executing = false;
+                        return failureResult(RenderPipelineFailure2D::LegacySceneRequired, index,
+                                             result.completedPasses);
+                    }
+
                     legacyScene->render(*legacyWindow, context);
                 }
                 else
