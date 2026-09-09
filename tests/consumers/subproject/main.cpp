@@ -27,6 +27,7 @@
 #include <Lorenzo2D/Renderer/RenderPipeline2D.hpp>
 #include <Lorenzo2D/Renderer/RenderSurface2D.hpp>
 #include <Lorenzo2D/Renderer/Shader2D.hpp>
+#include <Lorenzo2D/Renderer/ShaderPostProcessChain2D.hpp>
 #include <Lorenzo2D/Renderer/RenderOrder2D.hpp>
 #include <Lorenzo2D/Scene/LevelSerializer.hpp>
 #include <Lorenzo2D/Scene/ComponentCodecRegistry.hpp>
@@ -38,6 +39,7 @@
 #include <Lorenzo2D/Tilemap/TiledJsonImporter.hpp>
 #include <Lorenzo2D/UI/UiCanvas2D.hpp>
 
+#include <memory>
 #include <sstream>
 
 int main()
@@ -176,6 +178,15 @@ int main()
         renderPipeline.passCount() == 1u &&
         l2d::RenderPipeline2D::isValidFrame(l2d::RenderPipelineFrame2D{});
 
+    l2d::ShaderPostProcessChain2D shaderPostProcess;
+    l2d::ShaderPostProcessPass2D shaderPostProcessPass;
+    shaderPostProcessPass.name = "consumer-post-process";
+    shaderPostProcessPass.material = std::make_shared<l2d::Material2D>();
+    const bool shaderPostProcessConfigured =
+        shaderPostProcess.addPass(shaderPostProcessPass) &&
+        shaderPostProcess.passCount() == 1u &&
+        l2d::ShaderPostProcessChain2D::isValidPass(shaderPostProcessPass);
+
     l2d::InputSnapshot inputSnapshot;
     l2d::InputMap inputMap(inputSnapshot);
     l2d::InputContextStack inputContexts(inputSnapshot);
@@ -215,7 +226,7 @@ int main()
                    *checkedRenderPosition == position && cameraConfigured &&
                    shaderLayoutConfigured && shaderDefinition.uniformCount() == 1u &&
                    materialConfigured && renderSurfaceConfigured && renderPipelineConfigured &&
-                   checkedCompatibilityAction &&
+                   shaderPostProcessConfigured && checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0
