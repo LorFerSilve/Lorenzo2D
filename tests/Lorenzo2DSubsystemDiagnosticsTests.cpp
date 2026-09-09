@@ -10,7 +10,8 @@
 #include <Lorenzo2D/Navigation/NavigationGrid2D.hpp>
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
-#include <Lorenzo2D/Renderer/RenderQueue2D.hpp>\n#include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
+#include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+#include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
 
