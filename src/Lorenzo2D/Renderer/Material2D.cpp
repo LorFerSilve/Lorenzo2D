@@ -183,8 +183,7 @@ namespace l2d
             return true;
         }
 
-        const auto applyValue =
-            [this](const std::string& name, const MaterialUniformValue2D& value)
+        const auto applyValue = [this](const std::string& name, const MaterialUniformValue2D& value)
         {
             std::visit(
                 [this, &name](const auto& typedValue)
