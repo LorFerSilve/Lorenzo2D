@@ -84,8 +84,9 @@ This phase should be completed before adding another large subsystem.
 - **11.8 Public API/failure-path audit:** all 77 installed headers were audited for ownership,
   lifetime, mutability, silent fallback, validation, units, transactionality, workload bounds, and
   concurrency. Borrowed input snapshots reject temporaries, checked compatibility/render/camera
-  variants expose failure, level instantiation now rolls back only its appended batch, and retained
-  1.x escape hatches have explicit contracts. The measured Phase 11 production baseline and limits
+  variants expose failure, level instantiation now rolls back Scene objects created after a pre-call
+  identity snapshot even when callbacks compact the Scene, and retained 1.x escape hatches have
+  explicit contracts. The measured Phase 11 production baseline and limits
   are published.
 - **Repository policy:** `master` is protected by an active repository ruleset requiring pull
   requests, all seven CI gates, an up-to-date branch, and blocking force-pushes/deletion.
