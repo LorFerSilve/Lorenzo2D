@@ -277,3 +277,122 @@ Use the owning `RenderSurface2D` or `RenderSurface2DHandle` as the lifetime anch
 borrowed target/texture pointers and allocation-generation observers tied to one lifetime anchor;
 moving an allocated surface would otherwise invalidate those observers without an unambiguous
 monotonic generation transition.
+
+## 12.3 Configurable render-pass orchestration
+
+`RenderPipeline2D` adds a bounded ordered pass layer on top of `RenderSurface2D`. It is
+intentionally **not** a general render graph: passes execute in vector order, dependencies are
+declared for validation/lifetime only, and the engine never topologically reorders work.
+
+Each `RenderPipelinePass2D` declares:
+
+- a unique bounded name;
+- one logical `RenderPass2D` context (`World`, `PhysicsDebug`, or `UI`);
+- one output target: the caller backbuffer or an owned `RenderSurface2D`;
+- zero or more read-only surface inputs;
+- optional clear policy;
+- optional automatic presentation of a surface output back to the backbuffer;
+- enabled/disabled state.
+
+The initial envelope is 64 passes, 16 declared inputs per pass, and 128 bytes per pass name.
+
+### Deterministic ordering and mutation
+
+Insertion order is execution order. `movePass()` performs an explicit reorder; disabled passes retain
+their index but are skipped and do not contribute to `completedPasses`.
+
+Pipeline mutation is rejected while `execute()` is active. Recursive execution on the same pipeline
+returns `ReentrantExecution` instead of entering a second render traversal.
+
+### Frame context and projection lifetime
+
+`RenderPipelineFrame2D` supplies interpolation alpha and an optional coordinate projection once per
+execution. The interpolation alpha must be finite and within `[0, 1]`.
+
+The projection pointer is borrowed **only for the duration of `execute()`** and is never stored in the
+pipeline. Each pass receives a normal `RenderContext2D` built from that frame state plus the pass's
+logical `RenderPass2D`.
+
+### Inputs and outputs
+
+Surface inputs use `RenderSurface2DConstHandle`, preventing pass callbacks from mutating the
+declared input through the pipeline API. A declared input must:
+
+- still be allocated;
+- have a valid target/texture;
+- contain published content from an earlier `display()`, or be the output of an earlier enabled
+  surface pass in the same pipeline run;
+- not alias the current output target.
+
+A surface output is automatically published with `display()` after its callback succeeds. A pass
+may then automatically `present()` that surface to the backbuffer using the existing
+`RenderSurfacePresent2D` position/size/color/material contract.
+
+Self/read-write feedback is rejected during preflight.
+
+### Preflight and side effects
+
+Before pass 0 clears or draws anything, the pipeline validates the complete enabled pass sequence:
+
+- frame validity;
+- structural pass validity;
+- legacy Scene requirements;
+- output availability;
+- input availability/publication;
+- input/output feedback.
+
+If preflight fails, `completedPasses == 0` and no pass callback or clear operation has run.
+
+Once execution begins, GPU draw submission is not transactionally reversible. If a callback returns
+`false`, publishing fails, or presentation fails, the result identifies the failing pass and counts
+only passes that fully completed before it. Exceptions from user callbacks/legacy Scene rendering
+still propagate after the pipeline resets its internal executing guard.
+
+### Legacy Scene compatibility bridge
+
+The existing 1.x virtual rendering contract remains:
+
+`Component::onRender(sf::RenderWindow&, ...)`
+
+Changing it to `sf::RenderTarget&` would break existing custom components. 12.3 therefore exposes an
+explicit compatibility path:
+
+- `addLegacyScenePass()` marks a backbuffer pass that dispatches the existing Scene renderer;
+- generic `execute(sf::RenderTarget&)` rejects pipelines containing such a pass with
+  `LegacySceneRequired` during preflight;
+- `execute(sf::RenderWindow&, Scene&)` supplies the required legacy window and Scene only for that
+  call; neither is retained by the pipeline.
+
+This avoids silently skipping old components while allowing new callback passes to target off-screen
+surfaces immediately.
+
+### Failure reporting
+
+`RenderPipelineResult2D` reports a stable failure enum, optional pass index, and the number of fully
+completed enabled passes. `renderPipelineFailureName()` exposes stable diagnostic names.
+
+Important failures include:
+
+| Failure | Meaning |
+| --- | --- |
+| `InvalidFrame` | interpolation alpha is outside the supported finite `[0,1]` range |
+| `InvalidPass` | an enabled pass no longer satisfies its structural contract |
+| `LegacySceneRequired` | generic target execution encountered a legacy Scene pass |
+| `SurfaceUnavailable` | an output surface is not allocated |
+| `InputUnavailable` | a declared input is not allocated/published |
+| `FeedbackLoop` | declared input/output or surface/backbuffer feedback was detected |
+| `CallbackFailed` | a generic pass callback returned `false` |
+| `SurfacePublishFailed` | output `display()` failed |
+| `SurfacePresentFailed` | automatic presentation failed |
+
+### Concurrency and callback lifetime
+
+Pipeline configuration and execution are a single-owner render-thread contract. Callbacks are owned
+by the pipeline and may capture game state, so captured references must outlive every execution that
+can invoke them.
+
+Surface handles retain input/output lifetimes, but callbacks must not reallocate/reset pipeline
+surfaces or mutate shared materials concurrently while execution is active.
+
+The caller still owns final backbuffer publication: `RenderPipeline2D` never calls
+`RenderWindow::display()` or an equivalent backbuffer display operation.
