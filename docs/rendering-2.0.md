@@ -420,8 +420,7 @@ Each `ShaderPostProcessPass2D` contains:
 - enabled/disabled state;
 - optional output clearing and a clear color.
 
-A chain contains at most 16 passes. Insertion order is execution order; `movePass()` is the only
-automatic-free way to change that order. Structural configuration is CPU-only: a pass may be defined
+A chain contains at most 16 passes. Insertion order is execution order; `movePass()` is the explicit way to change that order. Structural configuration is CPU-only: a pass may be defined
 before its shader is compiled, but `apply()` rejects enabled passes whose material has no loaded
 shader or is incomplete.
 
