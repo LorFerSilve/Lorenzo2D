@@ -221,6 +221,17 @@ repository policy, installed-package consumers, and the published production bas
 Move Lorenzo2D beyond basic sprite/tile rendering without introducing a heavyweight general-purpose
 render graph.
 
+### Implementation progress
+
+- **12.1 Shader/material foundation:** public `Shader2D` adds bounded transactional in-memory
+  compilation and an explicit validated uniform layout; `Material2D` adds typed uniform/texture
+  state, required-uniform completeness, blend configuration, and transactional RenderStates
+  publication. `SpriteRenderer` can opt into a material while retaining the original simple draw
+  path when no material is bound. Focused xvfb regressions and package-consumer coverage are included.
+- Remaining Phase 12 work includes render targets/off-screen rendering, configurable pass
+  orchestration, shader post-processing, batching/atlas paths, camera/layer composition, render
+  statistics, examples, and measured batching benchmarks.
+
 ### Scope
 
 - Public shader abstraction.
@@ -636,8 +647,7 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-The next implementation phase is **Phase 12 — Rendering 2.0**.
-
-Phase 11 now provides the diagnostics, stress/fuzz/replay evidence, nightly validation, repository
-policy, API failure contracts, and production baseline needed to evaluate Phase 12 rendering changes
-against measured behavior rather than an unobserved engine baseline.
+Continue **Phase 12 — Rendering 2.0** after the shader/material foundation with the render-target and
+off-screen rendering slice. That target abstraction should be established before configurable
+multi-pass composition and shader-based post-processing, so later batching/statistics work can
+measure a stable submission model.
