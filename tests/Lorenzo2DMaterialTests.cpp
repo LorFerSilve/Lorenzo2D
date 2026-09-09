@@ -4,7 +4,10 @@
 #include <Lorenzo2D/Renderer/SpriteRenderer.hpp>
 
 #include <SFML/Graphics/BlendMode.hpp>
+#include <SFML/Graphics/Image.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderStates.hpp>
+#include <SFML/Graphics/RenderTexture.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
 #include "TestSupport.hpp"
@@ -45,6 +48,15 @@ void main()
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
     gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
     gl_FrontColor = gl_Color;
+}
+)";
+
+    constexpr const char* OptionalUniformFragmentSource = R"(
+uniform float optional_value;
+
+void main()
+{
+    gl_FragColor = vec4(optional_value, 0.0, 0.0, 1.0);
 }
 )";
 
@@ -166,6 +178,45 @@ void main()
         L2D_REQUIRE(material.isComplete());
     }
 
+    void testSharedShaderResetsOmittedOptionalUniforms()
+    {
+        auto shader = std::make_shared<l2d::Shader2D>();
+        L2D_REQUIRE(shader->loadFragmentSource(OptionalUniformFragmentSource));
+        L2D_REQUIRE(shader->setUniformLayout(
+            {{"optional_value", l2d::ShaderUniformType2D::Float, false}}));
+
+        l2d::Material2D redMaterial;
+        L2D_REQUIRE(redMaterial.setShader(shader));
+        L2D_REQUIRE(redMaterial.setFloat("optional_value", 1.f));
+
+        l2d::Material2D defaultMaterial;
+        L2D_REQUIRE(defaultMaterial.setShader(shader));
+        L2D_REQUIRE(defaultMaterial.isComplete());
+
+        sf::RenderTexture target({2u, 1u});
+        target.clear(sf::Color::Black);
+
+        sf::RectangleShape pixel({1.f, 1.f});
+        pixel.setFillColor(sf::Color::White);
+
+        sf::RenderStates states;
+        L2D_REQUIRE(redMaterial.apply(states));
+        pixel.setPosition({0.f, 0.f});
+        target.draw(pixel, states);
+
+        L2D_REQUIRE(defaultMaterial.apply(states));
+        pixel.setPosition({1.f, 0.f});
+        target.draw(pixel, states);
+
+        target.display();
+        const sf::Image image = target.getTexture().copyToImage();
+        const sf::Color first = image.getPixel({0u, 0u});
+        const sf::Color second = image.getPixel({1u, 0u});
+
+        L2D_REQUIRE(first.r > 240u);
+        L2D_REQUIRE(second.r < 16u);
+    }
+
     void testShaderRebindingRejectsIncompatibleMaterialState()
     {
         auto firstShader = std::make_shared<l2d::Shader2D>();
@@ -225,6 +276,8 @@ int main()
             testShaderUniformLayoutValidationIsTransactional, failures);
     runTest("material typed uniforms and completeness", testMaterialTypedUniformsAndCompleteness,
             failures);
+    runTest("shared shader resets omitted optional uniforms",
+            testSharedShaderResetsOmittedOptionalUniforms, failures);
     runTest("shader rebinding rejects incompatible material state",
             testShaderRebindingRejectsIncompatibleMaterialState, failures);
     runTest("sprite material binding is optional", testSpriteRendererMaterialBindingIsOptional,
