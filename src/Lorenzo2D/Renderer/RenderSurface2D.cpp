@@ -20,9 +20,8 @@ namespace l2d
         }
     }
 
+    RenderSurface2D::RenderSurface2D() = default;
     RenderSurface2D::~RenderSurface2D() = default;
-    RenderSurface2D::RenderSurface2D(RenderSurface2D&&) noexcept = default;
-    RenderSurface2D& RenderSurface2D::operator=(RenderSurface2D&&) noexcept = default;
 
     bool RenderSurface2D::isValidSize(sf::Vector2u size) noexcept
     {
