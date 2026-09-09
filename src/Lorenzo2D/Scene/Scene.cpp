@@ -237,25 +237,51 @@ namespace l2d
         m_gameObjects.erase(newEnd, m_gameObjects.end());
     }
 
-    void Scene::rollbackGameObjectsFrom(std::size_t firstIndex)
+    std::vector<GameObjectId> Scene::snapshotGameObjectIds() const
     {
-        if (firstIndex >= m_gameObjects.size()) return;
+        std::vector<GameObjectId> ids;
+        ids.reserve(m_gameObjects.size());
+
+        for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
+            if (gameObject != nullptr) ids.push_back(gameObject->id());
+
+        std::sort(ids.begin(), ids.end());
+        return ids;
+    }
+
+    void Scene::rollbackToGameObjectSnapshot(const std::vector<GameObjectId>& preservedIds)
+    {
+        const auto isPreserved = [&preservedIds](GameObjectId id)
+        { return std::binary_search(preservedIds.begin(), preservedIds.end(), id); };
 
         if (m_dispatchDepth > 0u)
         {
-            for (std::size_t index = firstIndex; index < m_gameObjects.size(); ++index)
-                if (m_gameObjects[index] != nullptr) m_gameObjects[index]->destroy();
+            bool queuedRollback = false;
+            for (const std::unique_ptr<GameObject>& gameObject : m_gameObjects)
+            {
+                if (gameObject != nullptr && !isPreserved(gameObject->id()))
+                {
+                    gameObject->destroy();
+                    queuedRollback = true;
+                }
+            }
 
-            m_destroySweepDeferred = true;
+            if (queuedRollback) m_destroySweepDeferred = true;
             return;
         }
 
-        for (std::size_t index = firstIndex; index < m_gameObjects.size(); ++index)
-            if (m_gameObjects[index] != nullptr)
-                m_gameObjectsById.erase(m_gameObjects[index]->id());
+        const auto newEnd =
+            std::remove_if(m_gameObjects.begin(), m_gameObjects.end(),
+                           [this, &isPreserved](const std::unique_ptr<GameObject>& gameObject)
+                           {
+                               if (gameObject == nullptr || isPreserved(gameObject->id()))
+                                   return false;
 
-        m_gameObjects.erase(m_gameObjects.begin() + static_cast<std::ptrdiff_t>(firstIndex),
-                            m_gameObjects.end());
+                               m_gameObjectsById.erase(gameObject->id());
+                               return true;
+                           });
+
+        m_gameObjects.erase(newEnd, m_gameObjects.end());
     }
 
     std::size_t Scene::destroyQueuedGameObjectCount() const
