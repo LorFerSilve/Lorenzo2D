@@ -480,8 +480,9 @@ visual flips that do not mutate the gameplay Transform or collider.
 with lifetime, velocity, gravity, color, and size evolution.
 `PostProcessStack2D` applies ordered alpha/add/multiply screen-space color
 passes after scene rendering. Phase 12 also provides `Shader2D`, `Material2D`,
-`RenderSurface2D`, `RenderPipeline2D`, and `ShaderPostProcessChain2D` for explicit off-screen
-shader effects without changing the simple rendering path. See
+`RenderSurface2D`, `RenderPipeline2D`, `ShaderPostProcessChain2D`, and `SpriteBatch2D` for explicit
+off-screen shader effects and ordered atlas-friendly batching without changing the simple rendering
+path. See
 [`docs/rendering-2.0.md`](docs/rendering-2.0.md) and
 [`docs/rendering-and-assets.md`](docs/rendering-and-assets.md) for the complete contracts and
 integration order.
@@ -798,8 +799,9 @@ Lorenzo2D is licensed under the [MIT License](LICENSE).
   rebuilt globally only when cell solidity changes; render geometry remains a
   one-chunk update. Streaming controls render-submission residency, not disk-backed
   map paging or chunk storage.
-- Post-processing currently provides ordered screen-space color passes rather
-  than off-screen shader graphs.
+- Rendering 2.0 now includes explicit shader post-processing and opt-in sprite batching, but it is
+  intentionally not a general render graph. Automatic Scene-wide batch extraction, generated texture
+  atlases, multi-camera/layer composition, and complete shader/culling telemetry remain later work.
 - Prefab serialization currently covers built-in shape renderers and physics
   components. Sprite asset references, animation state, custom component
   codecs, and schema migrations remain future work.
