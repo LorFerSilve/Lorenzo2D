@@ -75,9 +75,8 @@ namespace l2d
       private:
         [[nodiscard]] static bool isValidSource(std::string_view source) noexcept;
 
-        sf::Shader m_shader;
+        std::unique_ptr<sf::Shader> m_shader;
         std::vector<ShaderUniformSpec2D> m_uniformLayout;
-        bool m_loaded = false;
 
         friend class Material2D;
     };
