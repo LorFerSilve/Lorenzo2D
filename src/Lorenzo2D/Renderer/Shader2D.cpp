@@ -23,11 +23,10 @@ namespace l2d
     {
         if (!isValidSource(fragmentSource) || !isSupported()) return false;
 
-        sf::Shader candidate;
-        if (!candidate.loadFromMemory(fragmentSource, sf::Shader::Type::Fragment)) return false;
+        auto candidate = std::make_unique<sf::Shader>();
+        if (!candidate->loadFromMemory(fragmentSource, sf::Shader::Type::Fragment)) return false;
 
         m_shader = std::move(candidate);
-        m_loaded = true;
         return true;
     }
 
@@ -37,11 +36,10 @@ namespace l2d
         if (!isValidSource(vertexSource) || !isValidSource(fragmentSource) || !isSupported())
             return false;
 
-        sf::Shader candidate;
-        if (!candidate.loadFromMemory(vertexSource, fragmentSource)) return false;
+        auto candidate = std::make_unique<sf::Shader>();
+        if (!candidate->loadFromMemory(vertexSource, fragmentSource)) return false;
 
         m_shader = std::move(candidate);
-        m_loaded = true;
         return true;
     }
 
@@ -70,12 +68,12 @@ namespace l2d
 
     bool Shader2D::loaded() const noexcept
     {
-        return m_loaded;
+        return m_shader != nullptr;
     }
 
     unsigned int Shader2D::nativeHandle() const noexcept
     {
-        return m_loaded ? m_shader.getNativeHandle() : 0u;
+        return m_shader ? m_shader->getNativeHandle() : 0u;
     }
 
     std::size_t Shader2D::uniformCount() const noexcept
