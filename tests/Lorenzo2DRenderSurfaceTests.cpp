@@ -13,6 +13,7 @@
 
 #include <limits>
 #include <memory>
+#include <type_traits>
 
 namespace
 {
@@ -20,6 +21,11 @@ namespace
 
     void testRenderSurfaceValidationIsCpuOnly()
     {
+        static_assert(!std::is_copy_constructible_v<l2d::RenderSurface2D>);
+        static_assert(!std::is_copy_assignable_v<l2d::RenderSurface2D>);
+        static_assert(!std::is_move_constructible_v<l2d::RenderSurface2D>);
+        static_assert(!std::is_move_assignable_v<l2d::RenderSurface2D>);
+
         l2d::RenderSurface2D surface;
 
         L2D_REQUIRE(!surface.ready());
