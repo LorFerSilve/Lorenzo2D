@@ -19,7 +19,6 @@ namespace l2d
 
         struct PreparedSubmission2D
         {
-            sf::IntRect textureRect;
             std::array<sf::Vertex, SpriteBatch2D::VerticesPerSprite> vertices;
         };
 
@@ -140,11 +139,7 @@ namespace l2d
                 vertices[index].texCoords = textureCoordinates[index];
             }
 
-            if (prepared != nullptr)
-            {
-                prepared->textureRect = rectangle;
-                prepared->vertices = vertices;
-            }
+            if (prepared != nullptr) prepared->vertices = vertices;
 
             return SpriteBatchFailure2D::None;
         }
