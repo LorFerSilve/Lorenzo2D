@@ -366,3 +366,10 @@ l2d_add_regression_test(
     LABELS xvfb renderer shader material phase12
     TIMEOUT 60
 )
+
+l2d_add_regression_test(
+    Lorenzo2DRenderSurfaceTests
+    SOURCE Lorenzo2DRenderSurfaceTests.cpp
+    LABELS xvfb renderer render-target offscreen phase12
+    TIMEOUT 60
+)
