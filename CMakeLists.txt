@@ -230,6 +230,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Renderer/RenderOrder2D.cpp
     src/Lorenzo2D/Renderer/RenderQueue2D.cpp
     src/Lorenzo2D/Renderer/RenderSortKey2D.cpp
+    src/Lorenzo2D/Renderer/RenderSurface2D.cpp
     src/Lorenzo2D/Renderer/Shader2D.cpp
     src/Lorenzo2D/Renderer/SpriteRenderer.cpp
     src/Lorenzo2D/Scene/GameObjectHandle.cpp
