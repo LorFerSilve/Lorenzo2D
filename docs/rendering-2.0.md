@@ -26,7 +26,9 @@ The initial public loading surface supports:
 Each source is bounded to 1 MiB and embedded NUL bytes are rejected. Loading is transactional:
 source validation or GLSL compilation failure leaves the previously loaded program unchanged.
 
-Shader compilation is graphics-context work. Call it from the render thread/context unless the
+Constructing `Shader2D` and defining its uniform layout are CPU-only operations; the SFML shader
+backend is allocated lazily. Source compilation and loaded-shader destruction/application are
+graphics-resource work and should follow the owning render thread/context discipline unless the
 application deliberately establishes another compatible graphics context.
 
 ### Explicit uniform layout
