@@ -102,12 +102,11 @@ namespace l2d
         return failure == RenderCompositionFailure2D::None;
     }
 
-    RenderCompositionResult2D RenderComposition2D::execute(
-        sf::RenderTarget& target, RenderCompositionCallback2D callback,
-        const RenderCompositionFrame2D& frame)
+    RenderCompositionResult2D RenderComposition2D::execute(sf::RenderTarget& target,
+                                                           RenderCompositionCallback2D callback,
+                                                           const RenderCompositionFrame2D& frame)
     {
-        if (m_executing)
-            return failureResult(RenderCompositionFailure2D::ReentrantExecution);
+        if (m_executing) return failureResult(RenderCompositionFailure2D::ReentrantExecution);
         if (!isValidFrame(frame)) return failureResult(RenderCompositionFailure2D::InvalidFrame);
         if (!callback) return failureResult(RenderCompositionFailure2D::InvalidCallback);
 
@@ -153,8 +152,9 @@ namespace l2d
         return result;
     }
 
-    RenderCompositionResult2D RenderComposition2D::execute(
-        sf::RenderWindow& window, Scene& legacyScene, const RenderCompositionFrame2D& frame)
+    RenderCompositionResult2D RenderComposition2D::execute(sf::RenderWindow& window,
+                                                           Scene& legacyScene,
+                                                           const RenderCompositionFrame2D& frame)
     {
         RenderCompositionCallback2D callback =
             [&window, &legacyScene](const RenderCompositionExecution2D& execution)
