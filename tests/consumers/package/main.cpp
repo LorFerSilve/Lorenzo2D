@@ -23,6 +23,7 @@
 #include <Lorenzo2D/Renderer/Camera2D.hpp>
 #include <Lorenzo2D/Renderer/IsometricProjection2D.hpp>
 #include <Lorenzo2D/Renderer/Material2D.hpp>
+#include <Lorenzo2D/Renderer/RenderComposition2D.hpp>
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Renderer/RenderPipeline2D.hpp>
 #include <Lorenzo2D/Renderer/RenderSurface2D.hpp>
@@ -42,6 +43,7 @@
 
 #include <memory>
 #include <sstream>
+#include <string_view>
 
 int main()
 {
@@ -157,6 +159,17 @@ int main()
     l2d::Camera2D camera({100.f, 100.f});
     const bool cameraConfigured = camera.trySetCenter(position);
 
+    l2d::RenderComposition2D renderComposition;
+    l2d::RenderCompositionEntry2D renderCompositionEntry;
+    renderCompositionEntry.name = "consumer-camera";
+    renderCompositionEntry.camera = &camera;
+    renderCompositionEntry.layers = {-2, 2};
+    const bool renderCompositionConfigured =
+        renderComposition.addEntry(renderCompositionEntry) && renderComposition.entryCount() == 1u &&
+        !renderComposition.executing() && l2d::RenderCompositionResult2D{}.succeeded() &&
+        l2d::renderCompositionFailureName(l2d::RenderCompositionFailure2D::None) ==
+            std::string_view("none");
+
     l2d::Shader2D shaderDefinition;
     const bool shaderLayoutConfigured = shaderDefinition.setUniformLayout(
         {{"consumer_value", l2d::ShaderUniformType2D::Float, true}});
@@ -228,11 +241,10 @@ int main()
                    l2d::PathFollower2D::isValidConfig(followerConfig) &&
                    l2d::gridDirectionFromInput({1.f, 0.f}) == l2d::GridDirection2D::Right &&
                    joint.id() != l2d::InvalidJointId && checkedRenderPosition.has_value() &&
-                   *checkedRenderPosition == position && cameraConfigured &&
+                   *checkedRenderPosition == position && cameraConfigured && renderCompositionConfigured &&
                    shaderLayoutConfigured && shaderDefinition.uniformCount() == 1u &&
                    materialConfigured && renderSurfaceConfigured && renderPipelineConfigured &&
-                   shaderPostProcessConfigured && spriteBatchConfigured &&
-                   checkedCompatibilityAction &&
+                   shaderPostProcessConfigured && spriteBatchConfigured && checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0
