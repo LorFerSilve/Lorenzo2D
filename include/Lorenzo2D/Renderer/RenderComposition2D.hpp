@@ -211,16 +211,16 @@ namespace l2d
         // callback and its RenderCompositionExecution2D references are valid
         // only for the duration of each callback invocation. Returning false
         // stops execution and reports CallbackFailed.
-        [[nodiscard]] RenderCompositionResult2D execute(
-            sf::RenderTarget& target, RenderCompositionCallback2D callback,
-            const RenderCompositionFrame2D& frame = {});
+        [[nodiscard]] RenderCompositionResult2D execute(sf::RenderTarget& target,
+                                                        RenderCompositionCallback2D callback,
+                                                        const RenderCompositionFrame2D& frame = {});
 
         // Compatibility bridge for the existing Scene/Component RenderWindow
         // virtual contract. The Scene and window are borrowed only for this
         // call and are never retained by the composition.
-        [[nodiscard]] RenderCompositionResult2D execute(
-            sf::RenderWindow& window, Scene& legacyScene,
-            const RenderCompositionFrame2D& frame = {});
+        [[nodiscard]] RenderCompositionResult2D execute(sf::RenderWindow& window,
+                                                        Scene& legacyScene,
+                                                        const RenderCompositionFrame2D& frame = {});
 
       private:
         [[nodiscard]] static bool isValidRenderPass(RenderPass2D pass) noexcept
