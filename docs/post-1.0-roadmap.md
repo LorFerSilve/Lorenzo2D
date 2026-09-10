@@ -139,7 +139,7 @@ Introduce targeted fuzz/property tests for:
 - save-game JSON;
 - Tiled JSON import;
 - physics geometry/query inputs;
-- navigation-grid bounds and costs;
+- navigation-grid bounds/costs;
 - UI button bounds and pointer event sequences;
 - asset/resource lookup input.
 
@@ -248,8 +248,26 @@ render graph.
   items, preserving deterministic visible ordering. Atlas rectangles, stable failure reporting,
   structural/actual draw statistics, diagnostics integration, a public example, installed-package
   consumption, and nightly individual-vs-batched atlas trend benchmarks are included.
-- Remaining Phase 12 work includes camera/layer composition and the complete render-statistics
-  surface, including shader-switch and culling telemetry.
+- **12.6.1 Camera/layer composition foundation:** public `RenderComposition2D` adds a bounded,
+  deterministic CPU-side composition contract with up to 16 named entries. Each entry borrows one
+  `Camera2D`, selects a render pass, an inclusive integer layer range, and a normalized viewport.
+  `RenderContext2D` gains an all-layers-compatible range and `RenderQueue2D` filters its existing
+  deterministic pass snapshot by that range. Configuration validation, ordering, disabled-entry
+  behavior, and generated camera views/contexts are covered by focused headless regressions without
+  changing existing simple rendering behavior.
+- **12.6.2 Multi-camera composition execution:** `RenderComposition2D` now executes its configured
+  entries in order against a generic `sf::RenderTarget` callback or the legacy `RenderWindow` +
+  `Scene` bridge. Execution preflights enabled entries, snapshots camera views/contexts before the
+  first callback, applies normalized viewports without mutating borrowed cameras, restores the
+  incoming target view on success/failure/exception unwinding, rejects reentrant execution and
+  configuration mutation while executing, and preserves original entry indices while skipping
+  disabled entries. Split-screen/minimap-style repeated Scene rendering therefore composes through
+  the existing deterministic pass/layer queue while clear policy, surfaces, dependencies,
+  post-processing, publication, and presentation remain `RenderPipeline2D`/application concerns.
+  Focused Xvfb regressions and installed/add_subdirectory consumer coverage validate the execution
+  and stable failure/result API.
+- Remaining Phase 12 work is the complete render-statistics surface, including submitted primitive,
+  batch, material/shader-switch, and culling telemetry across the coherent presentation pipeline.
 
 ### Scope
 
@@ -666,8 +684,8 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-Continue **Phase 12 — Rendering 2.0** with **12.6 camera/layer composition and render
-diagnostics**. The shader/material, off-screen, ordered-pass, post-processing, and explicit
-sprite-batching paths now form a coherent presentation pipeline; the next slice should formalize
-multi-camera/layer composition and complete render telemetry without disturbing deterministic
-ordering or the existing simple rendering path.
+Continue **Phase 12 — Rendering 2.0** with **12.7 complete render diagnostics and statistics**.
+Camera/layer composition is now configured and executable through 12.6.1/12.6.2; the next slice
+should unify draw calls, submitted primitives, batches, material/shader switches, and culled-item
+telemetry across the existing sprite, tilemap, pipeline, post-process, and composition paths without
+disturbing deterministic ordering or the existing simple rendering path.
