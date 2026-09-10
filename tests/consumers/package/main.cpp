@@ -165,8 +165,9 @@ int main()
     renderCompositionEntry.camera = &camera;
     renderCompositionEntry.layers = {-2, 2};
     const bool renderCompositionConfigured =
-        renderComposition.addEntry(renderCompositionEntry) && renderComposition.entryCount() == 1u &&
-        !renderComposition.executing() && l2d::RenderCompositionResult2D{}.succeeded() &&
+        renderComposition.addEntry(renderCompositionEntry) &&
+        renderComposition.entryCount() == 1u && !renderComposition.executing() &&
+        l2d::RenderCompositionResult2D{}.succeeded() &&
         l2d::renderCompositionFailureName(l2d::RenderCompositionFailure2D::None) ==
             std::string_view("none");
 
@@ -241,10 +242,12 @@ int main()
                    l2d::PathFollower2D::isValidConfig(followerConfig) &&
                    l2d::gridDirectionFromInput({1.f, 0.f}) == l2d::GridDirection2D::Right &&
                    joint.id() != l2d::InvalidJointId && checkedRenderPosition.has_value() &&
-                   *checkedRenderPosition == position && cameraConfigured && renderCompositionConfigured &&
-                   shaderLayoutConfigured && shaderDefinition.uniformCount() == 1u &&
-                   materialConfigured && renderSurfaceConfigured && renderPipelineConfigured &&
-                   shaderPostProcessConfigured && spriteBatchConfigured && checkedCompatibilityAction &&
+                   *checkedRenderPosition == position && cameraConfigured &&
+                   renderCompositionConfigured && shaderLayoutConfigured &&
+                   shaderDefinition.uniformCount() == 1u && materialConfigured &&
+                   renderSurfaceConfigured && renderPipelineConfigured &&
+                   shaderPostProcessConfigured && spriteBatchConfigured &&
+                   checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY
                ? 0
