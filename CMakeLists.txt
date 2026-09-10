@@ -226,6 +226,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Renderer/ParticleEmitter2D.cpp
     src/Lorenzo2D/Renderer/PostProcessStack2D.cpp
     src/Lorenzo2D/Renderer/RectangleRenderer.cpp
+    src/Lorenzo2D/Renderer/RenderComposition2D.cpp
     src/Lorenzo2D/Renderer/RenderLayerStack2D.cpp
     src/Lorenzo2D/Renderer/RenderOrder2D.cpp
     src/Lorenzo2D/Renderer/RenderPipeline2D.cpp
