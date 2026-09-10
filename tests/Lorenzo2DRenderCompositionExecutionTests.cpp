@@ -58,9 +58,9 @@ namespace
 
         void onRender(sf::RenderWindow& window, const l2d::RenderContext2D& context) override
         {
-            m_observations.push_back(
-                {m_label, context.pass, context.layers, window.getView().getCenter(),
-                 window.getView().getViewport()});
+            m_observations.push_back({m_label, context.pass, context.layers,
+                                      window.getView().getCenter(),
+                                      window.getView().getViewport()});
         }
 
       private:
@@ -125,11 +125,11 @@ namespace
                 if (execution.entryIndex == 0u)
                 {
                     firstViewMatched = sameView(execution.target.getView(), expectedFirst);
-                    contextMatched =
-                        contextMatched && execution.context.pass == l2d::RenderPass2D::World &&
-                        execution.context.layers.minimum == -3 &&
-                        execution.context.layers.maximum == 0 &&
-                        execution.context.interpolationAlpha == 0.25f;
+                    contextMatched = contextMatched &&
+                                     execution.context.pass == l2d::RenderPass2D::World &&
+                                     execution.context.layers.minimum == -3 &&
+                                     execution.context.layers.maximum == 0 &&
+                                     execution.context.interpolationAlpha == 0.25f;
 
                     // Later entries use the view snapshot captured before the
                     // first callback rather than this mid-run camera mutation.
@@ -137,12 +137,13 @@ namespace
                 }
                 else if (execution.entryIndex == 2u)
                 {
-                    secondViewMatchedSnapshot = sameView(execution.target.getView(), expectedSecond);
-                    contextMatched =
-                        contextMatched && execution.context.pass == l2d::RenderPass2D::UI &&
-                        execution.context.layers.minimum == 4 &&
-                        execution.context.layers.maximum == 8 &&
-                        execution.context.interpolationAlpha == 0.25f;
+                    secondViewMatchedSnapshot =
+                        sameView(execution.target.getView(), expectedSecond);
+                    contextMatched = contextMatched &&
+                                     execution.context.pass == l2d::RenderPass2D::UI &&
+                                     execution.context.layers.minimum == 4 &&
+                                     execution.context.layers.maximum == 8 &&
+                                     execution.context.interpolationAlpha == 0.25f;
                 }
                 else
                 {
@@ -196,15 +197,15 @@ namespace
                     return true;
                 }
 
-                nested = composition.execute(
-                    execution.target,
-                    [](const l2d::RenderCompositionExecution2D&) { return true; });
+                nested = composition.execute(execution.target,
+                                             [](const l2d::RenderCompositionExecution2D&)
+                                             { return true; });
 
                 l2d::RenderCompositionEntry2D illegal = entryFor("illegal", camera);
                 mutationRejected = !composition.addEntry(std::move(illegal)) &&
                                    !composition.setEntryEnabled(1u, false) &&
-                                   !composition.moveEntry(1u, 0u) &&
-                                   !composition.removeEntry(1u) && !composition.clear();
+                                   !composition.moveEntry(1u, 0u) && !composition.removeEntry(1u) &&
+                                   !composition.clear();
 
                 sf::View changed = execution.target.getView();
                 changed.setCenter({123.f, 456.f});
@@ -234,8 +235,8 @@ namespace
         l2d::RenderComposition2D composition;
         L2D_REQUIRE(composition.addEntry(entryFor("main", camera)));
 
-        const l2d::RenderCompositionResult2D missingCallback = composition.execute(
-            *target.target(), l2d::RenderCompositionCallback2D{});
+        const l2d::RenderCompositionResult2D missingCallback =
+            composition.execute(*target.target(), l2d::RenderCompositionCallback2D{});
         L2D_REQUIRE(missingCallback.failure == l2d::RenderCompositionFailure2D::InvalidCallback);
         L2D_REQUIRE_EQUAL(missingCallback.completedEntries, 0u);
         L2D_REQUIRE(!missingCallback.failedEntry.has_value());
@@ -273,15 +274,14 @@ namespace
         bool threw = false;
         try
         {
-            (void)composition.execute(
-                *target.target(),
-                [](const l2d::RenderCompositionExecution2D& execution) -> bool
-                {
-                    sf::View changed = execution.target.getView();
-                    changed.setCenter({77.f, 88.f});
-                    execution.target.setView(changed);
-                    throw std::runtime_error("composition callback failure");
-                });
+            (void)composition.execute(*target.target(),
+                                      [](const l2d::RenderCompositionExecution2D& execution) -> bool
+                                      {
+                                          sf::View changed = execution.target.getView();
+                                          changed.setCenter({77.f, 88.f});
+                                          execution.target.setView(changed);
+                                          throw std::runtime_error("composition callback failure");
+                                      });
         }
         catch (const std::runtime_error&)
         {
@@ -364,9 +364,8 @@ namespace
 
     void testFailureNamesAreStable()
     {
-        L2D_REQUIRE_EQUAL(
-            l2d::renderCompositionFailureName(l2d::RenderCompositionFailure2D::None),
-            std::string_view("none"));
+        L2D_REQUIRE_EQUAL(l2d::renderCompositionFailureName(l2d::RenderCompositionFailure2D::None),
+                          std::string_view("none"));
         L2D_REQUIRE_EQUAL(
             l2d::renderCompositionFailureName(l2d::RenderCompositionFailure2D::CallbackFailed),
             std::string_view("callback-failed"));
