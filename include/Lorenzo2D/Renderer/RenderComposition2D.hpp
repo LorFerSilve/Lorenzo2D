@@ -133,8 +133,8 @@ namespace l2d
         // Disabled or invalid indices return nullopt. The generated context
         // carries the entry's pass/layer filter while the generated view is a
         // copy of the borrowed camera view with only the viewport overridden.
-        [[nodiscard]] std::optional<RenderContext2D>
-        makeContext(std::size_t index, const RenderCompositionFrame2D& frame = {}) const noexcept
+        [[nodiscard]] std::optional<RenderContext2D> makeContext(
+            std::size_t index, const RenderCompositionFrame2D& frame = {}) const noexcept
         {
             if (index >= m_entries.size() || !m_entries[index].enabled || !isValidFrame(frame))
                 return std::nullopt;
