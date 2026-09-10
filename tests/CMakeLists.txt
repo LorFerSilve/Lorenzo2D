@@ -44,7 +44,7 @@ function(l2d_add_regression_test target)
         l2d_xvfb_label_index GREATER_EQUAL 0
     )
         message(FATAL_ERROR
-            "${target} cannot use both the headless and xvfb runtime labels"
+            "${target} cannot use both the headless and xvfb runtime label"
         )
     endif()
 
@@ -393,4 +393,11 @@ l2d_add_regression_test(
     SOURCE Lorenzo2DSpriteBatchTests.cpp
     LABELS xvfb renderer batching atlas phase12
     TIMEOUT 90
+)
+
+l2d_add_regression_test(
+    Lorenzo2DRenderCompositionTests
+    SOURCE Lorenzo2DRenderCompositionTests.cpp
+    LABELS headless renderer camera composition layers phase12
+    TIMEOUT 60
 )

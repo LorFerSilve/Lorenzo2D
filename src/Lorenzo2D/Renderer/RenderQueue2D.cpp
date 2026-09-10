@@ -105,8 +105,11 @@ namespace l2d
                 {
                     const RenderSortKey2D sortKey =
                         makeSortKey(*gameObject, order, context, insertionOrder);
-                    m_entries.push_back({scene.createHandle(*gameObject), gameObject->zOrder(),
-                                         insertionOrder, sortKey});
+                    if (context.layers.contains(sortKey.layer))
+                    {
+                        m_entries.push_back({scene.createHandle(*gameObject), gameObject->zOrder(),
+                                             insertionOrder, sortKey});
+                    }
                 }
             }
 
