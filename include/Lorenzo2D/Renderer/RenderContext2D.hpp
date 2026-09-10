@@ -38,6 +38,15 @@ namespace l2d
 
     struct RenderContext2D
     {
+        constexpr RenderContext2D(float interpolationAlphaValue = 1.f,
+                                  const CoordinateProjection2D* projectionValue = nullptr,
+                                  RenderPass2D passValue = RenderPass2D::World,
+                                  RenderLayerRange2D layersValue = {}) noexcept
+            : interpolationAlpha(interpolationAlphaValue), projection(projectionValue),
+              pass(passValue), layers(layersValue)
+        {
+        }
+
         float interpolationAlpha = 1.f;
         const CoordinateProjection2D* projection = nullptr;
         RenderPass2D pass = RenderPass2D::World;
