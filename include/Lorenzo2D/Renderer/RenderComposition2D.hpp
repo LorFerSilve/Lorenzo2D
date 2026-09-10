@@ -9,14 +9,37 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
+namespace sf
+{
+    class RenderTarget;
+    class RenderWindow;
+}
+
 namespace l2d
 {
+    class Scene;
+
+    enum class RenderCompositionFailure2D : std::uint8_t
+    {
+        None,
+        ReentrantExecution,
+        InvalidFrame,
+        InvalidCallback,
+        InvalidEntry,
+        CallbackFailed
+    };
+
+    [[nodiscard]] std::string_view renderCompositionFailureName(
+        RenderCompositionFailure2D failure) noexcept;
+
     struct RenderCompositionEntry2D
     {
         std::string name;
@@ -33,9 +56,30 @@ namespace l2d
         const CoordinateProjection2D* projection = nullptr;
     };
 
-    // Ordered, CPU-side composition plan. Entries borrow Camera2D instances;
-    // this class never owns or mutates the referenced cameras. Rendering the
-    // plan is intentionally deferred to the next Phase 12 slice.
+    struct RenderCompositionExecution2D
+    {
+        sf::RenderTarget& target;
+        const RenderCompositionEntry2D& entry;
+        const RenderContext2D& context;
+        std::size_t entryIndex = 0u;
+    };
+
+    using RenderCompositionCallback2D =
+        std::function<bool(const RenderCompositionExecution2D& execution)>;
+
+    struct RenderCompositionResult2D
+    {
+        RenderCompositionFailure2D failure = RenderCompositionFailure2D::None;
+        std::size_t completedEntries = 0u;
+        std::optional<std::size_t> failedEntry;
+
+        [[nodiscard]] bool succeeded() const noexcept;
+    };
+
+    // Ordered camera/pass/layer/viewport composition plan. Entries borrow
+    // Camera2D instances; this class never owns or mutates the referenced
+    // cameras. Execution snapshots enabled camera views before the first
+    // callback and restores the target's incoming view on every exit path.
     class RenderComposition2D
     {
       public:
@@ -65,7 +109,7 @@ namespace l2d
 
         [[nodiscard]] bool addEntry(RenderCompositionEntry2D entry)
         {
-            if (m_entries.size() >= MaximumEntryCount || !isValidEntry(entry) ||
+            if (m_executing || m_entries.size() >= MaximumEntryCount || !isValidEntry(entry) ||
                 !isEntryNameAvailable(entry.name, std::nullopt))
             {
                 return false;
@@ -77,7 +121,7 @@ namespace l2d
 
         [[nodiscard]] bool setEntry(std::size_t index, RenderCompositionEntry2D entry)
         {
-            if (index >= m_entries.size() || !isValidEntry(entry) ||
+            if (m_executing || index >= m_entries.size() || !isValidEntry(entry) ||
                 !isEntryNameAvailable(entry.name, index))
             {
                 return false;
@@ -89,7 +133,7 @@ namespace l2d
 
         [[nodiscard]] bool setEntryEnabled(std::size_t index, bool enabled) noexcept
         {
-            if (index >= m_entries.size()) return false;
+            if (m_executing || index >= m_entries.size()) return false;
 
             m_entries[index].enabled = enabled;
             return true;
@@ -97,7 +141,7 @@ namespace l2d
 
         [[nodiscard]] bool moveEntry(std::size_t from, std::size_t to)
         {
-            if (from >= m_entries.size() || to >= m_entries.size()) return false;
+            if (m_executing || from >= m_entries.size() || to >= m_entries.size()) return false;
             if (from == to) return true;
 
             RenderCompositionEntry2D moved = std::move(m_entries[from]);
@@ -108,7 +152,7 @@ namespace l2d
 
         [[nodiscard]] bool removeEntry(std::size_t index)
         {
-            if (index >= m_entries.size()) return false;
+            if (m_executing || index >= m_entries.size()) return false;
 
             m_entries.erase(m_entries.begin() + static_cast<std::ptrdiff_t>(index));
             return true;
@@ -116,6 +160,8 @@ namespace l2d
 
         [[nodiscard]] bool clear()
         {
+            if (m_executing) return false;
+
             m_entries.clear();
             return true;
         }
@@ -128,6 +174,11 @@ namespace l2d
         [[nodiscard]] const RenderCompositionEntry2D* entry(std::size_t index) const noexcept
         {
             return index < m_entries.size() ? &m_entries[index] : nullptr;
+        }
+
+        [[nodiscard]] bool executing() const noexcept
+        {
+            return m_executing;
         }
 
         // Disabled or invalid indices return nullopt. The generated context
@@ -155,6 +206,21 @@ namespace l2d
             view.setViewport(m_entries[index].viewport);
             return view;
         }
+
+        // Generic ordered execution against any SFML render target. The
+        // callback and its RenderCompositionExecution2D references are valid
+        // only for the duration of each callback invocation. Returning false
+        // stops execution and reports CallbackFailed.
+        [[nodiscard]] RenderCompositionResult2D execute(
+            sf::RenderTarget& target, RenderCompositionCallback2D callback,
+            const RenderCompositionFrame2D& frame = {});
+
+        // Compatibility bridge for the existing Scene/Component RenderWindow
+        // virtual contract. The Scene and window are borrowed only for this
+        // call and are never retained by the composition.
+        [[nodiscard]] RenderCompositionResult2D execute(
+            sf::RenderWindow& window, Scene& legacyScene,
+            const RenderCompositionFrame2D& frame = {});
 
       private:
         [[nodiscard]] static bool isValidRenderPass(RenderPass2D pass) noexcept
@@ -205,5 +271,6 @@ namespace l2d
         }
 
         std::vector<RenderCompositionEntry2D> m_entries;
+        bool m_executing = false;
     };
 }
