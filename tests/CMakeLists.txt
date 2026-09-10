@@ -401,3 +401,10 @@ l2d_add_regression_test(
     LABELS headless renderer camera composition layers phase12
     TIMEOUT 60
 )
+
+l2d_add_regression_test(
+    Lorenzo2DRenderCompositionExecutionTests
+    SOURCE Lorenzo2DRenderCompositionExecutionTests.cpp
+    LABELS xvfb renderer camera composition layers execution phase12
+    TIMEOUT 60
+)
