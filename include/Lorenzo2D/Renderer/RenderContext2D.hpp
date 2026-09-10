@@ -5,6 +5,8 @@
 #include <SFML/System/Vector2.hpp>
 
 #include <cmath>
+#include <cstdint>
+#include <limits>
 #include <optional>
 
 namespace l2d
@@ -18,11 +20,28 @@ namespace l2d
         Count
     };
 
+    struct RenderLayerRange2D
+    {
+        std::int32_t minimum = std::numeric_limits<std::int32_t>::min();
+        std::int32_t maximum = std::numeric_limits<std::int32_t>::max();
+
+        [[nodiscard]] constexpr bool isValid() const noexcept
+        {
+            return minimum <= maximum;
+        }
+
+        [[nodiscard]] constexpr bool contains(std::int32_t layer) const noexcept
+        {
+            return isValid() && layer >= minimum && layer <= maximum;
+        }
+    };
+
     struct RenderContext2D
     {
         float interpolationAlpha = 1.f;
         const CoordinateProjection2D* projection = nullptr;
         RenderPass2D pass = RenderPass2D::World;
+        RenderLayerRange2D layers;
 
         [[nodiscard]] std::optional<sf::Vector2f> tryWorldToRender(sf::Vector2f position) const
         {
