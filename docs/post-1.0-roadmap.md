@@ -139,7 +139,7 @@ Introduce targeted fuzz/property tests for:
 - save-game JSON;
 - Tiled JSON import;
 - physics geometry/query inputs;
-- navigation-grid bounds and costs;
+- navigation-grid bounds/costs;
 - UI button bounds and pointer event sequences;
 - asset/resource lookup input.
 
@@ -253,8 +253,8 @@ render graph.
   `Camera2D`, selects a render pass, an inclusive integer layer range, and a normalized viewport.
   `RenderContext2D` gains an all-layers-compatible range and `RenderQueue2D` filters its existing
   deterministic pass snapshot by that range. Configuration validation, ordering, disabled-entry
-  behavior, generated camera views/contexts, and mutation guards are covered by focused headless
-  regressions without changing existing simple rendering behavior.
+  behavior, and generated camera views/contexts are covered by focused headless regressions without
+  changing existing simple rendering behavior.
 - **12.6.2 Multi-camera composition execution:** `RenderComposition2D` now executes its configured
   entries in order against a generic `sf::RenderTarget` callback or the legacy `RenderWindow` +
   `Scene` bridge. Execution preflights enabled entries, snapshots camera views/contexts before the
