@@ -77,17 +77,17 @@ namespace l2d_editor
 
     const EditorObjectRecord* EditorDocument::findObject(EditorObjectId id) const noexcept
     {
-        const auto found = std::find_if(
-            m_objects.begin(), m_objects.end(),
-            [id](const EditorObjectRecord& object) { return object.id == id; });
+        const auto found =
+            std::find_if(m_objects.begin(), m_objects.end(),
+                         [id](const EditorObjectRecord& object) { return object.id == id; });
         return found == m_objects.end() ? nullptr : &(*found);
     }
 
     std::optional<std::size_t> EditorDocument::indexOf(EditorObjectId id) const noexcept
     {
-        const auto found = std::find_if(
-            m_objects.begin(), m_objects.end(),
-            [id](const EditorObjectRecord& object) { return object.id == id; });
+        const auto found =
+            std::find_if(m_objects.begin(), m_objects.end(),
+                         [id](const EditorObjectRecord& object) { return object.id == id; });
         if (found == m_objects.end()) return std::nullopt;
         return static_cast<std::size_t>(std::distance(m_objects.begin(), found));
     }
@@ -112,9 +112,9 @@ namespace l2d_editor
 
     bool EditorDocument::removeObject(EditorObjectId id)
     {
-        const auto found = std::find_if(
-            m_objects.begin(), m_objects.end(),
-            [id](const EditorObjectRecord& object) { return object.id == id; });
+        const auto found =
+            std::find_if(m_objects.begin(), m_objects.end(),
+                         [id](const EditorObjectRecord& object) { return object.id == id; });
         if (found == m_objects.end()) return false;
 
         m_objects.erase(found);
@@ -223,9 +223,9 @@ namespace l2d_editor
 
     EditorObjectRecord* EditorDocument::findObjectMutable(EditorObjectId id) noexcept
     {
-        const auto found = std::find_if(
-            m_objects.begin(), m_objects.end(),
-            [id](const EditorObjectRecord& object) { return object.id == id; });
+        const auto found =
+            std::find_if(m_objects.begin(), m_objects.end(),
+                         [id](const EditorObjectRecord& object) { return object.id == id; });
         return found == m_objects.end() ? nullptr : &(*found);
     }
 }

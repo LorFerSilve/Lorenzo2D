@@ -17,8 +17,8 @@ namespace
     {
       public:
         explicit EditorApp(l2d_editor::EditorDocument document)
-            : l2d::Application(1280u, 720u, "Lorenzo2D Editor"),
-              m_document(std::move(document)), m_hierarchy(m_document)
+            : l2d::Application(1280u, 720u, "Lorenzo2D Editor"), m_document(std::move(document)),
+              m_hierarchy(m_document)
         {
             updateWindowTitle();
         }

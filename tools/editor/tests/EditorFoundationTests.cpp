@@ -65,8 +65,7 @@ namespace
         require(!document.replace(std::move(invalid)), "invalid level replacement succeeded");
         require(serialize(document) == beforeInvalidReplace,
                 "invalid replacement changed document contents");
-        require(document.selectedObject() == 2u,
-                "invalid replacement changed document selection");
+        require(document.selectedObject() == 2u, "invalid replacement changed document selection");
 
         const std::optional<l2d_editor::EditorObjectId> added =
             document.addObject(makePrefab("Fourth", 4.f));
@@ -112,16 +111,14 @@ namespace
         require(document.replace(makeLevel()), "command source replacement failed");
         l2d_editor::EditorCommandHistory history;
 
-        require(history.execute(document, "Rename object",
-                                [](l2d_editor::EditorDocument& editor)
+        require(history.execute(document, "Rename object", [](l2d_editor::EditorDocument& editor)
                                 { return editor.renameObject(1u, "Renamed"); }),
                 "rename command failed");
         require(document.findObject(1u)->prefab.name == "Renamed", "rename did not apply");
         require(history.undoLabel() == "Rename object", "undo label is incorrect");
 
         const l2d::TransformState moved{{42.f, -7.f}, 15.f, {2.f, 0.5f}};
-        require(history.execute(document, "Move object",
-                                [moved](l2d_editor::EditorDocument& editor)
+        require(history.execute(document, "Move object", [moved](l2d_editor::EditorDocument& editor)
                                 { return editor.setObjectTransform(1u, moved); }),
                 "transform command failed");
         require(document.findObject(1u)->prefab.transform.position == moved.position,
@@ -141,8 +138,7 @@ namespace
                 "redo did not restore transform state");
 
         require(history.undo(document), "redo-branch setup undo failed");
-        require(history.execute(document, "Alternate rename",
-                                [](l2d_editor::EditorDocument& editor)
+        require(history.execute(document, "Alternate rename", [](l2d_editor::EditorDocument& editor)
                                 { return editor.renameObject(2u, "Alternate"); }),
                 "alternate command failed");
         require(!history.canRedo(), "new command did not invalidate redo history");
@@ -194,8 +190,7 @@ namespace
         require(document.selectObject(2u), "delete test selection failed");
 
         l2d_editor::EditorCommandHistory history;
-        require(history.execute(document, "Delete selected",
-                                [](l2d_editor::EditorDocument& editor)
+        require(history.execute(document, "Delete selected", [](l2d_editor::EditorDocument& editor)
                                 { return editor.removeObject(2u); }),
                 "delete command failed");
         require(document.findObject(2u) == nullptr, "delete command kept removed object");
@@ -230,8 +225,8 @@ namespace
 
         require(history.undoCount() == l2d_editor::EditorCommandHistory::MaximumCommandCount,
                 "undo history exceeded its configured bound");
-        for (std::size_t index = 0u;
-             index < l2d_editor::EditorCommandHistory::MaximumCommandCount; ++index)
+        for (std::size_t index = 0u; index < l2d_editor::EditorCommandHistory::MaximumCommandCount;
+             ++index)
         {
             require(history.undo(document), "bounded-history undo failed");
         }
@@ -239,8 +234,8 @@ namespace
         require(document.findObject(1u)->prefab.name == "Name3",
                 "bounded-history eviction was not deterministic");
 
-        for (std::size_t index = 0u;
-             index < l2d_editor::EditorCommandHistory::MaximumCommandCount; ++index)
+        for (std::size_t index = 0u; index < l2d_editor::EditorCommandHistory::MaximumCommandCount;
+             ++index)
         {
             require(history.redo(document), "bounded-history redo failed");
         }
@@ -264,7 +259,8 @@ namespace
                 "editor IDs were not regenerated deterministically after load");
         require(loaded.selectedObject() == l2d_editor::InvalidEditorObjectId,
                 "editor-only selection leaked through runtime serialization");
-        require(serialize(loaded) == encoded, "runtime level bytes changed after editor round-trip");
+        require(serialize(loaded) == encoded,
+                "runtime level bytes changed after editor round-trip");
     }
 }
 

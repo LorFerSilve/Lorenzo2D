@@ -17,9 +17,8 @@ namespace l2d_editor
         for (std::size_t index = 0u; index < objects.size(); ++index)
         {
             const EditorObjectRecord& object = objects[index];
-            result.push_back(
-                {object.id, index, object.prefab.name, object.prefab.active, object.prefab.zOrder,
-                 object.id == selected});
+            result.push_back({object.id, index, object.prefab.name, object.prefab.active,
+                              object.prefab.zOrder, object.id == selected});
         }
 
         return result;
