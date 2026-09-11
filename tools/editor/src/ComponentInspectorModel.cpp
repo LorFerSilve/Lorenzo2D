@@ -97,7 +97,8 @@ namespace l2d_editor
             appendBuiltIn(result.components, InspectorComponentKind::PlatformerController);
         if (prefab.pathFollower)
             appendBuiltIn(result.components, InspectorComponentKind::PathFollower);
-        if (prefab.boxCollider) appendBuiltIn(result.components, InspectorComponentKind::BoxCollider);
+        if (prefab.boxCollider)
+            appendBuiltIn(result.components, InspectorComponentKind::BoxCollider);
         if (prefab.circleCollider)
             appendBuiltIn(result.components, InspectorComponentKind::CircleCollider);
         if (prefab.capsuleCollider)
@@ -108,8 +109,8 @@ namespace l2d_editor
         for (std::size_t index = 0u; index < prefab.customComponents.size(); ++index)
         {
             const l2d::SerializedComponentPrefab& component = prefab.customComponents[index];
-            result.components.push_back({InspectorComponentKind::Custom,
-                                         "Custom: " + component.type, true, index});
+            result.components.push_back(
+                {InspectorComponentKind::Custom, "Custom: " + component.type, true, index});
         }
 
         return result;
@@ -117,7 +118,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setName(std::string name)
     {
-        return editSelected("Rename object", [name = std::move(name)](l2d::Prefab& prefab) mutable
+        return editSelected("Rename object",
+                            [name = std::move(name)](l2d::Prefab& prefab) mutable
                             {
                                 if (prefab.name == name) return false;
                                 prefab.name = std::move(name);
@@ -127,7 +129,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setTag(std::string tag)
     {
-        return editSelected("Set object tag", [tag = std::move(tag)](l2d::Prefab& prefab) mutable
+        return editSelected("Set object tag",
+                            [tag = std::move(tag)](l2d::Prefab& prefab) mutable
                             {
                                 if (prefab.tag == tag) return false;
                                 prefab.tag = std::move(tag);
@@ -137,7 +140,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setActive(bool active)
     {
-        return editSelected("Set object active", [active](l2d::Prefab& prefab)
+        return editSelected("Set object active",
+                            [active](l2d::Prefab& prefab)
                             {
                                 if (prefab.active == active) return false;
                                 prefab.active = active;
@@ -147,7 +151,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setZOrder(std::int32_t zOrder)
     {
-        return editSelected("Set object z-order", [zOrder](l2d::Prefab& prefab)
+        return editSelected("Set object z-order",
+                            [zOrder](l2d::Prefab& prefab)
                             {
                                 if (prefab.zOrder == zOrder) return false;
                                 prefab.zOrder = zOrder;
@@ -157,7 +162,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setTransform(l2d::TransformState transform)
     {
-        return editSelected("Set object transform", [transform](l2d::Prefab& prefab)
+        return editSelected("Set object transform",
+                            [transform](l2d::Prefab& prefab)
                             {
                                 if (prefab.transform.position == transform.position &&
                                     prefab.transform.rotation == transform.rotation &&
@@ -177,23 +183,23 @@ namespace l2d_editor
         const EditorObjectId id = selectedId();
         if (id == InvalidEditorObjectId) return false;
 
-        return m_history->execute(
-            *m_document, std::move(label),
-            [id, &mutation](EditorDocument& document)
-            {
-                const EditorObjectRecord* object = document.findObject(id);
-                if (object == nullptr) return false;
+        return m_history->execute(*m_document, std::move(label),
+                                  [id, &mutation](EditorDocument& document)
+                                  {
+                                      const EditorObjectRecord* object = document.findObject(id);
+                                      if (object == nullptr) return false;
 
-                l2d::Prefab replacement = object->prefab;
-                if (!mutation(replacement)) return false;
-                return document.replaceObject(id, std::move(replacement));
-            });
+                                      l2d::Prefab replacement = object->prefab;
+                                      if (!mutation(replacement)) return false;
+                                      return document.replaceObject(id, std::move(replacement));
+                                  });
     }
 
     bool ComponentInspectorModel::addComponent(InspectorComponentKind kind)
     {
         const std::string label = "Add " + std::string(componentDisplayName(kind));
-        return editSelected(label, [kind](l2d::Prefab& prefab)
+        return editSelected(label,
+                            [kind](l2d::Prefab& prefab)
                             {
                                 switch (kind)
                                 {
@@ -264,7 +270,8 @@ namespace l2d_editor
     bool ComponentInspectorModel::removeComponent(InspectorComponentKind kind)
     {
         const std::string label = "Remove " + std::string(componentDisplayName(kind));
-        return editSelected(label, [kind](l2d::Prefab& prefab)
+        return editSelected(label,
+                            [kind](l2d::Prefab& prefab)
                             {
                                 switch (kind)
                                 {
@@ -334,17 +341,16 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::addCustomComponent(l2d::SerializedComponentPrefab component)
     {
-        return editSelected(
-            "Add custom component",
-            [component = std::move(component)](l2d::Prefab& prefab) mutable
-            {
-                prefab.customComponents.push_back(std::move(component));
-                return true;
-            });
+        return editSelected("Add custom component",
+                            [component = std::move(component)](l2d::Prefab& prefab) mutable
+                            {
+                                prefab.customComponents.push_back(std::move(component));
+                                return true;
+                            });
     }
 
-    bool ComponentInspectorModel::updateCustomComponent(
-        std::size_t index, l2d::SerializedComponentPrefab component)
+    bool ComponentInspectorModel::updateCustomComponent(std::size_t index,
+                                                        l2d::SerializedComponentPrefab component)
     {
         return editSelected(
             "Update custom component",
@@ -364,7 +370,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::removeCustomComponent(std::size_t index)
     {
-        return editSelected("Remove custom component", [index](l2d::Prefab& prefab)
+        return editSelected("Remove custom component",
+                            [index](l2d::Prefab& prefab)
                             {
                                 if (index >= prefab.customComponents.size()) return false;
                                 prefab.customComponents.erase(prefab.customComponents.begin() +
