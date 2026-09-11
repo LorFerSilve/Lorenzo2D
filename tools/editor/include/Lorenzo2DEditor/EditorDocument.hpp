@@ -24,9 +24,11 @@ namespace l2d_editor
 
     class EditorCommandHistory;
 
-    // Editor-only representation of a runtime LevelDocument. Stable editor IDs
-    // live only for the lifetime of this document and are deliberately not
-    // serialized into Lorenzo2D's runtime level format.
+    // Editor-only representation of a runtime LevelDocument. Editor IDs are
+    // allocated from a monotonically increasing document-local high-water mark.
+    // Successful replacement/load and command-history restoration never rewind
+    // that allocator, preventing stale IDs from aliasing later objects. IDs are
+    // deliberately not serialized into Lorenzo2D's runtime level format.
     class EditorDocument
     {
       public:
@@ -67,7 +69,6 @@ namespace l2d_editor
             std::string name;
             std::vector<EditorObjectRecord> objects;
             EditorObjectId selectedObject = InvalidEditorObjectId;
-            EditorObjectId nextObjectId = 1u;
         };
 
         [[nodiscard]] Snapshot snapshot() const;
