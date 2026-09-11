@@ -408,3 +408,10 @@ l2d_add_regression_test(
     LABELS xvfb renderer camera composition layers execution phase12
     TIMEOUT 60
 )
+
+l2d_add_regression_test(
+    Lorenzo2DRenderStatisticsTests
+    SOURCE Lorenzo2DRenderStatisticsTests.cpp
+    LABELS xvfb renderer diagnostics statistics batching pipeline composition post-process phase12
+    TIMEOUT 90
+)

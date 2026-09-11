@@ -21,6 +21,7 @@ namespace sf
 
 namespace l2d
 {
+    class RenderStatisticsRecorder2D;
     class Scene;
 
     enum class RenderPipelinePassTarget2D : std::uint8_t
@@ -77,12 +78,22 @@ namespace l2d
         bool enabled = true;
     };
 
-    // Per-execution presentation state. projection is borrowed only for the
-    // duration of execute(); the pipeline never stores it.
+    // Per-execution presentation state. projection and statistics are borrowed
+    // only for the duration of execute(); the pipeline never stores them.
     struct RenderPipelineFrame2D
     {
+        constexpr RenderPipelineFrame2D(
+            float interpolationAlphaValue = 1.f,
+            const CoordinateProjection2D* projectionValue = nullptr,
+            RenderStatisticsRecorder2D* statisticsValue = nullptr) noexcept
+            : interpolationAlpha(interpolationAlphaValue), projection(projectionValue),
+              statistics(statisticsValue)
+        {
+        }
+
         float interpolationAlpha = 1.f;
         const CoordinateProjection2D* projection = nullptr;
+        RenderStatisticsRecorder2D* statistics = nullptr;
     };
 
     struct RenderPipelineExecution2D

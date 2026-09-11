@@ -1,5 +1,7 @@
 #include <Lorenzo2D/Renderer/ShaderPostProcessChain2D.hpp>
 
+#include <Lorenzo2D/Renderer/RenderStatistics2D.hpp>
+
 #include <SFML/Graphics/BlendMode.hpp>
 #include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
@@ -175,6 +177,13 @@ namespace l2d
     ShaderPostProcessResult2D ShaderPostProcessChain2D::apply(const RenderSurface2D& source,
                                                               sf::RenderTarget& destination)
     {
+        return apply(source, destination, nullptr);
+    }
+
+    ShaderPostProcessResult2D ShaderPostProcessChain2D::apply(
+        const RenderSurface2D& source, sf::RenderTarget& destination,
+        RenderStatisticsRecorder2D* statistics)
+    {
         if (!source.ready() || source.target() == nullptr || source.texture() == nullptr)
             return failureResult(ShaderPostProcessFailure2D::SourceUnavailable);
 
@@ -211,7 +220,7 @@ namespace l2d
         if (enabledPasses.empty())
         {
             ScopedDefaultView2D viewGuard(destination);
-            if (!drawFullscreen(*source.texture(), destination, {}))
+            if (!drawFullscreen(*source.texture(), destination, {}, statistics))
                 return failureResult(ShaderPostProcessFailure2D::MaterialApplyFailed);
             return {};
         }
@@ -237,7 +246,7 @@ namespace l2d
                 ScopedDefaultView2D viewGuard(destination);
                 if (passConfig.clearOutput) destination.clear(passConfig.clearColor);
 
-                if (!drawFullscreen(*currentTexture, destination, passConfig.material))
+                if (!drawFullscreen(*currentTexture, destination, passConfig.material, statistics))
                 {
                     return failureResult(ShaderPostProcessFailure2D::MaterialApplyFailed, passIndex,
                                          result.completedPasses);
@@ -261,7 +270,7 @@ namespace l2d
 
                 {
                     ScopedDefaultView2D viewGuard(*target);
-                    if (!drawFullscreen(*currentTexture, *target, passConfig.material))
+                    if (!drawFullscreen(*currentTexture, *target, passConfig.material, statistics))
                     {
                         return failureResult(ShaderPostProcessFailure2D::MaterialApplyFailed,
                                              passIndex, result.completedPasses);
@@ -337,7 +346,8 @@ namespace l2d
 
     bool ShaderPostProcessChain2D::drawFullscreen(const sf::Texture& texture,
                                                   sf::RenderTarget& destination,
-                                                  const Material2DHandle& material)
+                                                  const Material2DHandle& material,
+                                                  RenderStatisticsRecorder2D* statistics)
     {
         const sf::Vector2u sourceSize = texture.getSize();
         const sf::Vector2u destinationSize = destination.getSize();
@@ -357,6 +367,7 @@ namespace l2d
         if (material && !material->apply(states)) return false;
 
         destination.draw(sprite, states);
+        if (statistics != nullptr) statistics->recordDraw({2u, 1u, 1u, material});
         return true;
     }
 }

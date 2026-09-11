@@ -116,6 +116,11 @@ namespace l2d
         ActiveAudioVoices,
         SaveBytesWritten,
         SaveBytesRead,
+        SubmittedPrimitives,
+        RenderBatches,
+        MaterialSwitches,
+        ShaderSwitches,
+        CulledItems,
         Count
     };
 

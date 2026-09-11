@@ -1,5 +1,6 @@
 #include <Lorenzo2D/Assets/AssetHandle.hpp>
 #include <Lorenzo2D/Core/Application.hpp>
+#include <Lorenzo2D/Renderer/RenderStatistics2D.hpp>
 #include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 
 #include <SFML/Graphics/Image.hpp>
@@ -12,8 +13,7 @@
 class Phase12BatchingExample final : public l2d::Application
 {
   public:
-    Phase12BatchingExample()
-        : l2d::Application(800, 450, "Lorenzo2D Phase 12 sprite batching")
+    Phase12BatchingExample() : l2d::Application(800, 450, "Lorenzo2D Phase 12 sprite batching")
     {
         sf::Image atlas({2u, 1u}, sf::Color(245, 170, 55));
         atlas.setPixel({1u, 0u}, sf::Color(70, 155, 255));
@@ -34,8 +34,7 @@ class Phase12BatchingExample final : public l2d::Application
             {
                 l2d::SpriteBatchSubmission2D submission;
                 submission.texture = m_atlas;
-                submission.textureRect =
-                    {{static_cast<int>((row + column) % 2u), 0}, {1, 1}};
+                submission.textureRect = {{static_cast<int>((row + column) % 2u), 0}, {1, 1}};
                 submission.position = {70.f + static_cast<float>(column) * Spacing,
                                        75.f + static_cast<float>(row) * Spacing};
                 submission.scale = {CellSize, CellSize};
@@ -53,12 +52,21 @@ class Phase12BatchingExample final : public l2d::Application
     void onRender(sf::RenderWindow& window, float) override
     {
         window.clear(sf::Color(18, 24, 42));
-        const l2d::SpriteBatchDrawResult2D result = m_batch.draw(window);
-        if (!result.succeeded()) window.clear(sf::Color::Red);
+        m_statistics.reset();
+        const l2d::SpriteBatchDrawResult2D result = m_batch.draw(window, &m_statistics);
+        const l2d::RenderStatistics2D& statistics = m_statistics.statistics();
+
+        if (!result.succeeded() || statistics.drawCallCount != 1u ||
+            statistics.submittedPrimitiveCount != 400u || statistics.batchCount != 1u ||
+            statistics.renderedItemCount != 200u)
+        {
+            window.clear(sf::Color::Red);
+        }
     }
 
     l2d::TextureHandle m_atlas;
     l2d::SpriteBatch2D m_batch;
+    l2d::RenderStatisticsRecorder2D m_statistics;
 };
 
 int main()

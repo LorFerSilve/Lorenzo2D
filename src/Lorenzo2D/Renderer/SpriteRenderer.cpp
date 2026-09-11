@@ -2,6 +2,7 @@
 
 #include <Lorenzo2D/ECS/GameObject.hpp>
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
+#include <Lorenzo2D/Renderer/RenderStatistics2D.hpp>
 
 #include "RendererNumeric.hpp"
 
@@ -9,8 +10,8 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Angle.hpp>
 
-#include <stdexcept>
 #include <cmath>
+#include <stdexcept>
 #include <utility>
 
 namespace l2d
@@ -255,10 +256,13 @@ namespace l2d
             sf::RenderStates states;
             if (!m_material->apply(states)) return;
             window.draw(m_sprite, states);
+            if (context.statistics != nullptr)
+                context.statistics->recordDraw({2u, 1u, 1u, m_material});
             return;
         }
 
         window.draw(m_sprite);
+        if (context.statistics != nullptr) context.statistics->recordDraw({2u, 1u, 1u, nullptr});
     }
 
     void SpriteRenderer::syncLiveTexture()

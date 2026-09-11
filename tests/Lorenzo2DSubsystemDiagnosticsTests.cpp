@@ -11,6 +11,7 @@
 #include <Lorenzo2D/Physics/CircleCollider2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
 #include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+#include <Lorenzo2D/Renderer/RenderStatistics2D.hpp>
 #include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
@@ -73,8 +74,11 @@ namespace
         l2d::TileMapRenderStats renderStats;
         renderStats.drawCallCount = 4u;
         renderStats.submittedTileCount = 12u;
+        renderStats.submittedVertexCount = 72u;
+        renderStats.culledChunkCount = 3u;
 
         l2d::SpriteBatchDrawResult2D batchResult;
+        batchResult.completedBatchCount = 2u;
         batchResult.drawCallCount = 2u;
         batchResult.renderedSpriteCount = 5u;
 
@@ -89,6 +93,32 @@ namespace
         L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::NavigationReplans), 1u);
         L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::DrawCalls), 6u);
         L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::RenderedItems), 17u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::SubmittedPrimitives), 34u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::RenderBatches), 6u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::CulledItems), 3u);
+    }
+
+    void testRenderStatisticsAccumulation()
+    {
+        l2d::RenderStatistics2D statistics;
+        statistics.drawCallCount = 7u;
+        statistics.submittedPrimitiveCount = 21u;
+        statistics.batchCount = 5u;
+        statistics.materialSwitchCount = 3u;
+        statistics.shaderSwitchCount = 2u;
+        statistics.renderedItemCount = 11u;
+        statistics.culledItemCount = 4u;
+
+        l2d::DiagnosticCounters counters;
+        l2d::accumulateRenderStatisticsDiagnostics(statistics, counters);
+
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::DrawCalls), 7u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::SubmittedPrimitives), 21u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::RenderBatches), 5u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::MaterialSwitches), 3u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::ShaderSwitches), 2u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::RenderedItems), 11u);
+        L2D_REQUIRE_EQUAL(counters.value(l2d::DiagnosticCounter::CulledItems), 4u);
     }
 
     void testAssetAudioAndSaveAccumulation()
@@ -148,6 +178,7 @@ int main()
     runTest("subsystem scene and render queue", testSceneAndRenderQueueAccumulation, failures);
     runTest("subsystem physics events", testPhysicsAndEventCounters, failures);
     runTest("subsystem navigation and tilemap", testNavigationAndTilemapAccumulation, failures);
+    runTest("subsystem render statistics", testRenderStatisticsAccumulation, failures);
     runTest("subsystem assets audio save", testAssetAudioAndSaveAccumulation, failures);
     runTest("subsystem accumulation and scopes", testAccumulationAndScopeNames, failures);
     return failures == 0 ? 0 : 1;

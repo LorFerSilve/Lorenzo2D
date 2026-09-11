@@ -28,7 +28,7 @@ done is satisfied, not merely to match a version target.
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 11 | production hardening, diagnostics, profiling, fuzzing, stress validation, and CI policy | Complete |
-| 12 | rendering 2.0: shaders, materials, render targets, batching, post-processing, and render diagnostics | In progress |
+| 12 | rendering 2.0: shaders, materials, render targets, batching, post-processing, and render diagnostics | Complete |
 | 13 | tooling and editor foundation using installed public engine API | Planned |
 | 14 | content pipeline 2.0: asset metadata, import/cook pipeline, dependency graph, and rebuild cache | Planned |
 | 15 | gameplay framework and scripting boundary | Planned |
@@ -266,8 +266,19 @@ render graph.
   post-processing, publication, and presentation remain `RenderPipeline2D`/application concerns.
   Focused Xvfb regressions and installed/add_subdirectory consumer coverage validate the execution
   and stable failure/result API.
-- Remaining Phase 12 work is the complete render-statistics surface, including submitted primitive,
-  batch, material/shader-switch, and culling telemetry across the coherent presentation pipeline.
+- **12.7 Complete render diagnostics and statistics:** public `RenderStatisticsRecorder2D` records
+  the ordered frame draw stream with saturating draw-call, submitted-triangle, batch, rendered-item,
+  culled-item, material-switch, and shader-switch counters. The optional recorder propagates through
+  `RenderContext2D`, `SpriteRenderer`, `SpriteBatch2D`, `RenderSurface2D` presentation,
+  `ShaderPostProcessChain2D`, `RenderPipeline2D`, and `RenderComposition2D`; tilemap render stats are
+  bridged without inventing finer culling granularity than the existing chunk telemetry. Phase 11
+  `DiagnosticCounters` gain stable appended render counters and an explicit accumulator bridge.
+  Focused Xvfb regressions, installed/add_subdirectory consumers, the batching example, and dedicated
+  lifetime/order/failure documentation validate the contract while preserving the no-recorder path.
+- **Phase 12 status: complete.** The required Rendering 2.0 API, validation, examples, batching
+  benchmark coverage, documentation, package consumption, deterministic ordering, and render
+  diagnostics are present. The roadmap's optional 2D-lighting foundation remains a future option,
+  not a completion requirement.
 
 ### Scope
 
@@ -304,6 +315,10 @@ render graph.
 - At least one post-processing example.
 - Batching correctness and diagnostic benchmarks.
 - Documentation for lifetime, pass ordering, coordinate spaces, and failure modes.
+
+All required Phase 12 definition-of-done items are satisfied by the 12.1-12.7 implementation
+slices, installed/add_subdirectory consumers, focused regressions, examples, and the existing
+nightly batching benchmark trend coverage.
 
 ---
 
@@ -684,8 +699,7 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-Continue **Phase 12 — Rendering 2.0** with **12.7 complete render diagnostics and statistics**.
-Camera/layer composition is now configured and executable through 12.6.1/12.6.2; the next slice
-should unify draw calls, submitted primitives, batches, material/shader switches, and culled-item
-telemetry across the existing sprite, tilemap, pipeline, post-process, and composition paths without
-disturbing deterministic ordering or the existing simple rendering path.
+Begin **Phase 13 — Tooling and editor foundation** with a thin editor application target that
+consumes Lorenzo2D through installed/public engine APIs. The first slice should establish the
+editor/runtime dependency boundary and a minimal scene-hierarchy/selection shell before adding
+component inspectors, gizmos, asset browsing, or tilemap authoring.

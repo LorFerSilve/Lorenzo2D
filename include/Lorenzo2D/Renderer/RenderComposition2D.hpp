@@ -25,6 +25,7 @@ namespace sf
 
 namespace l2d
 {
+    class RenderStatisticsRecorder2D;
     class Scene;
 
     enum class RenderCompositionFailure2D : std::uint8_t
@@ -52,8 +53,18 @@ namespace l2d
 
     struct RenderCompositionFrame2D
     {
+        constexpr RenderCompositionFrame2D(
+            float interpolationAlphaValue = 1.f,
+            const CoordinateProjection2D* projectionValue = nullptr,
+            RenderStatisticsRecorder2D* statisticsValue = nullptr) noexcept
+            : interpolationAlpha(interpolationAlphaValue), projection(projectionValue),
+              statistics(statisticsValue)
+        {
+        }
+
         float interpolationAlpha = 1.f;
         const CoordinateProjection2D* projection = nullptr;
+        RenderStatisticsRecorder2D* statistics = nullptr;
     };
 
     struct RenderCompositionExecution2D
@@ -182,8 +193,9 @@ namespace l2d
         }
 
         // Disabled or invalid indices return nullopt. The generated context
-        // carries the entry's pass/layer filter while the generated view is a
-        // copy of the borrowed camera view with only the viewport overridden.
+        // carries the entry's pass/layer filter and statistics recorder while
+        // the generated view is a copy of the borrowed camera view with only
+        // the viewport overridden.
         [[nodiscard]] std::optional<RenderContext2D> makeContext(
             std::size_t index, const RenderCompositionFrame2D& frame = {}) const noexcept
         {
@@ -195,6 +207,7 @@ namespace l2d
             context.projection = frame.projection;
             context.pass = m_entries[index].pass;
             context.layers = m_entries[index].layers;
+            context.statistics = frame.statistics;
             return context;
         }
 

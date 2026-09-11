@@ -23,6 +23,8 @@ namespace sf
 
 namespace l2d
 {
+    class RenderStatisticsRecorder2D;
+
     enum class ShaderPostProcessFailure2D : std::uint8_t
     {
         None,
@@ -109,12 +111,17 @@ namespace l2d
         // order. The source must already have published content via display().
         // The destination view is restored after the call. If no passes are
         // enabled, source is copied to the destination with overwrite blending.
+        // The original overload remains source-compatible; the recorder-aware
+        // overload appends successful full-screen draws to statistics.
         //
         // destination may itself be the output target of a RenderPipeline2D
         // surface pass; in that case the pipeline remains responsible for the
         // final RenderSurface2D::display() publication step.
         [[nodiscard]] ShaderPostProcessResult2D apply(const RenderSurface2D& source,
                                                       sf::RenderTarget& destination);
+        [[nodiscard]] ShaderPostProcessResult2D apply(const RenderSurface2D& source,
+                                                      sf::RenderTarget& destination,
+                                                      RenderStatisticsRecorder2D* statistics);
 
       private:
         [[nodiscard]] bool isPassNameAvailable(std::string_view name,
@@ -125,7 +132,8 @@ namespace l2d
                                                    const RenderSurfaceConfig2D& config) noexcept;
         [[nodiscard]] static bool drawFullscreen(const sf::Texture& texture,
                                                  sf::RenderTarget& destination,
-                                                 const Material2DHandle& material);
+                                                 const Material2DHandle& material,
+                                                 RenderStatisticsRecorder2D* statistics);
 
         std::vector<ShaderPostProcessPass2D> m_passes;
         std::array<std::unique_ptr<RenderSurface2D>, 2u> m_workspace;

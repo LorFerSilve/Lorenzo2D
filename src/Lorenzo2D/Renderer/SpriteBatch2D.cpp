@@ -1,5 +1,7 @@
 #include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 
+#include <Lorenzo2D/Renderer/RenderStatistics2D.hpp>
+
 #include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Texture.hpp>
@@ -266,6 +268,12 @@ namespace l2d
 
     SpriteBatchDrawResult2D SpriteBatch2D::draw(sf::RenderTarget& destination) const
     {
+        return draw(destination, nullptr);
+    }
+
+    SpriteBatchDrawResult2D SpriteBatch2D::draw(sf::RenderTarget& destination,
+                                                RenderStatisticsRecorder2D* statistics) const
+    {
         if (m_batches.empty()) return {};
 
         const sf::Vector2u destinationSize = destination.getSize();
@@ -295,6 +303,11 @@ namespace l2d
             }
 
             destination.draw(batch.vertices, states);
+            if (statistics != nullptr)
+            {
+                statistics->recordDraw(
+                    {batch.vertices.getVertexCount() / 3u, batch.spriteCount, 1u, batch.material});
+            }
             ++result.completedBatchCount;
             ++result.drawCallCount;
             result.renderedSpriteCount += batch.spriteCount;
