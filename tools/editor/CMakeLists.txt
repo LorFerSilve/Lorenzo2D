@@ -8,7 +8,7 @@ find_package(Lorenzo2D 1.1 CONFIG REQUIRED)
 
 option(
     L2D_EDITOR_BUILD_TESTS
-    "Build the Lorenzo2D editor foundation regression tests"
+    "Build the Lorenzo2D editor regression tests"
     ON
 )
 option(
@@ -38,6 +38,7 @@ function(l2d_editor_enable_warnings target)
 endfunction()
 
 add_library(Lorenzo2DEditorCore STATIC
+    src/ComponentInspectorModel.cpp
     src/EditorCommandHistory.cpp
     src/EditorDocument.cpp
     src/SceneHierarchyModel.cpp
@@ -74,6 +75,24 @@ if(L2D_EDITOR_BUILD_TESTS)
     )
     set_tests_properties(
         Lorenzo2DEditorFoundationTests
+        PROPERTIES
+            TIMEOUT 30
+    )
+
+    add_executable(
+        Lorenzo2DEditorComponentInspectorTests
+        tests/ComponentInspectorTests.cpp
+    )
+    target_compile_features(Lorenzo2DEditorComponentInspectorTests PRIVATE cxx_std_17)
+    target_link_libraries(Lorenzo2DEditorComponentInspectorTests PRIVATE Lorenzo2DEditor::Core)
+    l2d_editor_enable_warnings(Lorenzo2DEditorComponentInspectorTests)
+
+    add_test(
+        NAME Lorenzo2DEditorComponentInspectorTests
+        COMMAND Lorenzo2DEditorComponentInspectorTests
+    )
+    set_tests_properties(
+        Lorenzo2DEditorComponentInspectorTests
         PROPERTIES
             TIMEOUT 30
     )
