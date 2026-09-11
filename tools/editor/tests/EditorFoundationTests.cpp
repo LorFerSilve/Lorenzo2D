@@ -279,8 +279,7 @@ namespace
                                     return true;
                                 }),
                 "final ID-history add failed");
-        require(finalId == 8u,
-                "failed or throwing command rewound the editor ID high-water mark");
+        require(finalId == 8u, "failed or throwing command rewound the editor ID high-water mark");
     }
 
     void testFailedCommandsRollback()
