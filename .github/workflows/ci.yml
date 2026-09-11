@@ -268,6 +268,23 @@ jobs:
             --output-on-failure \
             --no-tests=error
 
+      - name: Configure editor foundation against installed package
+        run: >-
+          cmake
+          -S tools/editor
+          -B build-editor
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
+          -DL2D_EDITOR_BUILD_TESTS=ON
+          -DL2D_EDITOR_WARNINGS_AS_ERRORS=ON
+
+      - name: Build and test editor foundation
+        run: |
+          cmake --build build-editor --parallel
+          ctest --test-dir build-editor \
+            --output-on-failure \
+            --no-tests=error
+
       - name: Configure and build platformer starter
         run: |
           cmake \

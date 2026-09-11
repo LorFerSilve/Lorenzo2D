@@ -20,6 +20,8 @@ file(GLOB_RECURSE l2d_format_files
     "${L2D_SOURCE_DIR}/src/*.hpp"
     "${L2D_SOURCE_DIR}/tests/*.cpp"
     "${L2D_SOURCE_DIR}/tests/*.hpp"
+    "${L2D_SOURCE_DIR}/tools/editor/*.cpp"
+    "${L2D_SOURCE_DIR}/tools/editor/*.hpp"
 )
 
 set(l2d_format_failures)
