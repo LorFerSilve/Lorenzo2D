@@ -254,7 +254,7 @@ namespace
                                   {
                                       const std::optional<l2d_editor::EditorObjectId> id =
                                           editor.addObject(makePrefab("Throwing", 7.f));
-                                      if (!id) throw std::runtime_error("throwing add allocation failed");
+                                      require(id.has_value(), "throwing add allocation failed");
                                       thrownId = *id;
                                       throw std::runtime_error("expected throwing add failure");
                                   });
