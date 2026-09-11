@@ -16,7 +16,8 @@ namespace l2d_editor
 
     bool EditorDocument::replace(l2d::LevelDocument level)
     {
-        if (!isValidLevelName(level.name) || level.objects.size() > MaximumObjectCount) return false;
+        if (!isValidLevelName(level.name) || level.objects.size() > MaximumObjectCount)
+            return false;
 
         std::vector<EditorObjectRecord> replacement;
         replacement.reserve(level.objects.size());
