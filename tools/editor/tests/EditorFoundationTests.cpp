@@ -60,6 +60,18 @@ namespace
         require(document.selectedObject() == 2u, "failed selection changed the document");
 
         const std::string beforeInvalidReplace = serialize(document);
+        require(!document.setName("Broken\nName"), "unsaveable level name was accepted");
+        require(document.name() == "Editor Test", "invalid level name changed the document");
+
+        l2d::LevelDocument invalidName = makeLevel();
+        invalidName.name = "Broken\rName";
+        require(!document.replace(std::move(invalidName)),
+                "level replacement accepted an unsaveable name");
+        require(serialize(document) == beforeInvalidReplace,
+                "invalid-name replacement changed document contents");
+        require(document.selectedObject() == 2u,
+                "invalid-name replacement changed document selection");
+
         l2d::LevelDocument invalid = makeLevel();
         invalid.objects.front().transform.position.x = std::numeric_limits<float>::quiet_NaN();
         require(!document.replace(std::move(invalid)), "invalid level replacement succeeded");
