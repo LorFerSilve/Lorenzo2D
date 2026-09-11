@@ -209,6 +209,12 @@ namespace
         require(history.undo(document), "ID-history undo failed");
         require(document.findObject(firstAdded) == nullptr,
                 "undone object remained in the document");
+        require(history.redo(document), "ID-history redo failed");
+        require(document.findObject(firstAdded) != nullptr,
+                "redo did not restore the original editor object identity");
+        require(history.undo(document), "second ID-history undo failed");
+        require(document.findObject(firstAdded) == nullptr,
+                "second undo retained the redone object");
 
         l2d_editor::EditorObjectId branchAdded = l2d_editor::InvalidEditorObjectId;
         require(history.execute(document, "Branch add",
