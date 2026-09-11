@@ -48,8 +48,8 @@ namespace
     {
         std::ostringstream output;
         output << "Position: " << transform.position.x << ", " << transform.position.y
-               << "   Rotation: " << transform.rotation << "   Scale: " << transform.scale.x
-               << ", " << transform.scale.y;
+               << "   Rotation: " << transform.rotation << "   Scale: " << transform.scale.x << ", "
+               << transform.scale.y;
         return output.str();
     }
 
@@ -83,7 +83,8 @@ namespace
             if (l2d::Input::wasKeyPressed(l2d::Key::Space))
             {
                 const auto snapshot = m_inspector.snapshot();
-                if (snapshot) stateChanged = m_inspector.setActive(!snapshot->active) || stateChanged;
+                if (snapshot)
+                    stateChanged = m_inspector.setActive(!snapshot->active) || stateChanged;
             }
 
             if (l2d::Input::wasKeyPressed(l2d::Key::Left))
@@ -232,8 +233,7 @@ namespace
             {
                 if (y > height - 130.f) break;
                 drawText(window, "- " + component.displayName, {inspectorX + 8.f, y}, 14u,
-                         component.removable ? sf::Color(205, 208, 215)
-                                             : sf::Color(160, 178, 210));
+                         component.removable ? sf::Color(205, 208, 215) : sf::Color(160, 178, 210));
                 y += 22.f;
             }
 
@@ -245,8 +245,8 @@ namespace
             const float y = height - 112.f;
             drawText(window, "Up/Down select | A/D/W/S move | Left/Right z-order", {x, y}, 13u,
                      sf::Color(160, 164, 174));
-            drawText(window, "Space active | F1 rectangle component | Z undo | Q redo", {x, y + 22.f},
-                     13u, sf::Color(160, 164, 174));
+            drawText(window, "Space active | F1 rectangle component | Z undo | Q redo",
+                     {x, y + 22.f}, 13u, sf::Color(160, 164, 174));
             drawText(window, "Escape close", {x, y + 44.f}, 13u, sf::Color(160, 164, 174));
         }
 
