@@ -19,15 +19,25 @@ The first slice provides:
 - regression tests built against an installed Lorenzo2D package.
 
 The current runtime level format is flat, so the editor does not invent parent/child relationships
-that the engine cannot persist. Editor IDs and selection are session-local and are deliberately not
-written into `.l2dlevel` files.
+that the engine cannot persist. Editor IDs are allocated from a document-local monotonic high-water
+mark and are deliberately not written into `.l2dlevel` files. Successful scene replacement or load
+allocates a fresh ID range and clears selection, so IDs retained from an older scene cannot alias new
+objects.
+
+The high-water allocator is intentionally not part of an undo/redo snapshot. Undo, redo, rejected
+commands, and exception rollback restore document contents and selection but never rewind ID
+allocation. An object restored by redo retains the ID stored in that snapshot, while later newly
+created objects continue above every ID allocated previously in the editor session. This prevents
+stale editor references from silently resolving to unrelated objects after history branching or
+rollback.
 
 ## Undo/redo contract
 
 `EditorCommandHistory` retains at most 256 successful commands. A command receives an
-`EditorDocument` mutation callback. If the callback returns `false`, the complete pre-command state
-is restored and no history entry is created. If it throws, the document is restored before the
-exception propagates.
+`EditorDocument` mutation callback. If the callback returns `false`, document contents and selection
+are restored and no history entry is created. If it throws, those same visible document properties
+are restored before the exception propagates. The monotonic editor-ID high-water mark is not rewound
+by either path.
 
 The Phase 13.1 implementation stores full document snapshots. This prioritizes deterministic and
 transactional behavior over memory efficiency while editor operations are still small. Later Phase
