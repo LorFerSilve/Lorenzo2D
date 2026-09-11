@@ -76,8 +76,7 @@ namespace
                 "inspector snapshot exposed an unexpected component count");
         require(snapshot->components[0].kind == l2d_editor::InspectorComponentKind::Transform,
                 "Transform is not the first deterministic inspector component");
-        require(!snapshot->components[0].removable,
-                "mandatory Transform was exposed as removable");
+        require(!snapshot->components[0].removable, "mandatory Transform was exposed as removable");
         require(snapshot->components[1].kind ==
                     l2d_editor::InspectorComponentKind::RectangleRenderer,
                 "RectangleRenderer ordering is not deterministic");
@@ -118,7 +117,8 @@ namespace
         require(edited.transform.position == moved.position && edited.transform.rotation == 15.f &&
                     edited.transform.scale == moved.scale,
                 "inspector transform edit did not publish expected state");
-        require(history.undoCount() == 5u, "inspector property edits were not individually undoable");
+        require(history.undoCount() == 5u,
+                "inspector property edits were not individually undoable");
 
         require(!inspector.setTransform(moved), "no-op transform edit unexpectedly succeeded");
         require(history.undoCount() == 5u, "no-op transform edit entered history");
@@ -145,7 +145,8 @@ namespace
         require(inspector.addComponent(l2d_editor::InspectorComponentKind::CircleRenderer),
                 "valid default component addition failed");
         auto snapshot = inspector.snapshot();
-        require(snapshot && hasComponent(*snapshot, l2d_editor::InspectorComponentKind::CircleRenderer),
+        require(snapshot &&
+                    hasComponent(*snapshot, l2d_editor::InspectorComponentKind::CircleRenderer),
                 "added component was not exposed by inspector snapshot");
         require(!inspector.addComponent(l2d_editor::InspectorComponentKind::CircleRenderer),
                 "duplicate component addition unexpectedly succeeded");
@@ -153,11 +154,13 @@ namespace
         require(inspector.removeComponent(l2d_editor::InspectorComponentKind::CircleRenderer),
                 "component removal failed");
         snapshot = inspector.snapshot();
-        require(snapshot && !hasComponent(*snapshot, l2d_editor::InspectorComponentKind::CircleRenderer),
+        require(snapshot &&
+                    !hasComponent(*snapshot, l2d_editor::InspectorComponentKind::CircleRenderer),
                 "removed component remained in inspector snapshot");
         require(history.undo(document), "component removal undo failed");
         snapshot = inspector.snapshot();
-        require(snapshot && hasComponent(*snapshot, l2d_editor::InspectorComponentKind::CircleRenderer),
+        require(snapshot &&
+                    hasComponent(*snapshot, l2d_editor::InspectorComponentKind::CircleRenderer),
                 "component removal undo did not restore component");
 
         const std::size_t commandsBeforeInvalidAdd = history.undoCount();
