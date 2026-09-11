@@ -27,9 +27,9 @@ objects.
 The high-water allocator is intentionally not part of an undo/redo snapshot. Undo, redo, rejected
 commands, and exception rollback restore document contents and selection but never rewind ID
 allocation. An object restored by redo retains the ID stored in that snapshot, while later newly
-created objects continue above every ID allocated previously in the editor session. This prevents
-stale editor references from silently resolving to unrelated objects after history branching or
-rollback.
+created objects continue above every ID allocated previously during that `EditorDocument` lifetime.
+This prevents stale editor references from silently resolving to unrelated objects after history
+branching or rollback.
 
 ## Undo/redo contract
 
