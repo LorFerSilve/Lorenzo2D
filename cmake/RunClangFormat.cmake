@@ -44,6 +44,22 @@ foreach(l2d_file IN LISTS l2d_format_files)
 
     if(NOT l2d_result EQUAL 0)
         list(APPEND l2d_format_failures "${l2d_file}")
+        if(L2D_FORMAT_MODE STREQUAL "check")
+            string(MD5 l2d_file_hash "${l2d_file}")
+            set(l2d_formatted_file "${CMAKE_CURRENT_BINARY_DIR}/clang-format-${l2d_file_hash}.tmp")
+            execute_process(
+                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" "${l2d_file}"
+                OUTPUT_FILE "${l2d_formatted_file}"
+            )
+            execute_process(
+                COMMAND git diff --no-index -- "${l2d_file}" "${l2d_formatted_file}"
+                RESULT_VARIABLE l2d_diff_result
+                OUTPUT_VARIABLE l2d_diff
+                ERROR_QUIET
+            )
+            message(STATUS "clang-format diff for ${l2d_file}:\n${l2d_diff}")
+            file(REMOVE "${l2d_formatted_file}")
+        endif()
     endif()
 endforeach()
 
