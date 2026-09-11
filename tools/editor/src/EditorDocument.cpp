@@ -6,9 +6,17 @@
 
 namespace l2d_editor
 {
+    namespace
+    {
+        bool isValidLevelName(const std::string& name) noexcept
+        {
+            return name.find('\n') == std::string::npos && name.find('\r') == std::string::npos;
+        }
+    }
+
     bool EditorDocument::replace(l2d::LevelDocument level)
     {
-        if (level.objects.size() > MaximumObjectCount) return false;
+        if (!isValidLevelName(level.name) || level.objects.size() > MaximumObjectCount) return false;
 
         std::vector<EditorObjectRecord> replacement;
         replacement.reserve(level.objects.size());
@@ -60,7 +68,7 @@ namespace l2d_editor
 
     bool EditorDocument::setName(std::string name)
     {
-        if (name == m_name) return false;
+        if (!isValidLevelName(name) || name == m_name) return false;
         m_name = std::move(name);
         return true;
     }
