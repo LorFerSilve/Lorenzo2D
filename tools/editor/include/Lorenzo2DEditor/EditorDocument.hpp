@@ -35,6 +35,14 @@ namespace l2d_editor
         static constexpr std::size_t MaximumObjectCount = l2d::LevelSerializer::MaximumObjectCount;
 
         EditorDocument() = default;
+        EditorDocument(const EditorDocument&) = default;
+        EditorDocument(EditorDocument&&) noexcept = default;
+
+        // Assignment is intentionally disabled: replacing an identity-bearing
+        // document through implicit memberwise assignment could rewind its
+        // object-ID allocator. Use replace()/load() for content replacement.
+        EditorDocument& operator=(const EditorDocument&) = delete;
+        EditorDocument& operator=(EditorDocument&&) = delete;
 
         [[nodiscard]] bool replace(l2d::LevelDocument level);
         [[nodiscard]] bool load(std::istream& input);
@@ -69,6 +77,7 @@ namespace l2d_editor
             std::string name;
             std::vector<EditorObjectRecord> objects;
             EditorObjectId selectedObject = InvalidEditorObjectId;
+            EditorObjectId nextObjectId = 1u;
         };
 
         [[nodiscard]] Snapshot snapshot() const;
