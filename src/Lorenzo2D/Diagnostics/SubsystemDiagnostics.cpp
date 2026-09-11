@@ -7,6 +7,7 @@
 #include <Lorenzo2D/Navigation/AStarPathfinder2D.hpp>
 #include <Lorenzo2D/Physics/PhysicsWorld2D.hpp>
 #include <Lorenzo2D/Renderer/RenderQueue2D.hpp>
+#include <Lorenzo2D/Renderer/RenderStatistics2D.hpp>
 #include <Lorenzo2D/Renderer/SpriteBatch2D.hpp>
 #include <Lorenzo2D/Scene/Scene.hpp>
 #include <Lorenzo2D/Tilemap/Tilemap.hpp>
@@ -35,6 +36,13 @@ namespace l2d
                       std::size_t amount) noexcept
         {
             counters.add(counter, counterValue(amount));
+        }
+
+        std::size_t saturatedMultiply(std::size_t value, std::size_t factor) noexcept
+        {
+            if (value == 0u || factor == 0u) return 0u;
+            const std::size_t maximum = std::numeric_limits<std::size_t>::max();
+            return value > maximum / factor ? maximum : value * factor;
         }
     }
 
@@ -67,6 +75,9 @@ namespace l2d
     {
         addCount(counters, DiagnosticCounter::DrawCalls, stats.drawCallCount);
         addCount(counters, DiagnosticCounter::RenderedItems, stats.submittedTileCount);
+        addCount(counters, DiagnosticCounter::SubmittedPrimitives, stats.submittedVertexCount / 3u);
+        addCount(counters, DiagnosticCounter::RenderBatches, stats.drawCallCount);
+        addCount(counters, DiagnosticCounter::CulledItems, stats.culledChunkCount);
     }
 
     void accumulateSpriteBatchDiagnostics(const SpriteBatchDrawResult2D& result,
@@ -74,6 +85,31 @@ namespace l2d
     {
         addCount(counters, DiagnosticCounter::DrawCalls, result.drawCallCount);
         addCount(counters, DiagnosticCounter::RenderedItems, result.renderedSpriteCount);
+        addCount(counters, DiagnosticCounter::SubmittedPrimitives,
+                 saturatedMultiply(result.renderedSpriteCount, 2u));
+        addCount(counters, DiagnosticCounter::RenderBatches, result.completedBatchCount);
+    }
+
+    void accumulateRenderStatisticsDiagnostics(const RenderStatistics2D& statistics,
+                                               DiagnosticCounters& counters)
+    {
+        addCount(counters, DiagnosticCounter::DrawCalls, statistics.drawCallCount);
+        addCount(counters, DiagnosticCounter::RenderedItems, statistics.renderedItemCount);
+        addCount(counters, DiagnosticCounter::SubmittedPrimitives,
+                 statistics.submittedPrimitiveCount);
+        addCount(counters, DiagnosticCounter::RenderBatches, statistics.batchCount);
+        addCount(counters, DiagnosticCounter::MaterialSwitches, statistics.materialSwitchCount);
+        addCount(counters, DiagnosticCounter::ShaderSwitches, statistics.shaderSwitchCount);
+        addCount(counters, DiagnosticCounter::CulledItems, statistics.culledItemCount);
+    }
+
+    void recordTileMapRenderStatistics(const TileMapRenderStats& stats,
+                                       RenderStatisticsRecorder2D& statistics) noexcept
+    {
+        statistics.recordRepeatedDraws(stats.drawCallCount,
+                                       {stats.submittedVertexCount / 3u, stats.submittedTileCount,
+                                        stats.drawCallCount, nullptr});
+        statistics.recordCulledItems(stats.culledChunkCount);
     }
 
     void accumulateAssetDiagnostics(const AssetManager& assets, DiagnosticCounters& counters)

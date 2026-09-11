@@ -1,5 +1,7 @@
 #include <Lorenzo2D/Renderer/RenderSurface2D.hpp>
 
+#include <Lorenzo2D/Renderer/RenderStatistics2D.hpp>
+
 #include <SFML/Graphics/RenderStates.hpp>
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RenderTexture.hpp>
@@ -140,6 +142,13 @@ namespace l2d
     bool RenderSurface2D::present(sf::RenderTarget& destination,
                                   const RenderSurfacePresent2D& present) const
     {
+        return this->present(destination, present, nullptr);
+    }
+
+    bool RenderSurface2D::present(sf::RenderTarget& destination,
+                                  const RenderSurfacePresent2D& present,
+                                  RenderStatisticsRecorder2D* statistics) const
+    {
         if (!m_surface || !isValidPresent(present)) return false;
         if (&destination == static_cast<const sf::RenderTarget*>(m_surface.get())) return false;
 
@@ -158,6 +167,7 @@ namespace l2d
         if (present.material && !present.material->apply(states)) return false;
 
         destination.draw(sprite, states);
+        if (statistics != nullptr) statistics->recordDraw({2u, 1u, 1u, present.material});
         return true;
     }
 

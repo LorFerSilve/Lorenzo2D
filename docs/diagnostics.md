@@ -1,9 +1,10 @@
 # Diagnostics and profiling
 
 Phase 11 introduces a bounded, opt-in diagnostics foundation for production investigation and
-stress validation.
+stress validation. Phase 12.7 extends that foundation with ordered render statistics while keeping
+the same deterministic snapshot/report format.
 
-The first slice provides:
+The diagnostics foundation provides:
 
 - named timing scopes;
 - per-frame aggregation;
@@ -92,11 +93,15 @@ fixed percentile policy to the core engine.
 - colliders and physics queries;
 - navigation expansions/replans;
 - draw calls/rendered items;
+- submitted render primitives and render batches;
+- material/shader switches and culled items;
 - loaded/live assets;
 - active audio voices;
 - save bytes written/read.
 
-Counter additions saturate at `uint64_t` maximum instead of wrapping.
+The Phase 12.7 render counters were appended to the enum so the numeric values of all earlier
+Phase-11 counters remain unchanged. Counter additions saturate at `uint64_t` maximum instead of
+wrapping.
 
 ## Subsystem diagnostics adapters
 
@@ -112,13 +117,25 @@ render pass:
 - `accumulatePhysicsDiagnostics()` adds the active collider proxy count from the most recent valid
   physics broad-phase step.
 - `accumulateRenderQueueDiagnostics()` adds scene objects submitted to a render queue.
-- `accumulateTileMapRenderDiagnostics()` adds tilemap draw calls and submitted tiles from
-  `TileMapRenderStats`.
+- `accumulateTileMapRenderDiagnostics()` adds tilemap draw calls, submitted tiles, submitted
+  triangles, draw batches, and culled chunks from `TileMapRenderStats`.
+- `accumulateSpriteBatchDiagnostics()` adds completed sprite-batch draws, sprites, triangles, and
+  batches where the legacy draw result contains exact values.
+- `accumulateRenderStatisticsDiagnostics()` exports the complete ordered Phase 12.7
+  `RenderStatistics2D` snapshot, including material/shader switches.
 - `accumulateAssetDiagnostics()` adds loaded registry assets plus named live-binding slots.
 - `accumulateAudioDiagnostics()` adds active sound voices.
 
 Because the functions accumulate rather than overwrite, multiple scenes, physics worlds, tilemaps,
-or render passes can contribute to one report.
+or render passes can contribute to one report. Do not combine `accumulateRenderQueueDiagnostics()`,
+`accumulateTileMapRenderDiagnostics()`, or `accumulateSpriteBatchDiagnostics()` with a complete
+`RenderStatisticsRecorder2D` snapshot for the **same render work**; that would double count the
+overlapping render counters. The legacy adapters remain available for applications that have not
+adopted the ordered recorder.
+
+Tilemap culling remains chunk-based because chunks are the existing measured view/streaming culling
+unit. `recordTileMapRenderStatistics()` appends the existing `TileMapRenderStats` values to an ordered
+`RenderStatisticsRecorder2D` stream without inventing per-tile culling data.
 
 Some telemetry is operation-scoped rather than retained by the subsystem. Record those events when
 they occur:
@@ -138,9 +155,19 @@ the operation as a replan. This avoids guessing gameplay semantics inside the pa
 `liveTexture()`, or `liveSoundBuffer()`. It does not attempt to count every historical asset
 generation still retained by external snapshot handles.
 
-Physics-query and save-byte counters are explicit recorder calls in this slice. The engine does not
-install implicit global observers, so applications remain free to keep diagnostics disabled and pay
-no hidden synchronization cost.
+Physics-query and save-byte counters are explicit recorder calls. The engine does not install
+implicit global observers, so applications remain free to keep diagnostics disabled and pay no
+hidden synchronization cost.
+
+### Phase 12.7 render recorder
+
+`RenderStatisticsRecorder2D` is the authoritative stateful path when an application needs exact
+ordered material/shader switches in addition to draw totals. It is threaded through
+`RenderContext2D`, `RenderPipelineFrame2D`, and `RenderCompositionFrame2D`, and can be passed directly
+to `SpriteBatch2D`, `RenderSurface2D::present()`, and `ShaderPostProcessChain2D::apply()`.
+
+See [render-statistics-2d.md](render-statistics-2d.md) for exact counter units, integration examples,
+state-switch semantics, culling granularity, failure behavior, and lifetime rules.
 
 ### Standard timing scope names
 
@@ -235,14 +262,14 @@ determinism boundary.
 
 ## Threading and ownership
 
-`Profiler` and `DiagnosticCounters` are not internally synchronized. A game or tool should give
-each instance one owning thread, normally the main engine thread. Cross-thread aggregation can be
-added later with an explicit queue/merge contract rather than imposing locking overhead on every
-scope.
+`Profiler`, `DiagnosticCounters`, and `RenderStatisticsRecorder2D` are not internally synchronized.
+A game or tool should give each instance one owning thread, normally the main/render thread.
+Cross-thread aggregation can be added later with an explicit queue/merge contract rather than
+imposing locking overhead on every scope or draw submission.
 
-## Phase 11 progression
+## Phase 11 status
 
-The diagnostics, replay, subsystem-wiring, stress/soak, fuzz/malformed-input, repository-policy,
-and subsystem-integrated replay foundations are now in place. Phase 11 still requires scheduled
-nightly extended validation and the public 1.0 API/failure-path audit before the phase can be marked
-implemented.
+Phase 11 is complete: diagnostics, replay, subsystem wiring, stress/soak, fuzz/malformed-input,
+nightly validation, repository policy, integrated replay, and the public API/failure-path audit have
+all landed. Phase 12.7 reuses that completed diagnostic/report foundation rather than introducing a
+second reporting system.

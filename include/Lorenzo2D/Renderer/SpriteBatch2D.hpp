@@ -20,6 +20,8 @@ namespace sf
 
 namespace l2d
 {
+    class RenderStatisticsRecorder2D;
+
     enum class SpriteBatchFailure2D
     {
         None = 0,
@@ -108,8 +110,12 @@ namespace l2d
 
         // Draws in the target's current view. On success one draw call is issued
         // per retained batch. Material completeness is preflighted before any
-        // draw side effect.
+        // draw side effect. The original overload remains source-compatible;
+        // the recorder-aware overload records only completed draws and preserves
+        // the actual state-switch order.
         [[nodiscard]] SpriteBatchDrawResult2D draw(sf::RenderTarget& destination) const;
+        [[nodiscard]] SpriteBatchDrawResult2D draw(sf::RenderTarget& destination,
+                                                   RenderStatisticsRecorder2D* statistics) const;
 
       private:
         struct Batch

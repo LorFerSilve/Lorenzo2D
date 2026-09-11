@@ -10,8 +10,10 @@ namespace l2d
     class DiagnosticCounters;
     class PhysicsWorld2D;
     class RenderQueue2D;
+    class RenderStatisticsRecorder2D;
     class Scene;
     struct NavigationPath2D;
+    struct RenderStatistics2D;
     struct SpriteBatchDrawResult2D;
     struct TileMapRenderStats;
 
@@ -37,8 +39,16 @@ namespace l2d
                                             DiagnosticCounters& counters);
     void accumulateSpriteBatchDiagnostics(const SpriteBatchDrawResult2D& result,
                                           DiagnosticCounters& counters);
+    void accumulateRenderStatisticsDiagnostics(const RenderStatistics2D& statistics,
+                                               DiagnosticCounters& counters);
     void accumulateAssetDiagnostics(const AssetManager& assets, DiagnosticCounters& counters);
     void accumulateAudioDiagnostics(const AudioSystem& audio, DiagnosticCounters& counters);
+
+    // Bridges the existing chunk-level tilemap telemetry into the ordered Phase
+    // 12.7 recorder. Culled items use tilemap chunks as their unit because that
+    // is the granularity at which TileMap performs view/streaming culling.
+    void recordTileMapRenderStatistics(const TileMapRenderStats& stats,
+                                       RenderStatisticsRecorder2D& statistics) noexcept;
 
     // Event-style telemetry for operations whose counts are not retained by
     // their owning subsystem. Add these as operations occur during the current

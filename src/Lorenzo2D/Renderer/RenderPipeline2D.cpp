@@ -416,8 +416,11 @@ namespace l2d
                     }
                 }
 
-                const RenderContext2D context{frame.interpolationAlpha, frame.projection,
-                                              passConfig.contextPass};
+                const RenderContext2D context{frame.interpolationAlpha,
+                                              frame.projection,
+                                              passConfig.contextPass,
+                                              {},
+                                              frame.statistics};
 
                 if (record.legacyScene)
                 {
@@ -451,7 +454,8 @@ namespace l2d
                     }
 
                     if (passConfig.present.enabled &&
-                        !passConfig.surface->present(backbuffer, passConfig.present.presentation))
+                        !passConfig.surface->present(backbuffer, passConfig.present.presentation,
+                                                     frame.statistics))
                     {
                         m_executing = false;
                         return failureResult(RenderPipelineFailure2D::SurfacePresentFailed, index,

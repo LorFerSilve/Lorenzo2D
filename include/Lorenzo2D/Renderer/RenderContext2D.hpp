@@ -11,6 +11,8 @@
 
 namespace l2d
 {
+    class RenderStatisticsRecorder2D;
+
     enum class RenderPass2D
     {
         World = 0,
@@ -41,9 +43,10 @@ namespace l2d
         constexpr RenderContext2D(float interpolationAlphaValue = 1.f,
                                   const CoordinateProjection2D* projectionValue = nullptr,
                                   RenderPass2D passValue = RenderPass2D::World,
-                                  RenderLayerRange2D layersValue = {}) noexcept
+                                  RenderLayerRange2D layersValue = {},
+                                  RenderStatisticsRecorder2D* statisticsValue = nullptr) noexcept
             : interpolationAlpha(interpolationAlphaValue), projection(projectionValue),
-              pass(passValue), layers(layersValue)
+              pass(passValue), layers(layersValue), statistics(statisticsValue)
         {
         }
 
@@ -51,6 +54,7 @@ namespace l2d
         const CoordinateProjection2D* projection = nullptr;
         RenderPass2D pass = RenderPass2D::World;
         RenderLayerRange2D layers;
+        RenderStatisticsRecorder2D* statistics = nullptr;
 
         [[nodiscard]] std::optional<sf::Vector2f> tryWorldToRender(sf::Vector2f position) const
         {

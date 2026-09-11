@@ -42,14 +42,16 @@ current support claims are documented separately:
   projected bounds, depth ordering, and streaming-region culling.
 - [`docs/ui.md`](docs/ui.md), [`docs/audio.md`](docs/audio.md), and
   [`docs/saves.md`](docs/saves.md) document the 1.0 game-facing services.
-- [`docs/diagnostics.md`](docs/diagnostics.md) documents the Phase 11 profiling, counters, and diagnostic-report foundation.
+- [`docs/diagnostics.md`](docs/diagnostics.md) documents the profiling, counters, render-statistics bridge, and diagnostic-report foundation.
 - [`docs/stress-validation.md`](docs/stress-validation.md) documents bounded smoke, standard, and accelerated soak validation profiles.
 - [`docs/fuzz-validation.md`](docs/fuzz-validation.md) documents deterministic malformed-input/property validation and parser workload envelopes.
 - [`docs/replay-validation.md`](docs/replay-validation.md) documents subsystem-integrated replay and the deterministic simulation boundary.
 - [`docs/nightly-validation.md`](docs/nightly-validation.md) documents scheduled stress/soak, sanitizer, fuzz, and benchmark-trend validation.
 - [`docs/api-failure-audit.md`](docs/api-failure-audit.md) records the 1.x installed-header ownership, lifetime, failure, mutability, and concurrency audit.
 - [`docs/phase11-production-baseline.md`](docs/phase11-production-baseline.md) publishes the measured Phase 11 stress/sanitizer/fuzz/benchmark evidence and bounded workload envelopes.
-- [`docs/rendering-2.0.md`](docs/rendering-2.0.md) documents the Phase 12 shader/material, off-screen render-surface, and ordered render-pass contracts, including inputs/outputs, compositing, lifetimes, and failure semantics.
+- [`docs/rendering-2.0.md`](docs/rendering-2.0.md) documents the complete Phase 12 shader/material, off-screen target, render-pass, post-process, batching, composition, and diagnostics contracts.
+- [`docs/render-composition-2d.md`](docs/render-composition-2d.md) documents deterministic multi-camera, pass, layer-range, and viewport composition.
+- [`docs/render-statistics-2d.md`](docs/render-statistics-2d.md) documents ordered draw, primitive, batch, material/shader-switch, rendered-item, and culling telemetry.
 - [`docs/level-format.md`](docs/level-format.md) documents JSON level version 8,
   asset-backed prefabs, component codecs, and legacy migration.
 
@@ -63,7 +65,7 @@ current support claims are documented separately:
 - Unified mouse/touch pointers with camera-aware world conversion and drag state
 - Game objects, transforms, polymorphic components, tags, deterministic layered/depth ordering, and deferred deletion
 - Scenes, scene switching, object queries, and lifetime-aware object handles
-- Context-aware circle/rectangle/sprite rendering, sprite anchors/flips, coordinate projections, sprite-sheet animation, optional validated shader/material state, and bounded ordered render-pass orchestration
+- Context-aware circle/rectangle/sprite rendering, sprite anchors/flips, coordinate projections, sprite-sheet animation, optional validated shader/material state, ordered render-pass orchestration, multi-camera/layer composition, and frame-local render statistics
 - Smooth bounded 2D camera, resize handling, follow behavior, and wheel zoom
 - Layered orthogonal/isometric tile data with metadata, objects, ASCII/Tiled import,
   asset-backed rendering, streamed chunks, and merged collision geometry
@@ -91,7 +93,7 @@ current support claims are documented separately:
 - Deterministic particles, screen-space color passes, asset-backed prefabs, custom
   component codecs, JSON level saving, and legacy level loading
 - Debug overlay and independently switchable world, physics, and UI layers
-- Focused minimal, animation, physics, phase-4 through phase-10 examples plus regression tests for timing,
+- Focused minimal, animation, physics, phase-4 through phase-12 examples plus regression tests for timing,
   scenes, rendering, resources, serialization, animation, physics, and tilemaps
 
 ## Requirements
@@ -139,7 +141,7 @@ specialized build trees isolated under `build/<preset>`.
 
 The sandbox and the focused `Lorenzo2DMinimalExample`,
 `Lorenzo2DAnimationExample`, `Lorenzo2DPhysicsExample`, and
-`Lorenzo2DPhase4Example` through `Lorenzo2DPhase10Example` executables are
+`Lorenzo2DPhase4Example` through the Phase 12 examples are
 written to `build/bin`. Disable them independently with
 `-DL2D_BUILD_SANDBOX=OFF` and `-DL2D_BUILD_EXAMPLES=OFF`.
 
@@ -459,19 +461,19 @@ before view culling; render telemetry reports resident and non-resident counts.
 durations. Animation updates only texture coordinates, leaving chunk positions
 and physics geometry stable. Configuration remains snapshot-based per load.
 
-## Render contexts, ordering, and effects
+## Render contexts, ordering, effects, and diagnostics
 
 `RenderContext2D` carries interpolation, an optional world-to-render projection,
-and the current `World`, `PhysicsDebug`, or `UI` pass. UI coordinates remain
-screen-space. `CoordinateProjection2D` keeps rendering independent from the
-Cartesian Transform/physics world and provides the inverse mapping needed by
-picking code.
+the current `World`, `PhysicsDebug`, or `UI` pass, an inclusive layer range, and an optional
+`RenderStatisticsRecorder2D`. UI coordinates remain screen-space. `CoordinateProjection2D` keeps
+rendering independent from the Cartesian Transform/physics world and provides the inverse mapping
+needed by picking code.
 
 `RenderOrder2D` sorts by signed integer layer, depth, fine order, and insertion
 order. Fixed, explicit, world-Y, and projected-Y modes support side-view,
-top-down, and future isometric presentation. Spatial modes use interpolated
-bottom-centre sprite footpoints. Existing `setZOrder()` calls map to fine order
-with zero layer/depth, preserving their output and serialized level behavior.
+top-down, and isometric presentation. Spatial modes use interpolated bottom-centre sprite footpoints.
+Existing `setZOrder()` calls map to fine order with zero layer/depth, preserving their output and
+serialized level behavior.
 
 `SpriteRenderer` adds top-left, centre, and bottom-centre origins plus X/Y
 visual flips that do not mutate the gameplay Transform or collider.
@@ -480,10 +482,13 @@ visual flips that do not mutate the gameplay Transform or collider.
 with lifetime, velocity, gravity, color, and size evolution.
 `PostProcessStack2D` applies ordered alpha/add/multiply screen-space color
 passes after scene rendering. Phase 12 also provides `Shader2D`, `Material2D`,
-`RenderSurface2D`, `RenderPipeline2D`, `ShaderPostProcessChain2D`, and `SpriteBatch2D` for explicit
-off-screen shader effects and ordered atlas-friendly batching without changing the simple rendering
-path. See
-[`docs/rendering-2.0.md`](docs/rendering-2.0.md) and
+`RenderSurface2D`, `RenderPipeline2D`, `ShaderPostProcessChain2D`, `SpriteBatch2D`,
+`RenderComposition2D`, and `RenderStatisticsRecorder2D` for explicit off-screen effects, ordered
+atlas-friendly batching, deterministic multi-camera/layer composition, and ordered frame telemetry
+without changing the simple no-recorder rendering path. See
+[`docs/rendering-2.0.md`](docs/rendering-2.0.md),
+[`docs/render-composition-2d.md`](docs/render-composition-2d.md),
+[`docs/render-statistics-2d.md`](docs/render-statistics-2d.md), and
 [`docs/rendering-and-assets.md`](docs/rendering-and-assets.md) for the complete contracts and
 integration order.
 
@@ -550,7 +555,7 @@ time.
 include/Lorenzo2D/  Public engine headers
 src/Lorenzo2D/      Engine implementations
 sandbox/            Integration demo and sample game
-examples/           Focused minimal, animation, physics, and phase-4 through phase-10 applications
+examples/           Focused minimal, animation, physics, and phase-4 through phase-12 applications
 assets/             Text levels and optional runtime assets
 tests/              Regression and consumer integration tests
 benchmarks/         Diagnostic engine, isometric, UI, and save performance probes
@@ -799,9 +804,10 @@ Lorenzo2D is licensed under the [MIT License](LICENSE).
   rebuilt globally only when cell solidity changes; render geometry remains a
   one-chunk update. Streaming controls render-submission residency, not disk-backed
   map paging or chunk storage.
-- Rendering 2.0 now includes explicit shader post-processing and opt-in sprite batching, but it is
-  intentionally not a general render graph. Automatic Scene-wide batch extraction, generated texture
-  atlases, multi-camera/layer composition, and complete shader/culling telemetry remain later work.
+- Rendering 2.0 is complete for its planned Phase 12 scope but intentionally remains a lightweight
+  deterministic presentation architecture rather than a general render graph. Automatic Scene-wide
+  batch extraction and generated texture atlases are not implemented; tilemap culling telemetry is
+  intentionally chunk-granular, and 2D lighting remains an optional future extension.
 - Prefab serialization currently covers built-in shape renderers and physics
   components. Sprite asset references, animation state, custom component
   codecs, and schema migrations remain future work.

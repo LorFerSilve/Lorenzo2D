@@ -19,6 +19,8 @@ namespace sf
 
 namespace l2d
 {
+    class RenderStatisticsRecorder2D;
+
     struct RenderSurfaceConfig2D
     {
         sf::Vector2u size{0u, 0u};
@@ -84,9 +86,14 @@ namespace l2d
         // position/size use the destination target's current-view coordinates;
         // natural pixel size is used when present.size is absent.
         // Self-presentation is rejected to avoid read/write feedback on the
-        // same render texture.
+        // same render texture. The original overload remains source-compatible;
+        // the recorder-aware overload additionally reports two submitted
+        // triangles after a successful presentation.
         [[nodiscard]] bool present(sf::RenderTarget& destination,
                                    const RenderSurfacePresent2D& present = {}) const;
+        [[nodiscard]] bool present(sf::RenderTarget& destination,
+                                   const RenderSurfacePresent2D& present,
+                                   RenderStatisticsRecorder2D* statistics) const;
 
       private:
         static void advanceGeneration(std::uint64_t& generation) noexcept;

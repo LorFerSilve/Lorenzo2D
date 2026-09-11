@@ -26,6 +26,7 @@
 #include <Lorenzo2D/Renderer/RenderComposition2D.hpp>
 #include <Lorenzo2D/Renderer/RenderContext2D.hpp>
 #include <Lorenzo2D/Renderer/RenderPipeline2D.hpp>
+#include <Lorenzo2D/Renderer/RenderStatistics2D.hpp>
 #include <Lorenzo2D/Renderer/RenderSurface2D.hpp>
 #include <Lorenzo2D/Renderer/Shader2D.hpp>
 #include <Lorenzo2D/Renderer/ShaderPostProcessChain2D.hpp>
@@ -174,9 +175,23 @@ int main()
     l2d::Shader2D shaderDefinition;
     const bool shaderLayoutConfigured = shaderDefinition.setUniformLayout(
         {{"consumer_value", l2d::ShaderUniformType2D::Float, true}});
-    l2d::Material2D material;
+    auto material = std::make_shared<l2d::Material2D>();
     const bool materialConfigured =
-        material.setBlendMode(l2d::MaterialBlendMode2D::Multiply) && material.isComplete();
+        material->setBlendMode(l2d::MaterialBlendMode2D::Multiply) && material->isComplete();
+
+    l2d::RenderStatisticsRecorder2D renderStatistics;
+    renderStatistics.recordDraw({2u, 1u, 1u, material});
+    renderStatistics.recordCulledItems(1u);
+    l2d::accumulateRenderStatisticsDiagnostics(renderStatistics.statistics(), diagnosticCounters);
+    const bool renderStatisticsConfigured =
+        renderStatistics.statistics().drawCallCount == 1u &&
+        renderStatistics.statistics().submittedPrimitiveCount == 2u &&
+        renderStatistics.statistics().batchCount == 1u &&
+        renderStatistics.statistics().renderedItemCount == 1u &&
+        renderStatistics.statistics().culledItemCount == 1u &&
+        diagnosticCounters.value(l2d::DiagnosticCounter::SubmittedPrimitives) == 2u &&
+        diagnosticCounters.value(l2d::DiagnosticCounter::RenderBatches) == 1u &&
+        diagnosticCounters.value(l2d::DiagnosticCounter::CulledItems) == 1u;
 
     l2d::RenderSurface2D renderSurface;
     const l2d::RenderSurfaceConfig2D renderSurfaceConfig{{320u, 180u}, false, false};
@@ -205,6 +220,16 @@ int main()
     const bool spriteBatchConfigured = spriteBatch.empty() && spriteBatch.submissionCount() == 0u &&
                                        spriteBatch.batchCount() == 0u &&
                                        spriteBatch.stats().submittedVertexCount == 0u;
+
+    using SurfacePresent =
+        bool (l2d::RenderSurface2D::*)(sf::RenderTarget&, const l2d::RenderSurfacePresent2D&) const;
+    using BatchDraw = l2d::SpriteBatchDrawResult2D (l2d::SpriteBatch2D::*)(sf::RenderTarget&) const;
+    using PostProcessApply = l2d::ShaderPostProcessResult2D (l2d::ShaderPostProcessChain2D::*)(
+        const l2d::RenderSurface2D&, sf::RenderTarget&);
+    const bool legacyRenderOverloadsConfigured =
+        static_cast<SurfacePresent>(&l2d::RenderSurface2D::present) != nullptr &&
+        static_cast<BatchDraw>(&l2d::SpriteBatch2D::draw) != nullptr &&
+        static_cast<PostProcessApply>(&l2d::ShaderPostProcessChain2D::apply) != nullptr;
 
     l2d::InputSnapshot inputSnapshot;
     l2d::InputMap inputMap(inputSnapshot);
@@ -245,8 +270,9 @@ int main()
                    *checkedRenderPosition == position && cameraConfigured &&
                    renderCompositionConfigured && shaderLayoutConfigured &&
                    shaderDefinition.uniformCount() == 1u && materialConfigured &&
-                   renderSurfaceConfigured && renderPipelineConfigured &&
-                   shaderPostProcessConfigured && spriteBatchConfigured &&
+                   renderStatisticsConfigured && renderSurfaceConfigured &&
+                   renderPipelineConfigured && shaderPostProcessConfigured &&
+                   spriteBatchConfigured && legacyRenderOverloadsConfigured &&
                    checkedCompatibilityAction &&
                    renderContext.worldToRender(position) == position &&
                    renderOrder.depthMode() == l2d::RenderDepthMode2D::ProjectedY

@@ -287,6 +287,16 @@ namespace l2d
             return "save_bytes_written";
         case DiagnosticCounter::SaveBytesRead:
             return "save_bytes_read";
+        case DiagnosticCounter::SubmittedPrimitives:
+            return "submitted_primitives";
+        case DiagnosticCounter::RenderBatches:
+            return "render_batches";
+        case DiagnosticCounter::MaterialSwitches:
+            return "material_switches";
+        case DiagnosticCounter::ShaderSwitches:
+            return "shader_switches";
+        case DiagnosticCounter::CulledItems:
+            return "culled_items";
         case DiagnosticCounter::Count:
             return "invalid";
         }
