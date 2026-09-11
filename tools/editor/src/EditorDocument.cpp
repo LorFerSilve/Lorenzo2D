@@ -12,6 +12,14 @@ namespace l2d_editor
         {
             return name.find('\n') == std::string::npos && name.find('\r') == std::string::npos;
         }
+
+        EditorObjectId mergeAllocatorHighWater(EditorObjectId current,
+                                               EditorObjectId restored) noexcept
+        {
+            if (current == InvalidEditorObjectId || restored == InvalidEditorObjectId)
+                return InvalidEditorObjectId;
+            return std::max(current, restored);
+        }
     }
 
     bool EditorDocument::replace(l2d::LevelDocument level)
@@ -221,15 +229,18 @@ namespace l2d_editor
 
     EditorDocument::Snapshot EditorDocument::snapshot() const
     {
-        return {m_name, m_objects, m_selectedObject};
+        return {m_name, m_objects, m_selectedObject, m_nextObjectId};
     }
 
     void EditorDocument::restore(const Snapshot& snapshot)
     {
+        const EditorObjectId mergedHighWater =
+            mergeAllocatorHighWater(m_nextObjectId, snapshot.nextObjectId);
         Snapshot replacement = snapshot;
         m_name = std::move(replacement.name);
         m_objects = std::move(replacement.objects);
         m_selectedObject = replacement.selectedObject;
+        m_nextObjectId = mergedHighWater;
     }
 
     EditorObjectRecord* EditorDocument::findObjectMutable(EditorObjectId id) noexcept
