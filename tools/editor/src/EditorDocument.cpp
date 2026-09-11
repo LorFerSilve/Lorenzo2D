@@ -22,13 +22,16 @@ namespace l2d_editor
         std::vector<EditorObjectRecord> replacement;
         replacement.reserve(level.objects.size());
 
-        EditorObjectId nextId = 1u;
+        EditorObjectId nextId = m_nextObjectId;
         for (l2d::Prefab& prefab : level.objects)
         {
-            if (!l2d::isValidPrefab(prefab)) return false;
+            if (!l2d::isValidPrefab(prefab) || nextId == InvalidEditorObjectId) return false;
 
             replacement.push_back({nextId, std::move(prefab)});
-            ++nextId;
+            if (nextId == std::numeric_limits<EditorObjectId>::max())
+                nextId = InvalidEditorObjectId;
+            else
+                ++nextId;
         }
 
         m_name = std::move(level.name);
@@ -218,7 +221,7 @@ namespace l2d_editor
 
     EditorDocument::Snapshot EditorDocument::snapshot() const
     {
-        return {m_name, m_objects, m_selectedObject, m_nextObjectId};
+        return {m_name, m_objects, m_selectedObject};
     }
 
     void EditorDocument::restore(const Snapshot& snapshot)
@@ -227,7 +230,6 @@ namespace l2d_editor
         m_name = std::move(replacement.name);
         m_objects = std::move(replacement.objects);
         m_selectedObject = replacement.selectedObject;
-        m_nextObjectId = replacement.nextObjectId;
     }
 
     EditorObjectRecord* EditorDocument::findObjectMutable(EditorObjectId id) noexcept
