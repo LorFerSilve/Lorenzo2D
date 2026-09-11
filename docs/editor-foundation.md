@@ -37,6 +37,49 @@ document must use `replace()` or the load APIs so its allocator cannot be rewoun
 memberwise assignment. This prevents stale editor references from silently resolving to unrelated
 objects after scene replacement, history branching, or rollback.
 
+## Phase 13.2 component inspector
+
+The second slice turns hierarchy selection into a visible authoring surface and introduces
+`ComponentInspectorModel` as the editor-side boundary for selected-object inspection and property
+editing.
+
+The inspector snapshot exposes the selected object's editor ID, name, tag, active state, z-order,
+transform, built-in component list, and serialized custom components in deterministic order.
+`Transform` is always present and non-removable. Optional built-in components follow the stable
+runtime `Prefab` order, followed by custom components in serialized order. The model never stores a
+pointer into `EditorDocument` object storage; every operation resolves the current stable editor ID
+again, avoiding dangling references after history restoration or document mutation.
+
+All inspector writes route through `EditorCommandHistory`. A mutation edits a copy of the selected
+runtime `Prefab`, then publishes it only through `EditorDocument::replaceObject()`. Consequently the
+existing public `isValidPrefab()` contract remains the source of truth for editor validity. Invalid
+states are rejected transactionally and do not enter undo history. Examples include an unconfigured
+default `SpriteRenderer`, a malformed custom component type, or removing `CharacterMotor` while a
+controller still depends on it.
+
+Phase 13.2 supports:
+
+- undoable object name, tag, active-state, z-order, and transform edits;
+- deterministic inspection of all currently serialized built-in components;
+- add/remove for optional built-in components when the resulting runtime `Prefab` is valid;
+- an escape hatch for configured component edits through a validated `Prefab` mutation callback;
+- add/update/remove for serialized custom components;
+- separate component-inspector regression coverage against the installed engine package;
+- visible scene-hierarchy and component-inspector panels in the editor application shell.
+
+The shell intentionally keeps interaction minimal while the editor framework is still dependency
+light. `Up`/`Down` changes selection, `A`/`D`/`W`/`S` nudges the selected transform through command
+history, `Left`/`Right` adjusts z-order, `Space` toggles active state, `F1` toggles the default
+`RectangleRenderer`, `Z` performs undo, and `Q` performs redo. The panels use SFML directly and try a
+small platform-specific list of system UI fonts; failure to locate one disables panel text without
+changing editor document behavior.
+
+This slice does not claim viewport transform gizmos, arbitrary graphical field editors, asset
+picking, or component-specific rich controls. Those remain later Phase 13 work. In particular,
+asset-backed components such as `SpriteRenderer` and `Animator` require valid asset IDs/configuration;
+the generic default-add operation is expected to fail until a caller supplies a valid configured
+component through the validated mutation path or a later asset-browser UI.
+
 ## Undo/redo contract
 
 `EditorCommandHistory` retains at most 256 successful commands. A command receives an
@@ -45,7 +88,7 @@ are restored and no history entry is created. If it throws, those same visible d
 are restored before the exception propagates. In both cases, the allocator high-water mark is merged
 monotonically rather than rewound.
 
-The Phase 13.1 implementation stores full document snapshots. This prioritizes deterministic and
+The current implementation stores full document snapshots. This prioritizes deterministic and
 transactional behavior over memory efficiency while editor operations are still small. Later Phase
 13 slices may add specialized delta commands for high-frequency gizmo or painting operations without
 changing the history semantics.
@@ -70,6 +113,8 @@ or private engine internals.
 
 ## Next editor slice
 
-The next Phase 13 slice should turn the hierarchy/selection model into an actual editor panel and add
-the first component-inspector surface. Transform editing should route through the existing command
-history so undo/redo remains deterministic from the first interactive editing workflow.
+The next Phase 13 slice should build on the validated inspector mutations with viewport-oriented
+transform editing/gizmos rather than adding ad-hoc direct mutations. Gizmo drag publication should
+have explicit command coalescing semantics so a continuous drag becomes one deterministic undo step.
+After that boundary is stable, asset browsing/picking can provide configured values for asset-backed
+components without weakening runtime `Prefab` validation.
