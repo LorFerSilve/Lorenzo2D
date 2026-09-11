@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -88,6 +89,37 @@ namespace
         require(replacement && *replacement == 5u, "removed editor ID was unexpectedly reused");
     }
 
+    void testReplacementAndLoadUseFreshIdRanges()
+    {
+        l2d_editor::EditorDocument document;
+        require(document.replace(makeLevel()), "fresh-range source replacement failed");
+        require(document.selectObject(2u), "fresh-range selection setup failed");
+
+        l2d::LevelDocument replacement = makeLevel();
+        replacement.name = "Replacement";
+        require(document.replace(std::move(replacement)), "second level replacement failed");
+        require(document.objects()[0].id == 4u && document.objects()[1].id == 5u &&
+                    document.objects()[2].id == 6u,
+                "successful replacement reused a prior editor ID range");
+        require(document.findObject(1u) == nullptr && document.findObject(2u) == nullptr &&
+                    document.findObject(3u) == nullptr,
+                "stale editor IDs aliased replacement objects");
+        require(document.selectedObject() == l2d_editor::InvalidEditorObjectId,
+                "level replacement did not clear selection");
+
+        const std::string encoded = serialize(document);
+        std::istringstream input(encoded);
+        require(document.load(input), "same-document level reload failed");
+        require(document.objects()[0].id == 7u && document.objects()[1].id == 8u &&
+                    document.objects()[2].id == 9u,
+                "same-document reload reused a prior editor ID range");
+
+        const std::optional<l2d_editor::EditorObjectId> added =
+            document.addObject(makePrefab("After reload", 4.f));
+        require(added && *added == 10u,
+                "post-reload object allocation did not continue the high-water mark");
+    }
+
     void testHierarchySelectionModel()
     {
         l2d_editor::EditorDocument document;
@@ -154,6 +186,100 @@ namespace
                                 { return editor.renameObject(2u, "Alternate"); }),
                 "alternate command failed");
         require(!history.canRedo(), "new command did not invalidate redo history");
+    }
+
+    void testHistoryRollbackDoesNotRecycleIds()
+    {
+        l2d_editor::EditorDocument document;
+        require(document.replace(makeLevel()), "ID-history source replacement failed");
+        l2d_editor::EditorCommandHistory history;
+
+        l2d_editor::EditorObjectId firstAdded = l2d_editor::InvalidEditorObjectId;
+        require(history.execute(document, "Add object",
+                                [&firstAdded](l2d_editor::EditorDocument& editor)
+                                {
+                                    const std::optional<l2d_editor::EditorObjectId> id =
+                                        editor.addObject(makePrefab("Transient", 4.f));
+                                    if (!id) return false;
+                                    firstAdded = *id;
+                                    return true;
+                                }),
+                "initial ID-history add failed");
+        require(firstAdded == 4u, "initial ID-history allocation was unexpected");
+        require(history.undo(document), "ID-history undo failed");
+        require(document.findObject(firstAdded) == nullptr,
+                "undone object remained in the document");
+        require(history.redo(document), "ID-history redo failed");
+        require(document.findObject(firstAdded) != nullptr,
+                "redo did not restore the original editor object identity");
+        require(history.undo(document), "second ID-history undo failed");
+        require(document.findObject(firstAdded) == nullptr,
+                "second undo retained the redone object");
+
+        l2d_editor::EditorObjectId branchAdded = l2d_editor::InvalidEditorObjectId;
+        require(history.execute(document, "Branch add",
+                                [&branchAdded](l2d_editor::EditorDocument& editor)
+                                {
+                                    const std::optional<l2d_editor::EditorObjectId> id =
+                                        editor.addObject(makePrefab("Branch", 5.f));
+                                    if (!id) return false;
+                                    branchAdded = *id;
+                                    return true;
+                                }),
+                "post-undo branch add failed");
+        require(branchAdded == 5u, "undo rewound the editor ID allocator");
+        require(!history.canRedo(), "post-undo branch did not invalidate redo history");
+
+        l2d_editor::EditorObjectId rejectedId = l2d_editor::InvalidEditorObjectId;
+        require(!history.execute(document, "Rejected add",
+                                 [&rejectedId](l2d_editor::EditorDocument& editor)
+                                 {
+                                     const std::optional<l2d_editor::EditorObjectId> id =
+                                         editor.addObject(makePrefab("Rejected", 6.f));
+                                     if (!id) return false;
+                                     rejectedId = *id;
+                                     return false;
+                                 }),
+                "rejected add unexpectedly entered history");
+        require(rejectedId == 6u, "rejected command allocation was unexpected");
+        require(document.findObject(rejectedId) == nullptr,
+                "rejected command did not restore document contents");
+
+        l2d_editor::EditorObjectId thrownId = l2d_editor::InvalidEditorObjectId;
+        bool threw = false;
+        try
+        {
+            (void)history.execute(document, "Throwing add",
+                                  [&thrownId](l2d_editor::EditorDocument& editor) -> bool
+                                  {
+                                      const std::optional<l2d_editor::EditorObjectId> id =
+                                          editor.addObject(makePrefab("Throwing", 7.f));
+                                      require(id.has_value(), "throwing add allocation failed");
+                                      thrownId = *id;
+                                      throw std::runtime_error("expected throwing add failure");
+                                  });
+        }
+        catch (const std::runtime_error&)
+        {
+            threw = true;
+        }
+        require(threw, "throwing add did not propagate its exception");
+        require(thrownId == 7u, "throwing command allocation was unexpected");
+        require(document.findObject(thrownId) == nullptr,
+                "throwing command did not restore document contents");
+
+        l2d_editor::EditorObjectId finalId = l2d_editor::InvalidEditorObjectId;
+        require(history.execute(document, "Final add",
+                                [&finalId](l2d_editor::EditorDocument& editor)
+                                {
+                                    const std::optional<l2d_editor::EditorObjectId> id =
+                                        editor.addObject(makePrefab("Final", 8.f));
+                                    if (!id) return false;
+                                    finalId = *id;
+                                    return true;
+                                }),
+                "final ID-history add failed");
+        require(finalId == 8u, "failed or throwing command rewound the editor ID high-water mark");
     }
 
     void testFailedCommandsRollback()
@@ -281,8 +407,10 @@ int main()
     try
     {
         testDocumentReplacementAndStableIds();
+        testReplacementAndLoadUseFreshIdRanges();
         testHierarchySelectionModel();
         testTransactionalCommandHistory();
+        testHistoryRollbackDoesNotRecycleIds();
         testFailedCommandsRollback();
         testDeleteUndoRestoresSelectionAndIdentity();
         testBoundedHistory();

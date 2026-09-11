@@ -12,6 +12,14 @@ namespace l2d_editor
         {
             return name.find('\n') == std::string::npos && name.find('\r') == std::string::npos;
         }
+
+        EditorObjectId mergeAllocatorHighWater(EditorObjectId current,
+                                               EditorObjectId restored) noexcept
+        {
+            if (current == InvalidEditorObjectId || restored == InvalidEditorObjectId)
+                return InvalidEditorObjectId;
+            return std::max(current, restored);
+        }
     }
 
     bool EditorDocument::replace(l2d::LevelDocument level)
@@ -22,13 +30,16 @@ namespace l2d_editor
         std::vector<EditorObjectRecord> replacement;
         replacement.reserve(level.objects.size());
 
-        EditorObjectId nextId = 1u;
+        EditorObjectId nextId = m_nextObjectId;
         for (l2d::Prefab& prefab : level.objects)
         {
-            if (!l2d::isValidPrefab(prefab)) return false;
+            if (!l2d::isValidPrefab(prefab) || nextId == InvalidEditorObjectId) return false;
 
             replacement.push_back({nextId, std::move(prefab)});
-            ++nextId;
+            if (nextId == std::numeric_limits<EditorObjectId>::max())
+                nextId = InvalidEditorObjectId;
+            else
+                ++nextId;
         }
 
         m_name = std::move(level.name);
@@ -223,11 +234,13 @@ namespace l2d_editor
 
     void EditorDocument::restore(const Snapshot& snapshot)
     {
+        const EditorObjectId mergedHighWater =
+            mergeAllocatorHighWater(m_nextObjectId, snapshot.nextObjectId);
         Snapshot replacement = snapshot;
         m_name = std::move(replacement.name);
         m_objects = std::move(replacement.objects);
         m_selectedObject = replacement.selectedObject;
-        m_nextObjectId = replacement.nextObjectId;
+        m_nextObjectId = mergedHighWater;
     }
 
     EditorObjectRecord* EditorDocument::findObjectMutable(EditorObjectId id) noexcept
