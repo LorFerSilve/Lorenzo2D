@@ -29,7 +29,7 @@ done is satisfied, not merely to match a version target.
 | --- | --- | --- |
 | 11 | production hardening, diagnostics, profiling, fuzzing, stress validation, and CI policy | Complete |
 | 12 | rendering 2.0: shaders, materials, render targets, batching, post-processing, and render diagnostics | Complete |
-| 13 | tooling and editor foundation using installed public engine API | Planned |
+| 13 | tooling and editor foundation using installed public engine API | In Progress |
 | 14 | content pipeline 2.0: asset metadata, import/cook pipeline, dependency graph, and rebuild cache | Planned |
 | 15 | gameplay framework and scripting boundary | Planned |
 | 16 | UI 2.0: layout, focus, text input, widgets, themes, and scalable navigation | Planned |
@@ -332,6 +332,20 @@ Create practical authoring tools without making the engine depend on editor code
 
 The editor must consume Lorenzo2D through public APIs wherever practical. Engine modules must never
 depend on the editor.
+
+### Implementation progress
+
+- **13.1 Editor foundation:** a standalone `tools/editor` CMake application now consumes Lorenzo2D
+  strictly through its installed public package. It provides an editor-only document model over the
+  existing runtime level/prefab contracts, stable document-local object identities, flat
+  hierarchy/selection state, deterministic bounded transactional undo/redo, scene open/save using
+  the runtime level format, and focused regressions that build and run against an installed engine
+  package. Object-ID allocation is monotonic across replacement, history branching, rejected
+  commands, and exception rollback so stale editor references cannot alias unrelated later objects.
+- **Phase 13 status: in progress.** Slice 13.1 establishes the editor/runtime dependency boundary
+  and state-management foundation. Component inspection, transform editing/gizmos, asset browsing,
+  tilemap authoring, visualization tools, play/test workflow, and the end-to-end authoring tutorial
+  remain future Phase 13 slices.
 
 ### Initial editor scope
 
@@ -699,7 +713,7 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-Begin **Phase 13 — Tooling and editor foundation** with a thin editor application target that
-consumes Lorenzo2D through installed/public engine APIs. The first slice should establish the
-editor/runtime dependency boundary and a minimal scene-hierarchy/selection shell before adding
-component inspectors, gizmos, asset browsing, or tilemap authoring.
+Continue **Phase 13.2 — interactive hierarchy and inspector foundation** by turning the existing
+hierarchy/selection model into an actual editor panel and adding the first component/transform
+inspector surface. Route supported edits through the existing command history so undo/redo remains
+deterministic, and keep the editor consuming only the installed public Lorenzo2D package.
