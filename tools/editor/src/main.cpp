@@ -162,8 +162,9 @@ namespace
             }
             else if (pointer.dragging && m_viewport.isDragging())
             {
-                changed = m_viewport.updateTranslationDrag(pointerPosition(pointer.screenPosition)) ||
-                          changed;
+                changed =
+                    m_viewport.updateTranslationDrag(pointerPosition(pointer.screenPosition)) ||
+                    changed;
             }
 
             if (pointer.dragEnded && m_viewport.isDragging())
@@ -386,8 +387,7 @@ namespace
             {
                 if (y > height - 130.f) break;
                 drawText(window, "- " + component.displayName, {inspectorX + 8.f, y}, 14u,
-                         component.removable ? sf::Color(205, 208, 215)
-                                             : sf::Color(160, 178, 210));
+                         component.removable ? sf::Color(205, 208, 215) : sf::Color(160, 178, 210));
                 y += 22.f;
             }
 
