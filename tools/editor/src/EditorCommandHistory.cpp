@@ -13,7 +13,8 @@ namespace l2d_editor
     bool EditorCommandHistory::execute(EditorDocument& document, std::string label,
                                        const Mutation& mutation)
     {
-        if (m_pending || label.empty() || label.size() > MaximumLabelBytes || !mutation) return false;
+        if (m_pending || label.empty() || label.size() > MaximumLabelBytes || !mutation)
+            return false;
 
         EditorDocument::Snapshot before = document.snapshot();
         try
@@ -147,12 +148,14 @@ namespace l2d_editor
 
     std::string_view EditorCommandHistory::undoLabel() const noexcept
     {
-        return m_pending || m_undo.empty() ? std::string_view{} : std::string_view(m_undo.back().label);
+        return m_pending || m_undo.empty() ? std::string_view{}
+                                           : std::string_view(m_undo.back().label);
     }
 
     std::string_view EditorCommandHistory::redoLabel() const noexcept
     {
-        return m_pending || m_redo.empty() ? std::string_view{} : std::string_view(m_redo.back().label);
+        return m_pending || m_redo.empty() ? std::string_view{}
+                                           : std::string_view(m_redo.back().label);
     }
 
     void EditorCommandHistory::pushCompleted(Command command)
