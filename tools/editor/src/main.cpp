@@ -155,8 +155,9 @@ namespace
             {
                 if (m_viewport.beginTranslationDrag(pointerPosition(pointer.dragOrigin)))
                 {
-                    changed = m_viewport.updateTranslationDrag(pointerPosition(pointer.screenPosition)) ||
-                              changed;
+                    changed =
+                        m_viewport.updateTranslationDrag(pointerPosition(pointer.screenPosition)) ||
+                        changed;
                 }
             }
             else if (pointer.dragging && m_viewport.isDragging())
@@ -179,8 +180,8 @@ namespace
             const float viewportWidth =
                 std::max(1.f, width - HierarchyWidth - InspectorWidth - ViewportMargin * 2.f);
             const float viewportHeight = std::max(1.f, height - ViewportMargin * 2.f);
-            (void)m_viewport.setViewport(
-                {{HierarchyWidth + ViewportMargin, ViewportMargin}, {viewportWidth, viewportHeight}});
+            (void)m_viewport.setViewport({{HierarchyWidth + ViewportMargin, ViewportMargin},
+                                          {viewportWidth, viewportHeight}});
         }
 
         bool adjustZOrder(std::int32_t delta)
@@ -237,14 +238,16 @@ namespace
             window.draw(background);
 
             const sf::Vector2f origin = m_viewport.worldToViewport({0.f, 0.f});
-            if (origin.x >= viewport.position.x && origin.x <= viewport.position.x + viewport.size.x)
+            if (origin.x >= viewport.position.x &&
+                origin.x <= viewport.position.x + viewport.size.x)
             {
                 sf::RectangleShape vertical({1.f, viewport.size.y});
                 vertical.setPosition({origin.x, viewport.position.y});
                 vertical.setFillColor(sf::Color(50, 54, 63));
                 window.draw(vertical);
             }
-            if (origin.y >= viewport.position.y && origin.y <= viewport.position.y + viewport.size.y)
+            if (origin.y >= viewport.position.y &&
+                origin.y <= viewport.position.y + viewport.size.y)
             {
                 sf::RectangleShape horizontal({viewport.size.x, 1.f});
                 horizontal.setPosition({viewport.position.x, origin.y});
@@ -254,7 +257,8 @@ namespace
 
             for (const l2d_editor::EditorObjectRecord& object : m_document.objects())
             {
-                const sf::Vector2f position = m_viewport.worldToViewport(object.prefab.transform.position);
+                const sf::Vector2f position =
+                    m_viewport.worldToViewport(object.prefab.transform.position);
                 if (!insideViewport(position)) continue;
 
                 const bool selected = object.id == m_document.selectedObject();
@@ -274,15 +278,17 @@ namespace
 
             if (m_hasFont)
             {
-                drawText(window, "Viewport", {viewport.position.x + 12.f, viewport.position.y + 10.f},
-                         18u, sf::Color::White);
+                drawText(window, "Viewport",
+                         {viewport.position.x + 12.f, viewport.position.y + 10.f}, 18u,
+                         sf::Color::White);
                 drawText(window, "Drag the selected center handle to translate",
                          {viewport.position.x + 12.f, viewport.position.y + 34.f}, 12u,
                          sf::Color(155, 160, 171));
             }
         }
 
-        void drawTranslationGizmo(sf::RenderWindow& window, sf::Vector2f center, bool dragging) const
+        void drawTranslationGizmo(sf::RenderWindow& window, sf::Vector2f center,
+                                  bool dragging) const
         {
             sf::RectangleShape xAxis({42.f, 3.f});
             xAxis.setOrigin({0.f, 1.5f});
@@ -380,7 +386,8 @@ namespace
             {
                 if (y > height - 130.f) break;
                 drawText(window, "- " + component.displayName, {inspectorX + 8.f, y}, 14u,
-                         component.removable ? sf::Color(205, 208, 215) : sf::Color(160, 178, 210));
+                         component.removable ? sf::Color(205, 208, 215)
+                                             : sf::Color(160, 178, 210));
                 y += 22.f;
             }
 
