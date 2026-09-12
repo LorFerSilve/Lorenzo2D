@@ -127,12 +127,12 @@ namespace l2d_editor
 
     bool EditorCommandHistory::canUndo() const noexcept
     {
-        return !m_undo.empty();
+        return !m_pending && !m_undo.empty();
     }
 
     bool EditorCommandHistory::canRedo() const noexcept
     {
-        return !m_redo.empty();
+        return !m_pending && !m_redo.empty();
     }
 
     std::size_t EditorCommandHistory::undoCount() const noexcept
@@ -147,12 +147,12 @@ namespace l2d_editor
 
     std::string_view EditorCommandHistory::undoLabel() const noexcept
     {
-        return m_undo.empty() ? std::string_view{} : std::string_view(m_undo.back().label);
+        return m_pending || m_undo.empty() ? std::string_view{} : std::string_view(m_undo.back().label);
     }
 
     std::string_view EditorCommandHistory::redoLabel() const noexcept
     {
-        return m_redo.empty() ? std::string_view{} : std::string_view(m_redo.back().label);
+        return m_pending || m_redo.empty() ? std::string_view{} : std::string_view(m_redo.back().label);
     }
 
     void EditorCommandHistory::pushCompleted(Command command)
