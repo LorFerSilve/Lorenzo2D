@@ -40,23 +40,6 @@ foreach(l2d_file IN LISTS l2d_format_files)
             OUTPUT_QUIET
             ERROR_QUIET
         )
-
-        if(NOT l2d_result EQUAL 0)
-            execute_process(
-                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" "${l2d_file}"
-                RESULT_VARIABLE l2d_format_result
-                OUTPUT_VARIABLE l2d_formatted
-                ERROR_VARIABLE l2d_format_error
-            )
-            if(l2d_format_result EQUAL 0)
-                file(READ "${l2d_file}" l2d_original)
-                string(REPLACE "\r\n" "\n" l2d_original "${l2d_original}")
-                string(REPLACE "\r\n" "\n" l2d_formatted "${l2d_formatted}")
-                message(STATUS "BEGIN_FORMATTED_FILE ${l2d_file}\n${l2d_formatted}\nEND_FORMATTED_FILE ${l2d_file}")
-            else()
-                message(STATUS "clang-format diagnostic failed for ${l2d_file}: ${l2d_format_error}")
-            endif()
-        endif()
     endif()
 
     if(NOT l2d_result EQUAL 0)
