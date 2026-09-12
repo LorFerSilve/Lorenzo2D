@@ -354,11 +354,25 @@ depend on the editor.
   and custom components; the final PR and merged `master` commit both pass all seven required CI
   gates, including Windows MSVC, ASan/UBSan, coverage, clang-tidy, and the installed-package editor
   consumer path.
-- **Phase 13 status: in progress.** Slices 13.1 and 13.2 establish the editor/runtime dependency
-  boundary, document/history foundation, interactive hierarchy, and validated component-inspection
-  workflow. Viewport transform gizmos and drag-command coalescing, asset browsing, tilemap authoring,
-  visualization tools, play/test workflow, richer component-specific controls, and the end-to-end
-  authoring tutorial remain future Phase 13 slices.
+- **13.3 Viewport transform/gizmo foundation:** the editor now includes a central authoring viewport
+  backed by `ViewportTransformModel`, with explicit world-to-viewport mapping, deterministic
+  selection-bound gizmo state, object-position markers, hit-tested translation interaction, and a
+  visible translation handle. `EditorCommandHistory` now supports an exclusive coalesced-command
+  gesture: live drag updates publish transactionally while the gesture is open, then commit as
+  exactly one undoable command rather than one history entry per pointer update. Cancellation,
+  net-zero drags, rejected updates, and selection-identity changes roll back to the gesture-start
+  snapshot without invalidating pre-existing redo history, while normal execute/undo/redo operations
+  are blocked during an open gesture. Dedicated installed-package regressions cover coordinate
+  mapping, hit testing, gesture exclusivity, coalescing, undo/redo, rollback, and cancellation. PR
+  #49 and the merged `master` commit `876ce9897841ab9eeea82effaa44b49e7287c3b1` both pass all seven
+  required CI gates, including Windows MSVC, ASan/UBSan, coverage, clang-tidy, and the
+  installed-package editor consumer path.
+- **Phase 13 status: in progress.** Slices 13.1 through 13.3 establish the editor/runtime dependency
+  boundary, document/history foundation, interactive hierarchy, validated component inspection, and
+  coalesced viewport translation workflow. Asset browsing/picking, tilemap authoring, collider and
+  navigation visualization/editing, animation preview, play/test workflow, richer component-specific
+  controls, rotation/scale gizmos, and the end-to-end authoring tutorial remain future Phase 13
+  slices.
 
 ### Initial editor scope
 
@@ -726,9 +740,10 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-Begin **Phase 13.3 — viewport transform/gizmo foundation** on top of the completed 13.1 document
-foundation and 13.2 component inspector. Introduce explicit viewport-space transform interaction
-without bypassing `EditorCommandHistory`; continuous drag gestures should coalesce into one
-deterministic undoable command rather than emitting one history entry per frame. Keep viewport/editor
-state outside engine modules and continue validating the editor exclusively through the installed
-public Lorenzo2D package.
+Begin **Phase 13.4 — asset browser/picking foundation** on top of the completed hierarchy,
+component-inspector, and viewport-transform slices. Add an editor-only, bounded asset browser that
+uses the existing configured resource-root/asset-ID contracts rather than inventing the Phase 14
+content-pipeline model early. Provide deterministic browsing/filtering and a validated picking
+boundary for component fields such as `SpriteRenderer` and `Animator`; keep filesystem/editor state
+outside engine modules, reject paths that escape configured roots, and continue validating the
+editor through the installed public Lorenzo2D package.
