@@ -9,6 +9,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace
 {
@@ -46,8 +47,7 @@ namespace
 
     void configureViewport(l2d_editor::ViewportTransformModel& viewport)
     {
-        require(viewport.setViewport({{0.f, 0.f}, {400.f, 300.f}}),
-                "viewport bounds setup failed");
+        require(viewport.setViewport({{0.f, 0.f}, {400.f, 300.f}}), "viewport bounds setup failed");
         require(viewport.setView({0.f, 0.f}, 1.f), "viewport view setup failed");
     }
 
@@ -72,8 +72,9 @@ namespace
         require(!viewport.setViewport({{0.f, 0.f}, {0.f, 100.f}}),
                 "zero-width viewport was accepted");
         require(!viewport.setView({0.f, 0.f}, 0.f), "zero viewport zoom was accepted");
-        require(!viewport.setView({0.f, 0.f}, l2d_editor::ViewportTransformModel::MaximumZoom * 2.f),
-                "out-of-range viewport zoom was accepted");
+        require(
+            !viewport.setView({0.f, 0.f}, l2d_editor::ViewportTransformModel::MaximumZoom * 2.f),
+            "out-of-range viewport zoom was accepted");
         require(!viewport.setView({std::numeric_limits<float>::quiet_NaN(), 0.f}, 1.f),
                 "non-finite viewport center was accepted");
 
@@ -99,8 +100,7 @@ namespace
         require(snapshot->objectId == 1u, "viewport snapshot identity is incorrect");
         require(near(snapshot->gizmoPosition, {210.f, 170.f}),
                 "selected gizmo screen position is incorrect");
-        require(viewport.hitTestSelectedHandle({210.f, 170.f}),
-                "gizmo center did not hit-test");
+        require(viewport.hitTestSelectedHandle({210.f, 170.f}), "gizmo center did not hit-test");
         require(!viewport.hitTestSelectedHandle({250.f, 170.f}),
                 "distant point unexpectedly hit the gizmo");
         require(!viewport.beginTranslationDrag({250.f, 170.f}),
@@ -159,12 +159,14 @@ namespace
 
         require(viewport.endTranslationDrag(), "coalesced drag commit failed");
         require(history.undoCount() == 1u, "drag did not produce exactly one undo command");
-        require(history.undoLabel() == "Move object in viewport", "drag history label is incorrect");
+        require(history.undoLabel() == "Move object in viewport",
+                "drag history label is incorrect");
         require(!history.hasOpenCoalescedCommand(), "drag history remained open after commit");
 
         require(history.undo(document), "coalesced drag undo failed");
         const l2d::TransformState undone = document.findObject(1u)->prefab.transform;
-        require(near(undone.position, initial.position), "drag undo did not restore start position");
+        require(near(undone.position, initial.position),
+                "drag undo did not restore start position");
         require(near(undone.rotation, initial.rotation) && near(undone.scale, initial.scale),
                 "drag undo did not restore exact transform state");
 
@@ -246,12 +248,12 @@ namespace
 
         require(history.beginCoalescedCommand(document, "Rejected gesture"),
                 "rejected-update coalesced begin failed");
-        require(!history.updateCoalescedCommand(
-                    document, [](l2d_editor::EditorDocument& editor)
-                    {
-                        (void)editor.renameObject(1u, "Temporary");
-                        return false;
-                    }),
+        require(!history.updateCoalescedCommand(document,
+                                                [](l2d_editor::EditorDocument& editor)
+                                                {
+                                                    (void)editor.renameObject(1u, "Temporary");
+                                                    return false;
+                                                }),
                 "rejected coalesced update unexpectedly succeeded");
         require(document.findObject(1u)->prefab.name == "First",
                 "rejected coalesced update changed document state");
