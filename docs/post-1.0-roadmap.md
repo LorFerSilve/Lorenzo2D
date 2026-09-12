@@ -451,6 +451,7 @@ language.
 ### Scripting
 
 Prefer Lua or Luau unless a later evaluation identifies a stronger fit.
+
 The scripting boundary should expose a curated gameplay API rather than raw internal engine
 objects.
 
