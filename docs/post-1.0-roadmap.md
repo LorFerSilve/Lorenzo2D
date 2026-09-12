@@ -342,10 +342,23 @@ depend on the editor.
   the runtime level format, and focused regressions that build and run against an installed engine
   package. Object-ID allocation is monotonic across replacement, history branching, rejected
   commands, and exception rollback so stale editor references cannot alias unrelated later objects.
-- **Phase 13 status: in progress.** Slice 13.1 establishes the editor/runtime dependency boundary
-  and state-management foundation. Component inspection, transform editing/gizmos, asset browsing,
-  tilemap authoring, visualization tools, play/test workflow, and the end-to-end authoring tutorial
-  remain future Phase 13 slices.
+- **13.2 Component inspector foundation:** the standalone editor now exposes visible scene-hierarchy
+  and component-inspector panels backed by a selection-bound `ComponentInspectorModel`. Inspector
+  snapshots deterministically expose object metadata, transform state, built-in components, and
+  serialized custom components without retaining pointers into document storage. Supported
+  name/tag/active/z-order/transform edits, built-in component add/remove, and custom-component CRUD
+  are routed through `EditorCommandHistory` and `EditorDocument::replaceObject()`, keeping runtime
+  `Prefab` validation authoritative. Invalid defaults, duplicate components, and dependency-breaking
+  removals are rejected transactionally and do not enter history. Dedicated installed-package
+  regressions cover deterministic snapshots, undo/redo, validation rollback, dependency handling,
+  and custom components; the final PR and merged `master` commit both pass all seven required CI
+  gates, including Windows MSVC, ASan/UBSan, coverage, clang-tidy, and the installed-package editor
+  consumer path.
+- **Phase 13 status: in progress.** Slices 13.1 and 13.2 establish the editor/runtime dependency
+  boundary, document/history foundation, interactive hierarchy, and validated component-inspection
+  workflow. Viewport transform gizmos and drag-command coalescing, asset browsing, tilemap authoring,
+  visualization tools, play/test workflow, richer component-specific controls, and the end-to-end
+  authoring tutorial remain future Phase 13 slices.
 
 ### Initial editor scope
 
@@ -713,7 +726,9 @@ Additional post-1.0 rules:
 
 ## Immediate next step
 
-Continue **Phase 13.2 — interactive hierarchy and inspector foundation** by turning the existing
-hierarchy/selection model into an actual editor panel and adding the first component/transform
-inspector surface. Route supported edits through the existing command history so undo/redo remains
-deterministic, and keep the editor consuming only the installed public Lorenzo2D package.
+Begin **Phase 13.3 — viewport transform/gizmo foundation** on top of the completed 13.1 document
+foundation and 13.2 component inspector. Introduce explicit viewport-space transform interaction
+without bypassing `EditorCommandHistory`; continuous drag gestures should coalesce into one
+deterministic undoable command rather than emitting one history entry per frame. Keep viewport/editor
+state outside engine modules and continue validating the editor exclusively through the installed
+public Lorenzo2D package.
