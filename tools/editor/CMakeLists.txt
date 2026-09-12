@@ -42,6 +42,7 @@ add_library(Lorenzo2DEditorCore STATIC
     src/EditorCommandHistory.cpp
     src/EditorDocument.cpp
     src/SceneHierarchyModel.cpp
+    src/ViewportTransformModel.cpp
 )
 add_library(Lorenzo2DEditor::Core ALIAS Lorenzo2DEditorCore)
 
@@ -93,6 +94,24 @@ if(L2D_EDITOR_BUILD_TESTS)
     )
     set_tests_properties(
         Lorenzo2DEditorComponentInspectorTests
+        PROPERTIES
+            TIMEOUT 30
+    )
+
+    add_executable(
+        Lorenzo2DEditorViewportTransformTests
+        tests/ViewportTransformTests.cpp
+    )
+    target_compile_features(Lorenzo2DEditorViewportTransformTests PRIVATE cxx_std_17)
+    target_link_libraries(Lorenzo2DEditorViewportTransformTests PRIVATE Lorenzo2DEditor::Core)
+    l2d_editor_enable_warnings(Lorenzo2DEditorViewportTransformTests)
+
+    add_test(
+        NAME Lorenzo2DEditorViewportTransformTests
+        COMMAND Lorenzo2DEditorViewportTransformTests
+    )
+    set_tests_properties(
+        Lorenzo2DEditorViewportTransformTests
         PROPERTIES
             TIMEOUT 30
     )
