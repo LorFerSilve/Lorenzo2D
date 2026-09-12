@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -26,8 +27,25 @@ namespace l2d_editor
         [[nodiscard]] bool execute(EditorDocument& document, std::string label,
                                    const Mutation& mutation);
 
+        // A coalesced command is an explicit multi-update editor gesture. The
+        // first snapshot is retained while updateCoalescedCommand() publishes
+        // live document state. commitCoalescedCommand() records exactly one
+        // undo entry; cancelCoalescedCommand() restores the gesture-start state.
+        // Normal execute/undo/redo operations are rejected while a coalesced
+        // command is open so history ordering cannot become ambiguous.
+        [[nodiscard]] bool beginCoalescedCommand(EditorDocument& document, std::string label);
+        [[nodiscard]] bool updateCoalescedCommand(EditorDocument& document,
+                                                  const Mutation& mutation);
+        [[nodiscard]] bool commitCoalescedCommand(EditorDocument& document);
+        [[nodiscard]] bool cancelCoalescedCommand(EditorDocument& document);
+        [[nodiscard]] bool hasOpenCoalescedCommand() const noexcept;
+
         [[nodiscard]] bool undo(EditorDocument& document);
         [[nodiscard]] bool redo(EditorDocument& document);
+
+        // Clears completed undo/redo entries. An open coalesced command is
+        // deliberately retained because clear() has no document parameter with
+        // which it could safely restore the gesture-start snapshot.
         void clear() noexcept;
 
         [[nodiscard]] bool canUndo() const noexcept;
@@ -45,7 +63,17 @@ namespace l2d_editor
             EditorDocument::Snapshot after;
         };
 
+        struct PendingCommand
+        {
+            std::string label;
+            EditorDocument::Snapshot before;
+            std::size_t successfulUpdates = 0u;
+        };
+
+        void pushCompleted(Command command);
+
         std::vector<Command> m_undo;
         std::vector<Command> m_redo;
+        std::optional<PendingCommand> m_pending;
     };
 }

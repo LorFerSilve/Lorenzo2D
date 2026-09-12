@@ -74,24 +74,76 @@ history, `Left`/`Right` adjusts z-order, `Space` toggles active state, `F1` togg
 small platform-specific list of system UI fonts; failure to locate one disables panel text without
 changing editor document behavior.
 
-This slice does not claim viewport transform gizmos, arbitrary graphical field editors, asset
-picking, or component-specific rich controls. Those remain later Phase 13 work. In particular,
+Asset picking and component-specific rich controls remain later Phase 13 work. In particular,
 asset-backed components such as `SpriteRenderer` and `Animator` require valid asset IDs/configuration;
 the generic default-add operation is expected to fail until a caller supplies a valid configured
 component through the validated mutation path or a later asset-browser UI.
 
+## Phase 13.3 viewport transform foundation
+
+The third slice adds a real editor viewport interaction boundary without introducing engine-side
+editor dependencies. `ViewportTransformModel` maps between editor viewport pixels and runtime world
+positions using explicit viewport bounds, world center, and bounded zoom. It resolves selected
+objects by stable editor ID on every operation and exposes the selected transform plus its on-screen
+translation handle position.
+
+The first gizmo operation is deterministic translation. A drag can emit many pointer updates, but it
+is represented by one explicit coalesced `EditorCommandHistory` transaction:
+
+- `beginCoalescedCommand()` captures the exact gesture-start document snapshot;
+- `updateCoalescedCommand()` publishes each live transform update transactionally without creating a
+  completed undo entry per frame;
+- `commitCoalescedCommand()` records exactly one before/after command and invalidates redo only when
+  the gesture is actually committed;
+- `cancelCoalescedCommand()` restores the gesture-start snapshot and leaves existing redo history
+  intact;
+- ordinary execute/undo/redo operations are rejected while a coalesced gesture is open, preventing
+  ambiguous history interleaving.
+
+The viewport model owns no runtime scene objects and retains no pointer into `EditorDocument` object
+storage. It stores only the selected editor ID and the drag-start transform. A selection identity
+change during a drag cancels the exclusive gesture and restores the drag-start state. Returning the
+pointer to the exact start position before release is treated as a net-zero gesture and creates no
+undo entry.
+
+The application shell now renders a central viewport between the hierarchy and inspector panels. It
+shows the world origin axes, document-object position markers, and a translation gizmo for the
+selected object. Dragging the selected center handle moves the object live in world space; releasing
+commits one undo step. `Escape` cancels an active drag, otherwise it closes the editor. Existing
+keyboard transform nudges remain separate ordinary history commands.
+
+Focused viewport regressions validate:
+
+- viewport/world coordinate round-tripping and bounded configuration validation;
+- selection-bound gizmo hit testing;
+- multiple drag updates coalescing into exactly one undo/redo command;
+- preservation of rotation and scale during translation;
+- cancellation, net-zero drags, and redo preservation;
+- selection-change cancellation and exact gesture-start restoration;
+- rejected coalesced mutations rolling back locally without closing the gesture or entering history.
+
+Phase 13.3 deliberately establishes only the translation-gizmo and gesture-history foundation. It
+does not yet claim rotation/scale handles, camera pan/zoom controls, renderer-accurate scene previews,
+asset picking, tilemap painting, or general component widgets.
+
 ## Undo/redo contract
 
-`EditorCommandHistory` retains at most 256 successful commands. A command receives an
+`EditorCommandHistory` retains at most 256 successful completed commands. A normal command receives an
 `EditorDocument` mutation callback. If the callback returns `false`, document contents and selection
 are restored and no history entry is created. If it throws, those same visible document properties
 are restored before the exception propagates. In both cases, the allocator high-water mark is merged
 monotonically rather than rewound.
 
+Coalesced commands extend the same snapshot contract to continuous editor gestures. Live updates are
+transactional, but the command is not appended to undo history until commit. A cancelled gesture
+restores its initial snapshot. Completed undo/redo history remains bounded by the same 256-command
+limit, and redo is cleared only on successful normal-command execution or successful coalesced
+commit.
+
 The current implementation stores full document snapshots. This prioritizes deterministic and
-transactional behavior over memory efficiency while editor operations are still small. Later Phase
-13 slices may add specialized delta commands for high-frequency gizmo or painting operations without
-changing the history semantics.
+transactional behavior over memory efficiency while editor operations are still small. Future
+high-volume authoring tools such as tile painting may introduce specialized deltas while preserving
+the same externally visible history semantics.
 
 ## Building the editor
 
@@ -113,8 +165,8 @@ or private engine internals.
 
 ## Next editor slice
 
-The next Phase 13 slice should build on the validated inspector mutations with viewport-oriented
-transform editing/gizmos rather than adding ad-hoc direct mutations. Gizmo drag publication should
-have explicit command coalescing semantics so a continuous drag becomes one deterministic undo step.
-After that boundary is stable, asset browsing/picking can provide configured values for asset-backed
-components without weakening runtime `Prefab` validation.
+With hierarchy, validated component inspection, and coalesced viewport translation established, the
+next Phase 13 slice should add an asset-browser/picking boundary that can provide validated configured
+asset IDs to components such as `SpriteRenderer` and `Animator`. Rotation/scale gizmos and richer
+viewport camera controls can then build on the same coalesced-history contract without creating a
+second mutation path.
