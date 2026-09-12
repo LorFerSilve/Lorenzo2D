@@ -64,8 +64,8 @@ namespace l2d_editor
                 center.y + (worldPosition.y - m_worldCenter.y) * m_zoom};
     }
 
-    sf::Vector2f
-    ViewportTransformModel::viewportToWorld(sf::Vector2f viewportPosition) const noexcept
+    sf::Vector2f ViewportTransformModel::viewportToWorld(
+        sf::Vector2f viewportPosition) const noexcept
     {
         const sf::Vector2f center{m_viewport.position.x + m_viewport.size.x * 0.5f,
                                   m_viewport.position.y + m_viewport.size.y * 0.5f};
@@ -129,10 +129,9 @@ namespace l2d_editor
 
         const sf::Vector2f pointerWorld = viewportToWorld(pointerPosition);
         l2d::TransformState target = m_drag->startTransform;
-        target.position = {m_drag->startTransform.position.x +
-                               (pointerWorld.x - m_drag->pointerStartWorld.x),
-                           m_drag->startTransform.position.y +
-                               (pointerWorld.y - m_drag->pointerStartWorld.y)};
+        target.position = {
+            m_drag->startTransform.position.x + (pointerWorld.x - m_drag->pointerStartWorld.x),
+            m_drag->startTransform.position.y + (pointerWorld.y - m_drag->pointerStartWorld.y)};
         if (!isFinite(target.position) || object->prefab.transform.position == target.position)
             return false;
 
@@ -179,9 +178,9 @@ namespace l2d_editor
 
     bool ViewportTransformModel::viewportIsValid() const noexcept
     {
-        return isFinite(m_viewport.position) && isFinite(m_viewport.size) && m_viewport.size.x > 0.f &&
-               m_viewport.size.y > 0.f && std::isfinite(m_zoom) && m_zoom >= MinimumZoom &&
-               m_zoom <= MaximumZoom;
+        return isFinite(m_viewport.position) && isFinite(m_viewport.size) &&
+               m_viewport.size.x > 0.f && m_viewport.size.y > 0.f && std::isfinite(m_zoom) &&
+               m_zoom >= MinimumZoom && m_zoom <= MaximumZoom;
     }
 
     const EditorObjectRecord* ViewportTransformModel::selectedObject() const noexcept
