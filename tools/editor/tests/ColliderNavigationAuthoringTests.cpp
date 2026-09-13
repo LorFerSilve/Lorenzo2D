@@ -92,7 +92,8 @@ namespace
                 "valid collider offset edit failed");
         require(model.setBoxSize({120.f, 44.f}), "valid box collider resize failed");
         require(model.setCircleRadius(18.f), "valid circle collider resize failed");
-        require(history.undoCount() == 3u, "collider edits did not enter shared history exactly once");
+        require(history.undoCount() == 3u,
+                "collider edits did not enter shared history exactly once");
 
         const l2d::Prefab& edited = document.findObject(1u)->prefab;
         require(near(edited.boxCollider->properties.offset, {9.f, 7.f}),
@@ -102,10 +103,8 @@ namespace
         require(near(edited.circleCollider->radius, 18.f),
                 "circle collider resize was not published");
 
-        require(!model.setBoxSize({-1.f, 10.f}),
-                "invalid box collider size was published");
-        require(history.undoCount() == 3u,
-                "rejected collider edit polluted document history");
+        require(!model.setBoxSize({-1.f, 10.f}), "invalid box collider size was published");
+        require(history.undoCount() == 3u, "rejected collider edit polluted document history");
         require(near(document.findObject(1u)->prefab.boxCollider->size, {120.f, 44.f}),
                 "rejected collider edit changed published state");
 
@@ -133,8 +132,7 @@ namespace
         require(near(overlay->cells.front().worldCenter, {0.f, 20.f}),
                 "navigation overlay world center is incorrect");
 
-        require(model.setNavigationWalkable({1, 1}, false),
-                "navigation walkability edit failed");
+        require(model.setNavigationWalkable({1, 1}, false), "navigation walkability edit failed");
         require(model.setNavigationTraversalCost({1, 1}, 2.5f),
                 "navigation traversal-cost edit failed");
         require(model.navigationUndoCount() == 2u,
@@ -148,8 +146,7 @@ namespace
                 "navigation no-op unexpectedly entered history");
         require(!model.setNavigationTraversalCost({99, 99}, 3.f),
                 "out-of-bounds navigation edit unexpectedly succeeded");
-        require(model.navigationUndoCount() == 2u,
-                "rejected navigation edits polluted history");
+        require(model.navigationUndoCount() == 2u, "rejected navigation edits polluted history");
 
         require(model.undoNavigation(), "navigation traversal-cost undo failed");
         require(near(model.navigationGrid()->cell({1, 1})->traversalCost, 1.f),
@@ -157,8 +154,7 @@ namespace
         require(model.undoNavigation(), "navigation walkability undo failed");
         require(model.navigationGrid()->cell({1, 1})->walkable,
                 "navigation undo did not restore prior walkability");
-        require(model.navigationRedoCount() == 2u,
-                "navigation undo did not populate redo history");
+        require(model.navigationRedoCount() == 2u, "navigation undo did not populate redo history");
         require(model.redoNavigation(), "navigation walkability redo failed");
         require(!model.navigationGrid()->cell({1, 1})->walkable,
                 "navigation redo did not restore edited walkability");
