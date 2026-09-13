@@ -38,6 +38,7 @@ function(l2d_editor_enable_warnings target)
 endfunction()
 
 add_library(Lorenzo2DEditorCore STATIC
+    src/AnimationPreviewModel.cpp
     src/AssetBrowserModel.cpp
     src/AssetPickingModel.cpp
     src/ColliderNavigationAuthoringModel.cpp
@@ -170,6 +171,24 @@ if(L2D_EDITOR_BUILD_TESTS)
     )
     set_tests_properties(
         Lorenzo2DEditorColliderNavigationAuthoringTests
+        PROPERTIES
+            TIMEOUT 30
+    )
+
+    add_executable(
+        Lorenzo2DEditorAnimationPreviewTests
+        tests/AnimationPreviewTests.cpp
+    )
+    target_compile_features(Lorenzo2DEditorAnimationPreviewTests PRIVATE cxx_std_17)
+    target_link_libraries(Lorenzo2DEditorAnimationPreviewTests PRIVATE Lorenzo2DEditor::Core)
+    l2d_editor_enable_warnings(Lorenzo2DEditorAnimationPreviewTests)
+
+    add_test(
+        NAME Lorenzo2DEditorAnimationPreviewTests
+        COMMAND Lorenzo2DEditorAnimationPreviewTests
+    )
+    set_tests_properties(
+        Lorenzo2DEditorAnimationPreviewTests
         PROPERTIES
             TIMEOUT 30
     )
