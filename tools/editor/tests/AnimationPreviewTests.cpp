@@ -25,8 +25,6 @@ namespace
     {
         l2d::Prefab animated;
         animated.name = "Animated";
-        animated.spriteRenderer = l2d::SpriteRendererPrefab{};
-        animated.spriteRenderer->texture = "textures/hero.png";
         animated.animator = l2d::AnimatorPrefab{};
         animated.animator->clips = {"animations/idle", "animations/run"};
         animated.animator->initialClip = "animations/idle";
