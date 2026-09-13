@@ -15,7 +15,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setRectangleSize(sf::Vector2f size)
     {
-        return editSelected("Set RectangleRenderer size", [size](l2d::Prefab& prefab)
+        return editSelected("Set RectangleRenderer size",
+                            [size](l2d::Prefab& prefab)
                             {
                                 if (!prefab.rectangleRenderer ||
                                     prefab.rectangleRenderer->size == size)
@@ -27,7 +28,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setRectangleColor(sf::Color color)
     {
-        return editSelected("Set RectangleRenderer color", [color](l2d::Prefab& prefab)
+        return editSelected("Set RectangleRenderer color",
+                            [color](l2d::Prefab& prefab)
                             {
                                 if (!prefab.rectangleRenderer ||
                                     prefab.rectangleRenderer->color == color)
@@ -39,7 +41,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setCircleRadius(float radius)
     {
-        return editSelected("Set CircleRenderer radius", [radius](l2d::Prefab& prefab)
+        return editSelected("Set CircleRenderer radius",
+                            [radius](l2d::Prefab& prefab)
                             {
                                 if (!prefab.circleRenderer ||
                                     prefab.circleRenderer->radius == radius)
@@ -51,7 +54,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setCircleColor(sf::Color color)
     {
-        return editSelected("Set CircleRenderer color", [color](l2d::Prefab& prefab)
+        return editSelected("Set CircleRenderer color",
+                            [color](l2d::Prefab& prefab)
                             {
                                 if (!prefab.circleRenderer || prefab.circleRenderer->color == color)
                                     return false;
@@ -62,7 +66,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setSpriteSize(sf::Vector2f size)
     {
-        return editSelected("Set SpriteRenderer size", [size](l2d::Prefab& prefab)
+        return editSelected("Set SpriteRenderer size",
+                            [size](l2d::Prefab& prefab)
                             {
                                 if (!prefab.spriteRenderer || prefab.spriteRenderer->size == size)
                                     return false;
@@ -73,7 +78,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setSpriteColor(sf::Color color)
     {
-        return editSelected("Set SpriteRenderer color", [color](l2d::Prefab& prefab)
+        return editSelected("Set SpriteRenderer color",
+                            [color](l2d::Prefab& prefab)
                             {
                                 if (!prefab.spriteRenderer || prefab.spriteRenderer->color == color)
                                     return false;
@@ -84,7 +90,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setSpriteOrigin(sf::Vector2f origin)
     {
-        return editSelected("Set SpriteRenderer origin", [origin](l2d::Prefab& prefab)
+        return editSelected("Set SpriteRenderer origin",
+                            [origin](l2d::Prefab& prefab)
                             {
                                 if (!prefab.spriteRenderer ||
                                     prefab.spriteRenderer->origin == origin)
@@ -96,7 +103,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setSpriteFlipX(bool flipped)
     {
-        return editSelected("Set SpriteRenderer flip X", [flipped](l2d::Prefab& prefab)
+        return editSelected("Set SpriteRenderer flip X",
+                            [flipped](l2d::Prefab& prefab)
                             {
                                 if (!prefab.spriteRenderer ||
                                     prefab.spriteRenderer->flipX == flipped)
@@ -108,7 +116,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setSpriteFlipY(bool flipped)
     {
-        return editSelected("Set SpriteRenderer flip Y", [flipped](l2d::Prefab& prefab)
+        return editSelected("Set SpriteRenderer flip Y",
+                            [flipped](l2d::Prefab& prefab)
                             {
                                 if (!prefab.spriteRenderer ||
                                     prefab.spriteRenderer->flipY == flipped)
@@ -120,7 +129,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setSpriteRenderOrder(l2d::RenderOrderPrefab order)
     {
-        return editSelected("Set SpriteRenderer render order", [order](l2d::Prefab& prefab)
+        return editSelected("Set SpriteRenderer render order",
+                            [order](l2d::Prefab& prefab)
                             {
                                 if (!prefab.spriteRenderer ||
                                     sameRenderOrder(prefab.spriteRenderer->renderOrder, order))
@@ -132,7 +142,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setAnimatorPlaybackSpeed(float speed)
     {
-        return editSelected("Set Animator playback speed", [speed](l2d::Prefab& prefab)
+        return editSelected("Set Animator playback speed",
+                            [speed](l2d::Prefab& prefab)
                             {
                                 if (!prefab.animator || prefab.animator->playbackSpeed == speed)
                                     return false;
@@ -143,7 +154,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setAnimatorPlaying(bool playing)
     {
-        return editSelected("Set Animator playing", [playing](l2d::Prefab& prefab)
+        return editSelected("Set Animator playing",
+                            [playing](l2d::Prefab& prefab)
                             {
                                 if (!prefab.animator || prefab.animator->playing == playing)
                                     return false;
@@ -154,7 +166,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::removeAnimatorClipAsset(const l2d::AssetId& clip)
     {
-        return editSelected("Remove Animator clip", [&clip](l2d::Prefab& prefab)
+        return editSelected("Remove Animator clip",
+                            [&clip](l2d::Prefab& prefab)
                             {
                                 if (!prefab.animator) return false;
                                 auto& animator = *prefab.animator;
@@ -169,7 +182,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::clearAnimatorInitialClip()
     {
-        return editSelected("Clear Animator initial clip", [](l2d::Prefab& prefab)
+        return editSelected("Clear Animator initial clip",
+                            [](l2d::Prefab& prefab)
                             {
                                 if (!prefab.animator || prefab.animator->initialClip.empty())
                                     return false;
@@ -180,7 +194,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setRigidBodyType(l2d::BodyType2D type)
     {
-        return editSelected("Set RigidBody type", [type](l2d::Prefab& prefab)
+        return editSelected("Set RigidBody type",
+                            [type](l2d::Prefab& prefab)
                             {
                                 if (!prefab.rigidBody || prefab.rigidBody->bodyType == type)
                                     return false;
@@ -191,7 +206,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setRigidBodyVelocity(sf::Vector2f velocity)
     {
-        return editSelected("Set RigidBody velocity", [velocity](l2d::Prefab& prefab)
+        return editSelected("Set RigidBody velocity",
+                            [velocity](l2d::Prefab& prefab)
                             {
                                 if (!prefab.rigidBody || prefab.rigidBody->velocity == velocity)
                                     return false;
@@ -202,7 +218,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setRigidBodyAcceleration(sf::Vector2f acceleration)
     {
-        return editSelected("Set RigidBody acceleration", [acceleration](l2d::Prefab& prefab)
+        return editSelected("Set RigidBody acceleration",
+                            [acceleration](l2d::Prefab& prefab)
                             {
                                 if (!prefab.rigidBody ||
                                     prefab.rigidBody->acceleration == acceleration)
@@ -214,9 +231,11 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setRigidBodyMass(float mass)
     {
-        return editSelected("Set RigidBody mass", [mass](l2d::Prefab& prefab)
+        return editSelected("Set RigidBody mass",
+                            [mass](l2d::Prefab& prefab)
                             {
-                                if (!prefab.rigidBody || prefab.rigidBody->mass == mass) return false;
+                                if (!prefab.rigidBody || prefab.rigidBody->mass == mass)
+                                    return false;
                                 prefab.rigidBody->mass = mass;
                                 return true;
                             });
@@ -224,7 +243,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setRigidBodyUseGravity(bool enabled)
     {
-        return editSelected("Set RigidBody gravity", [enabled](l2d::Prefab& prefab)
+        return editSelected("Set RigidBody gravity",
+                            [enabled](l2d::Prefab& prefab)
                             {
                                 if (!prefab.rigidBody || prefab.rigidBody->useGravity == enabled)
                                     return false;
@@ -235,7 +255,8 @@ namespace l2d_editor
 
     bool ComponentInspectorModel::setRigidBodyGravityScale(float scale)
     {
-        return editSelected("Set RigidBody gravity scale", [scale](l2d::Prefab& prefab)
+        return editSelected("Set RigidBody gravity scale",
+                            [scale](l2d::Prefab& prefab)
                             {
                                 if (!prefab.rigidBody || prefab.rigidBody->gravityScale == scale)
                                     return false;
