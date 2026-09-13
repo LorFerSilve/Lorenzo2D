@@ -89,6 +89,16 @@ namespace
                 "Tiled import published wrong cell values");
         require(model.undoCount() == 0u && model.redoCount() == 0u,
                 "successful map replacement retained old tile history");
+
+        l2d_editor::TilemapAuthoringLimits inputLimits;
+        inputLimits.maxInputBytes = 8u;
+        l2d_editor::TilemapAuthoringModel inputBounded(inputLimits);
+        std::stringstream oversizedInput(tiled);
+        require(!inputBounded.loadTiled(oversizedInput),
+                "Tiled input above editor byte limit unexpectedly loaded");
+        require(inputBounded.lastError() == l2d_editor::TilemapAuthoringError::ImportFailed,
+                "Tiled input byte limit reported the wrong error");
+        require(!inputBounded.hasMap(), "failed bounded Tiled import published a partial map");
     }
 
     void testAuthoringLimitsAreTransactional()
@@ -120,10 +130,26 @@ namespace
         require(model.lastError() == l2d_editor::TilemapAuthoringError::DefinitionLimitExceeded,
                 "definition limit violation reported the wrong error");
 
+        l2d::TileMapData objectHeavy = makeMap(1u, 1u, 1u, {1u});
+        l2d::TileMapObject firstObject;
+        firstObject.id = 1u;
+        l2d::TileMapObject secondObject;
+        secondObject.id = 2u;
+        require(objectHeavy.addObject(firstObject) && objectHeavy.addObject(secondObject),
+                "unable to create object-limit fixture");
+        require(!model.replace(std::move(objectHeavy)),
+                "over-limit tilemap object count unexpectedly succeeded");
+        require(model.lastError() == l2d_editor::TilemapAuthoringError::ObjectLimitExceeded,
+                "object limit violation reported the wrong error");
+
         require(!model.replace(makeMap(2u, 2u, 2u, {1u})),
                 "over-limit authored tile-slot count unexpectedly succeeded");
         require(model.lastError() == l2d_editor::TilemapAuthoringError::TileSlotLimitExceeded,
                 "tile-slot limit violation reported the wrong error");
+
+        require(model.data().width() == 2u && model.data().height() == 2u &&
+                    model.data().layers().size() == 1u,
+                "authoring-limit failures replaced the previously published map");
 
         l2d_editor::TilemapAuthoringLimits invalidLimits;
         invalidLimits.maxStrokeCellCount = 0u;
