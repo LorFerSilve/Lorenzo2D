@@ -44,26 +44,6 @@ foreach(l2d_file IN LISTS l2d_format_files)
 
     if(NOT l2d_result EQUAL 0)
         list(APPEND l2d_format_failures "${l2d_file}")
-        if(L2D_FORMAT_MODE STREQUAL "check")
-            set(l2d_formatted_file "${l2d_file}.clang-format-diagnostic")
-            execute_process(
-                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" "${l2d_file}"
-                OUTPUT_FILE "${l2d_formatted_file}"
-            )
-            execute_process(
-                COMMAND diff -u "${l2d_file}" "${l2d_formatted_file}"
-                RESULT_VARIABLE l2d_diff_result
-                OUTPUT_VARIABLE l2d_diff
-                ERROR_VARIABLE l2d_diff_error
-            )
-            if(l2d_diff)
-                message(STATUS "clang-format diff for ${l2d_file}:\n${l2d_diff}")
-            endif()
-            if(l2d_diff_error)
-                message(STATUS "clang-format diff error for ${l2d_file}: ${l2d_diff_error}")
-            endif()
-            file(REMOVE "${l2d_formatted_file}")
-        endif()
     endif()
 endforeach()
 
