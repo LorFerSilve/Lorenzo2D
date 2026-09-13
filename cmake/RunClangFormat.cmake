@@ -40,6 +40,13 @@ foreach(l2d_file IN LISTS l2d_format_files)
             OUTPUT_QUIET
             ERROR_QUIET
         )
+        if(NOT l2d_result EQUAL 0)
+            execute_process(
+                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" "${l2d_file}"
+                OUTPUT_VARIABLE l2d_formatted_output
+            )
+            message(STATUS "FORMATTED ${l2d_file} BEGIN\n${l2d_formatted_output}FORMATTED ${l2d_file} END")
+        endif()
     endif()
 
     if(NOT l2d_result EQUAL 0)
