@@ -44,6 +44,7 @@ add_library(Lorenzo2DEditorCore STATIC
     src/EditorCommandHistory.cpp
     src/EditorDocument.cpp
     src/SceneHierarchyModel.cpp
+    src/TilemapAuthoringModel.cpp
     src/ViewportTransformModel.cpp
 )
 add_library(Lorenzo2DEditor::Core ALIAS Lorenzo2DEditorCore)
@@ -132,6 +133,24 @@ if(L2D_EDITOR_BUILD_TESTS)
     )
     set_tests_properties(
         Lorenzo2DEditorAssetBrowserTests
+        PROPERTIES
+            TIMEOUT 30
+    )
+
+    add_executable(
+        Lorenzo2DEditorTilemapAuthoringTests
+        tests/TilemapAuthoringTests.cpp
+    )
+    target_compile_features(Lorenzo2DEditorTilemapAuthoringTests PRIVATE cxx_std_17)
+    target_link_libraries(Lorenzo2DEditorTilemapAuthoringTests PRIVATE Lorenzo2DEditor::Core)
+    l2d_editor_enable_warnings(Lorenzo2DEditorTilemapAuthoringTests)
+
+    add_test(
+        NAME Lorenzo2DEditorTilemapAuthoringTests
+        COMMAND Lorenzo2DEditorTilemapAuthoringTests
+    )
+    set_tests_properties(
+        Lorenzo2DEditorTilemapAuthoringTests
         PROPERTIES
             TIMEOUT 30
     )

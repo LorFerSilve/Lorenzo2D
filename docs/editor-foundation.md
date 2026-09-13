@@ -186,6 +186,73 @@ Phase 13.4 does not add source-asset metadata, import settings, background cooki
 dependency graphs, thumbnail generation, asset drag-and-drop, runtime registry introspection, or
 renderer-accurate previews. Those boundaries either belong to later editor slices or Phase 14.
 
+## Phase 13.5 bounded tilemap authoring foundation
+
+The fifth slice introduces `TilemapAuthoringModel` as an editor-only mutation boundary over the
+installed public `TileMapData` and `TiledJsonImporter` contracts. The editor does not create a second
+tilemap schema and does not modify engine modules to depend on authoring state.
+
+Tiled JSON enters the model only through `TiledJsonImporter::load()`. Import first builds a candidate
+`TileMapData`; the candidate is published only after the runtime document is valid and the stricter
+editor limits are satisfied. Failed parsing, runtime validation, or editor-limit validation therefore
+leaves the previously published map, selection, and completed history unchanged.
+
+The default editor envelope is intentionally much smaller than the runtime hard maximums:
+
+- at most 256 Ki map cells;
+- at most 64 layers;
+- at most 4,096 tile definitions;
+- at most 65,536 imported objects;
+- at most 1,048,576 authored tile slots across all layers;
+- at most 4,096 unique changed cells in one continuous paint stroke;
+- at most 128 completed tile-paint history commands;
+- at most 16 MiB input for one Tiled JSON import.
+
+These are authoring-workload limits rather than new runtime support claims. Callers may construct a
+model with a different non-zero envelope as long as runtime maxima are not exceeded.
+
+Layer selection follows canonical `TileMapData::layers()` order. The tile palette is rebuilt from
+runtime definitions and sorted numerically by `TileId`, so authoring order never depends on
+`unordered_map` iteration. `EmptyTile` is the erase brush and cannot carry flip flags. Non-empty
+brushes must resolve to an existing runtime tile definition, and flip flags are restricted to the
+public horizontal/vertical/diagonal mask.
+
+Painting always delegates the actual cell mutation to `TileMapData::setTile()`. A one-cell edit is
+one undoable command. Continuous painting uses an explicit begin/update/commit/cancel gesture. The
+open gesture snapshots the selected layer and brush, blocks selection/history interleaving, records
+only unique touched-cell deltas, and commits all successful pointer updates as exactly one history
+entry. Exceeding the per-stroke unique-cell limit rejects the extra cell without discarding already
+valid live updates. Cancellation restores every touched cell to its gesture-start state and preserves
+pre-existing redo history. A no-op stroke creates no history entry.
+
+Unlike the small scene-document history, tile painting does not copy the complete tilemap per pointer
+update. Completed commands store bounded before/after cell deltas. This keeps the externally visible
+transactional undo/redo contract while preventing a large map from being multiplied by every paint
+sample. History depth and per-stroke delta count independently bound retained memory.
+
+This foundation deliberately does not implement a second editor-side Tiled writer. Lorenzo2D
+currently exposes a public Tiled importer but no public exporter, so inventing a private serializer in
+Phase 13 would create a competing persistence contract. Phase 13.5 therefore establishes validated
+in-memory authoring and installed-package regressions only. A future persistence/export decision must
+extend or deliberately define the public content contract rather than hiding one inside the editor.
+
+Focused installed-package regressions cover:
+
+- public Tiled import and transactional failed-import preservation;
+- deterministic numeric tile-palette ordering;
+- map, layer, definition, object, tile-slot, input, stroke, and history limits;
+- validated layer/tile/flip selection;
+- one-cell paint/erase undo and redo;
+- continuous paint coalescing into one command;
+- out-of-bounds and over-limit mutation rejection without history pollution;
+- gesture cancellation and redo preservation;
+- bounded history eviction.
+
+Phase 13.5 does not yet claim a visual tile palette/grid widget, renderer-accurate tile previews,
+Tiled export, tileset metadata editing, object-layer authoring, collision/nav overlays, or Phase 14
+asset import/cook behavior. Those remain separate slices so this foundation stays deterministic and
+bounded.
+
 ## Undo/redo contract
 
 `EditorCommandHistory` retains at most 256 successful completed commands. A normal command receives an
@@ -200,10 +267,11 @@ restores its initial snapshot. Completed undo/redo history remains bounded by th
 limit, and redo is cleared only on successful normal-command execution or successful coalesced
 commit.
 
-The current implementation stores full document snapshots. This prioritizes deterministic and
-transactional behavior over memory efficiency while editor operations are still small. Future
-high-volume authoring tools such as tile painting may introduce specialized deltas while preserving
-the same externally visible history semantics.
+The scene-document implementation stores full document snapshots because normal inspector/gizmo
+operations are still small. Tilemap painting uses a specialized bounded delta history instead: each
+paint command stores only the unique touched cells and their before/after states while preserving the
+same commit/cancel/undo/redo semantics. This avoids multiplying large tilemap snapshots by pointer
+sample count.
 
 ## Building the editor
 
@@ -225,7 +293,7 @@ or private engine internals.
 
 ## Next editor slice
 
-After asset browsing/picking is validated, the next Phase 13 slice should establish a bounded tilemap
-authoring foundation using the existing installed public tilemap/Tiled contracts. It should preserve
-the same editor/runtime dependency direction and deterministic history semantics rather than
-introducing a second persistence or mutation path.
+After the bounded tilemap authoring model is validated, the next Phase 13 slice should establish a
+bounded collider/navigation visualization and editing foundation over the existing public physics,
+tilemap-collider, and navigation contracts. It should keep diagnostic/authoring overlays editor-owned
+and avoid introducing editor dependencies into engine modules.
