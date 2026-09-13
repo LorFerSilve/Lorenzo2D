@@ -33,11 +33,12 @@ continuing through the planned Lorenzo2D 2.0 preparation phase.
 
 ### Current post-1.0 implementation pointer
 
-Phase 13 is the active editor/tooling phase. Slices 13.1 through 13.8 are implemented. Phase 13.7
-established the bounded editor-only animation preview foundation, while Phase 13.8 adds the bounded
-play/test orchestration and runtime-readable unsaved-level snapshot workflow documented in
-[`play-test-workflow.md`](play-test-workflow.md). The next planned dependency is **Phase 13.9 —
-richer component-specific inspector controls**.
+Phase 13 is the active editor/tooling phase. Slices 13.1 through 13.9 are implemented. Phase 13.8
+established the bounded play/test orchestration and runtime-readable unsaved-level snapshot workflow,
+while Phase 13.9 adds validated typed property controls for rectangle/circle renderers, sprites,
+animators, and rigid bodies as documented in
+[`component-inspector-controls.md`](component-inspector-controls.md). The next planned dependency is
+**Phase 13.10 — rotation/scale gizmos**.
 
 ## Phase completion rule
 
