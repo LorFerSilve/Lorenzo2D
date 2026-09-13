@@ -51,8 +51,8 @@ namespace
         expect(workflow.lastError() == l2d_editor::PlayTestError::MissingLevelPlaceholder,
                "missing placeholder should report MissingLevelPlaceholder");
 
-        std::vector<std::string> tooMany(l2d_editor::PlayTestWorkflowModel::MaximumArgumentCount + 1u,
-                                         "x");
+        std::vector<std::string> tooMany(
+            l2d_editor::PlayTestWorkflowModel::MaximumArgumentCount + 1u, "x");
         tooMany.front() = "{level}";
         expect(!workflow.configure("game", ".", std::move(tooMany)),
                "argument-count limit must be enforced");
@@ -73,11 +73,13 @@ namespace
         l2d_editor::PlayTestLaunchRequest captured;
         bool stopCalled = false;
         l2d_editor::PlayTestProcessHooks hooks;
-        hooks.launch = [&captured](const l2d_editor::PlayTestLaunchRequest& request) {
+        hooks.launch = [&captured](const l2d_editor::PlayTestLaunchRequest& request)
+        {
             captured = request;
             return true;
         };
-        hooks.stop = [&stopCalled]() {
+        hooks.stop = [&stopCalled]()
+        {
             stopCalled = true;
             return true;
         };
@@ -90,14 +92,16 @@ namespace
         expect(captured.arguments.size() == 2u, "launch request should preserve argument count");
         expect(captured.arguments.front().find("{level}") == std::string::npos,
                "launch request should expand the level placeholder");
-        expect(captured.arguments.front().find(captured.levelSnapshotPath.string()) != std::string::npos,
+        expect(captured.arguments.front().find(captured.levelSnapshotPath.string()) !=
+                   std::string::npos,
                "expanded argument should contain the serialized snapshot path");
         expect(std::filesystem::is_regular_file(captured.levelSnapshotPath),
                "play/test start should publish a serialized level snapshot");
 
         l2d_editor::EditorDocument restored;
-        expect(restored.loadFromFile(captured.levelSnapshotPath.string()),
-               "runtime level snapshot should remain readable by EditorDocument/runtime serializer");
+        expect(
+            restored.loadFromFile(captured.levelSnapshotPath.string()),
+            "runtime level snapshot should remain readable by EditorDocument/runtime serializer");
         expect(restored.name() == "PlayTestLevel", "snapshot should reflect current editor state");
 
         expect(workflow.stop(), "active play/test session should stop cleanly");
@@ -120,7 +124,8 @@ namespace
 
         std::filesystem::path attemptedSnapshot;
         l2d_editor::PlayTestProcessHooks hooks;
-        hooks.launch = [&attemptedSnapshot](const l2d_editor::PlayTestLaunchRequest& request) {
+        hooks.launch = [&attemptedSnapshot](const l2d_editor::PlayTestLaunchRequest& request)
+        {
             attemptedSnapshot = request.levelSnapshotPath;
             return false;
         };
