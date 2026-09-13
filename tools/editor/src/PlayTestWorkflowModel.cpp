@@ -40,8 +40,8 @@ namespace l2d_editor
             for (const std::string& argument : arguments)
             {
                 std::size_t position = 0u;
-                while ((position = argument.find(PlayTestWorkflowModel::LevelPlaceholder, position)) !=
-                       std::string::npos)
+                while ((position = argument.find(PlayTestWorkflowModel::LevelPlaceholder,
+                                                 position)) != std::string::npos)
                 {
                     ++total;
                     position += placeholderLength;
@@ -115,14 +115,16 @@ namespace l2d_editor
             return false;
         }
 
-        const std::filesystem::path snapshotRoot = std::filesystem::absolute(snapshotDirectory, error);
+        const std::filesystem::path snapshotRoot =
+            std::filesystem::absolute(snapshotDirectory, error);
         if (error)
         {
             m_lastError = PlayTestError::SnapshotDirectoryUnavailable;
             return false;
         }
 
-        const std::filesystem::path sessionDirectory = createOwnedSnapshotDirectory(snapshotRoot, error);
+        const std::filesystem::path sessionDirectory =
+            createOwnedSnapshotDirectory(snapshotRoot, error);
         if (error || sessionDirectory.empty())
         {
             m_lastError = PlayTestError::SnapshotDirectoryUnavailable;
@@ -147,7 +149,8 @@ namespace l2d_editor
         {
             error.clear();
             std::filesystem::remove_all(sessionDirectory, error);
-            m_lastError = error ? PlayTestError::SnapshotCleanupFailed : PlayTestError::LaunchRejected;
+            m_lastError =
+                error ? PlayTestError::SnapshotCleanupFailed : PlayTestError::LaunchRejected;
             return false;
         }
 
