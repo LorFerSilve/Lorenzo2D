@@ -10,7 +10,8 @@ namespace l2d_editor
 
     bool AssetPickingModel::canApplySelected(AssetPickTarget target) const
     {
-        if (m_browser == nullptr || m_inspector == nullptr || !m_inspector->snapshot()) return false;
+        if (m_browser == nullptr || m_inspector == nullptr || !m_inspector->snapshot())
+            return false;
 
         const AssetBrowserEntry* entry = m_browser->selectedEntry();
         if (entry == nullptr || !m_browser->isSelectedResolvable()) return false;

@@ -263,8 +263,7 @@ namespace
             {
                 const std::size_t capacity = assetRowCapacity(height);
                 const float relativeY = position.y - AssetBrowserRowsTop;
-                const std::size_t row =
-                    static_cast<std::size_t>(relativeY / AssetBrowserRowHeight);
+                const std::size_t row = static_cast<std::size_t>(relativeY / AssetBrowserRowHeight);
                 if (row < capacity)
                 {
                     const std::size_t visibleIndex = m_assetScroll + row;
@@ -568,17 +567,20 @@ namespace
         void drawAssetBrowser(sf::RenderWindow& window, float height) const
         {
             if (height <= AssetBrowserTop) return;
-            drawText(window, "Asset Browser", {18.f, AssetBrowserTop + 10.f}, 18u, sf::Color::White);
+            drawText(window, "Asset Browser", {18.f, AssetBrowserTop + 10.f}, 18u,
+                     sf::Color::White);
 
             std::string summary = std::to_string(m_assets.visibleCount()) + " assets / " +
                                   std::to_string(m_assets.roots().size()) + " roots";
-            if (!m_assets.filter().empty()) summary += " | filter: " + std::string(m_assets.filter());
+            if (!m_assets.filter().empty())
+                summary += " | filter: " + std::string(m_assets.filter());
             drawText(window, summary, {18.f, AssetBrowserTop + 34.f}, 12u,
                      sf::Color(150, 155, 166));
 
             if (m_assets.lastError() != l2d_editor::AssetBrowserError::None)
             {
-                drawText(window, std::string(l2d_editor::assetBrowserErrorMessage(m_assets.lastError())),
+                drawText(window,
+                         std::string(l2d_editor::assetBrowserErrorMessage(m_assets.lastError())),
                          {18.f, AssetBrowserRowsTop}, 13u, sf::Color(215, 120, 120));
                 return;
             }
@@ -591,8 +593,8 @@ namespace
                 const l2d_editor::AssetBrowserEntry* entry = m_assets.visibleEntry(visibleIndex);
                 if (entry == nullptr) break;
 
-                const float y = AssetBrowserRowsTop +
-                                static_cast<float>(row) * AssetBrowserRowHeight;
+                const float y =
+                    AssetBrowserRowsTop + static_cast<float>(row) * AssetBrowserRowHeight;
                 const bool isSelected = selected && *selected == entry->id;
                 if (isSelected)
                 {
@@ -602,9 +604,8 @@ namespace
                     window.draw(selection);
                 }
 
-                const std::string prefix = entry->kind == l2d_editor::AssetBrowserEntryKind::Texture
-                                               ? "[T] "
-                                               : "[ ] ";
+                const std::string prefix =
+                    entry->kind == l2d_editor::AssetBrowserEntryKind::Texture ? "[T] " : "[ ] ";
                 drawText(window, prefix + shorten(entry->id, 36u), {16.f, y}, 13u,
                          isSelected ? sf::Color::White : sf::Color(200, 203, 211));
             }
@@ -619,10 +620,12 @@ namespace
                      "Selected: " + (selected ? shorten(*selected, 48u) : std::string("<none>")),
                      {x, y + 26.f}, 13u, sf::Color(185, 189, 198));
 
-            drawAssetAction(window, x, y + 54.f, "Use as Sprite Texture",
-                            m_assetPicker.canApplySelected(l2d_editor::AssetPickTarget::SpriteTexture));
-            drawAssetAction(window, x, y + 84.f, "Add as Animator Clip",
-                            m_assetPicker.canApplySelected(l2d_editor::AssetPickTarget::AnimatorClip));
+            drawAssetAction(
+                window, x, y + 54.f, "Use as Sprite Texture",
+                m_assetPicker.canApplySelected(l2d_editor::AssetPickTarget::SpriteTexture));
+            drawAssetAction(
+                window, x, y + 84.f, "Add as Animator Clip",
+                m_assetPicker.canApplySelected(l2d_editor::AssetPickTarget::AnimatorClip));
             drawAssetAction(
                 window, x, y + 114.f, "Set as Animator Initial Clip",
                 m_assetPicker.canApplySelected(l2d_editor::AssetPickTarget::AnimatorInitialClip));
@@ -648,8 +651,8 @@ namespace
                      sf::Color(160, 164, 174));
             drawText(window, "Viewport: drag selected center handle to move", {x, y + 18.f}, 12u,
                      sf::Color(160, 164, 174));
-            drawText(window, "Up/Down select | A/D/W/S nudge | Left/Right z-order",
-                     {x, y + 36.f}, 12u, sf::Color(160, 164, 174));
+            drawText(window, "Up/Down select | A/D/W/S nudge | Left/Right z-order", {x, y + 36.f},
+                     12u, sf::Color(160, 164, 174));
             drawText(window, "Space active | F1 rectangle | Z undo | Q redo", {x, y + 54.f}, 12u,
                      sf::Color(160, 164, 174));
             drawText(window, "Escape cancels drag, otherwise closes", {x, y + 72.f}, 12u,

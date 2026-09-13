@@ -76,8 +76,8 @@ namespace l2d_editor
 
         // Resolves only portable relative AssetIds through the configured runtime
         // ResourceLocator contract. Absolute paths and traversal components are rejected.
-        [[nodiscard]] std::optional<std::filesystem::path>
-        resolveAssetId(const l2d::AssetId& id) const;
+        [[nodiscard]] std::optional<std::filesystem::path> resolveAssetId(
+            const l2d::AssetId& id) const;
         [[nodiscard]] bool isSelectedResolvable() const;
 
         [[nodiscard]] static bool isPortableAssetId(std::string_view id) noexcept;

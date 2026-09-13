@@ -215,7 +215,8 @@ namespace
         l2d_editor::AssetBrowserModel invalidRootBrowser;
         require(invalidRootBrowser.setRoots({notDirectory}),
                 "runtime-compatible root normalization unexpectedly failed for file path");
-        require(!invalidRootBrowser.refresh(), "file resource root unexpectedly browsed as directory");
+        require(!invalidRootBrowser.refresh(),
+                "file resource root unexpectedly browsed as directory");
         require(invalidRootBrowser.lastError() == l2d_editor::AssetBrowserError::RootIsNotDirectory,
                 "file resource root reported the wrong browser error");
 
@@ -238,8 +239,7 @@ namespace
         writeFile(root / "clips" / "run.anim");
 
         l2d_editor::AssetBrowserModel browser;
-        require(browser.setRoots({root}) && browser.refresh(),
-                "asset picker browser setup failed");
+        require(browser.setRoots({root}) && browser.refresh(), "asset picker browser setup failed");
 
         l2d_editor::EditorDocument document = makeSelectedDocument();
         l2d_editor::EditorCommandHistory history;
@@ -252,7 +252,8 @@ namespace
         require(picker.applySelected(l2d_editor::AssetPickTarget::SpriteTexture),
                 "SpriteRenderer texture pick failed");
         const l2d::Prefab& withSprite = document.findObject(1u)->prefab;
-        require(withSprite.spriteRenderer.has_value(), "texture pick did not create SpriteRenderer");
+        require(withSprite.spriteRenderer.has_value(),
+                "texture pick did not create SpriteRenderer");
         require(withSprite.spriteRenderer->texture == "textures/player.png",
                 "texture pick published the wrong AssetId");
         require(withSprite.spriteRenderer->textureRect.position == sf::Vector2i{0, 0} &&

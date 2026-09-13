@@ -198,8 +198,10 @@ namespace l2d_editor
                     const l2d::AssetId id = relative.generic_string();
                     if (isPortableAssetId(id))
                     {
-                        const std::optional<std::filesystem::path> resolved = locator.locate(relative);
-                        if (resolved && resolved->lexically_normal() == entry.path().lexically_normal())
+                        const std::optional<std::filesystem::path> resolved =
+                            locator.locate(relative);
+                        if (resolved &&
+                            resolved->lexically_normal() == entry.path().lexically_normal())
                         {
                             candidates.push_back(
                                 {id, entry.path().lexically_normal(), rootIndex, classify(id)});
@@ -226,8 +228,10 @@ namespace l2d_editor
                   [](const AssetBrowserEntry& left, const AssetBrowserEntry& right)
                   {
                       if (left.id != right.id) return left.id < right.id;
-                      if (left.rootIndex != right.rootIndex) return left.rootIndex < right.rootIndex;
-                      return left.absolutePath.generic_string() < right.absolutePath.generic_string();
+                      if (left.rootIndex != right.rootIndex)
+                          return left.rootIndex < right.rootIndex;
+                      return left.absolutePath.generic_string() <
+                             right.absolutePath.generic_string();
                   });
 
         candidates.erase(
@@ -310,8 +314,8 @@ namespace l2d_editor
         return m_selectedAssetId;
     }
 
-    std::optional<std::filesystem::path>
-    AssetBrowserModel::resolveAssetId(const l2d::AssetId& id) const
+    std::optional<std::filesystem::path> AssetBrowserModel::resolveAssetId(
+        const l2d::AssetId& id) const
     {
         if (!isPortableAssetId(id)) return std::nullopt;
 
@@ -348,9 +352,8 @@ namespace l2d_editor
         while (start < id.size())
         {
             const std::size_t separator = id.find('/', start);
-            const std::size_t length = separator == std::string_view::npos
-                                           ? id.size() - start
-                                           : separator - start;
+            const std::size_t length =
+                separator == std::string_view::npos ? id.size() - start : separator - start;
             const std::string_view component = id.substr(start, length);
             if (component.empty() || component == "." || component == "..") return false;
             if (separator == std::string_view::npos) break;
@@ -364,13 +367,12 @@ namespace l2d_editor
         const std::string_view value(id);
         const std::size_t slash = value.find_last_of('/');
         const std::size_t dot = value.find_last_of('.');
-        if (dot == std::string_view::npos ||
-            (slash != std::string_view::npos && dot < slash))
+        if (dot == std::string_view::npos || (slash != std::string_view::npos && dot < slash))
             return AssetBrowserEntryKind::Generic;
 
         const std::string_view extension = value.substr(dot);
         constexpr std::string_view textureExtensions[] = {".bmp", ".png", ".tga", ".jpg", ".jpeg",
-                                                           ".gif", ".psd", ".hdr", ".pic", ".pnm"};
+                                                          ".gif", ".psd", ".hdr", ".pic", ".pnm"};
         for (std::string_view candidate : textureExtensions)
             if (equalsIgnoreAsciiCase(extension, candidate)) return AssetBrowserEntryKind::Texture;
         return AssetBrowserEntryKind::Generic;
@@ -393,8 +395,7 @@ namespace l2d_editor
 
         if (!m_selectedAssetId) return;
         const bool selectedVisible =
-            std::any_of(m_visibleIndices.begin(), m_visibleIndices.end(),
-                        [this](std::size_t index)
+            std::any_of(m_visibleIndices.begin(), m_visibleIndices.end(), [this](std::size_t index)
                         { return m_entries[index].id == *m_selectedAssetId; });
         if (!selectedVisible) m_selectedAssetId.reset();
     }
