@@ -706,7 +706,7 @@ int main(int argc, char** argv)
     }
 
     l2d_editor::EditorDocument document;
-    if (options.levelPath && !document.loadFromFile(*options.levelPath))
+    if (options.levelPath && !document.loadFromFile(options.levelPath->string()))
     {
         std::cerr << "Unable to open level: " << options.levelPath->string() << '\n';
         return 3;

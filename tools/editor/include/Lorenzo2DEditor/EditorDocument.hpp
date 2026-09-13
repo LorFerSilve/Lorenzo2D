@@ -5,7 +5,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <filesystem>
 #include <iosfwd>
 #include <optional>
 #include <string>
@@ -50,14 +49,6 @@ namespace l2d_editor
         [[nodiscard]] bool save(std::ostream& output) const;
         [[nodiscard]] bool loadFromFile(const std::string& filepath);
         [[nodiscard]] bool saveToFile(const std::string& filepath) const;
-        [[nodiscard]] bool loadFromFile(const std::filesystem::path& filepath)
-        {
-            return loadFromFile(filepath.string());
-        }
-        [[nodiscard]] bool saveToFile(const std::filesystem::path& filepath) const
-        {
-            return saveToFile(filepath.string());
-        }
 
         [[nodiscard]] const std::string& name() const noexcept;
         [[nodiscard]] bool setName(std::string name);
