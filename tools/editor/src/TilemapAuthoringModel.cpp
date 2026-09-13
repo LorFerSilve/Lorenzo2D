@@ -15,8 +15,7 @@ namespace l2d_editor
             static_cast<std::uint8_t>(l2d::TileFlipFlags::Diagonal);
     }
 
-    TilemapAuthoringModel::TilemapAuthoringModel(TilemapAuthoringLimits limits)
-        : m_limits(limits)
+    TilemapAuthoringModel::TilemapAuthoringModel(TilemapAuthoringLimits limits) : m_limits(limits)
     {
         if (!validLimits()) m_lastError = TilemapAuthoringError::InvalidConfiguration;
     }
@@ -210,9 +209,8 @@ namespace l2d_editor
             return false;
         }
 
-        auto existing = std::find_if(
-            pending.deltas.begin(), pending.deltas.end(),
-            [cell](const CellDelta& delta) { return delta.cell == cell; });
+        auto existing = std::find_if(pending.deltas.begin(), pending.deltas.end(),
+                                     [cell](const CellDelta& delta) { return delta.cell == cell; });
         if (existing == pending.deltas.end() &&
             pending.deltas.size() >= m_limits.maxStrokeCellCount)
         {
@@ -385,8 +383,8 @@ namespace l2d_editor
             return TilemapAuthoringError::DefinitionLimitExceeded;
         if (data.objects().size() > m_limits.maxObjectCount)
             return TilemapAuthoringError::ObjectLimitExceeded;
-        if (!data.layers().empty() && data.cellCount() >
-                                          m_limits.maxTileSlotCount / data.layers().size())
+        if (!data.layers().empty() &&
+            data.cellCount() > m_limits.maxTileSlotCount / data.layers().size())
             return TilemapAuthoringError::TileSlotLimitExceeded;
         return TilemapAuthoringError::None;
     }
@@ -409,7 +407,7 @@ namespace l2d_editor
     }
 
     bool TilemapAuthoringModel::applyCellState(std::size_t layerIndex, l2d::TileMapCell cell,
-                                                CellState state)
+                                               CellState state)
     {
         return m_data.setTile(layerIndex, cell.row, cell.column, state.tile, state.flags);
     }
@@ -461,8 +459,7 @@ namespace l2d_editor
         if (!m_hasMap || !m_selectedLayer || *m_selectedLayer >= m_data.layers().size() ||
             !validFlipFlags(m_selectedFlags))
             return false;
-        if (m_selectedTile == l2d::EmptyTile)
-            return m_selectedFlags == l2d::TileFlipFlags::None;
+        if (m_selectedTile == l2d::EmptyTile) return m_selectedFlags == l2d::TileFlipFlags::None;
         return m_data.definition(m_selectedTile) != nullptr;
     }
 
@@ -493,7 +490,8 @@ namespace l2d_editor
     {
         m_tileIds.clear();
         m_tileIds.reserve(m_data.definitions().size());
-        for (const auto& definition : m_data.definitions()) m_tileIds.push_back(definition.first);
+        for (const auto& definition : m_data.definitions())
+            m_tileIds.push_back(definition.first);
         std::sort(m_tileIds.begin(), m_tileIds.end());
     }
 

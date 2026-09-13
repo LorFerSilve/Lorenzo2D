@@ -65,8 +65,8 @@ namespace l2d_editor
         [[nodiscard]] l2d::TileId selectedTile() const noexcept;
         [[nodiscard]] l2d::TileFlipFlags selectedFlipFlags() const noexcept;
         [[nodiscard]] bool selectLayer(std::size_t layerIndex);
-        [[nodiscard]] bool selectTile(
-            l2d::TileId tile, l2d::TileFlipFlags flags = l2d::TileFlipFlags::None);
+        [[nodiscard]] bool selectTile(l2d::TileId tile,
+                                      l2d::TileFlipFlags flags = l2d::TileFlipFlags::None);
 
         // paintCell() is one complete undoable mutation. Continuous painting
         // uses begin/paint/commit and records exactly one bounded delta command

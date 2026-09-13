@@ -84,8 +84,7 @@ namespace
                 "Tiled import published wrong dimensions");
         require(model.data().layers().size() == 1u && model.data().definitions().size() == 1u,
                 "Tiled import published wrong layer or definition count");
-        require(model.data().tileAt(0u, 0u, 0u) == 1u &&
-                    model.data().tileAt(0u, 1u, 1u) == 1u,
+        require(model.data().tileAt(0u, 0u, 0u) == 1u && model.data().tileAt(0u, 1u, 1u) == 1u,
                 "Tiled import published wrong cell values");
         require(model.undoCount() == 0u && model.redoCount() == 0u,
                 "successful map replacement retained old tile history");
@@ -169,8 +168,7 @@ namespace
         require(model.selectTile(2u, l2d::TileFlipFlags::Horizontal),
                 "unable to select textured tile brush");
         require(model.paintCell({2u, 1u}), "single-cell tile paint failed");
-        require(model.data().tileAt(1u, 1u, 2u) == 2u,
-                "single-cell paint wrote the wrong tile ID");
+        require(model.data().tileAt(1u, 1u, 2u) == 2u, "single-cell paint wrote the wrong tile ID");
         require(flagsAt(model.data(), 1u, {2u, 1u}) == l2d::TileFlipFlags::Horizontal,
                 "single-cell paint wrote the wrong flip flags");
         require(model.undoCount() == 1u && model.redoCount() == 0u,
@@ -203,8 +201,7 @@ namespace
         require(model.data().tileAt(1u, 1u, 2u) == l2d::EmptyTile,
                 "erase brush did not clear tile");
         require(model.undo(), "erase undo failed");
-        require(model.data().tileAt(1u, 1u, 2u) == 2u,
-                "erase undo did not restore tile");
+        require(model.data().tileAt(1u, 1u, 2u) == 2u, "erase undo did not restore tile");
     }
 
     void testContinuousPaintingIsBoundedAndCoalesced()
@@ -213,14 +210,12 @@ namespace
         limits.maxStrokeCellCount = 2u;
         limits.maxHistoryCommandCount = 4u;
         l2d_editor::TilemapAuthoringModel model(limits);
-        require(model.replace(makeMap(2u, 2u, 1u, {1u, 2u})),
-                "unable to publish stroke test map");
+        require(model.replace(makeMap(2u, 2u, 1u, {1u, 2u})), "unable to publish stroke test map");
         require(model.selectTile(1u), "unable to select stroke brush");
         require(model.beginPaintStroke(), "unable to begin tile paint stroke");
         require(model.paintStrokeCell({0u, 0u}), "first stroke cell failed");
         require(model.paintStrokeCell({1u, 0u}), "second stroke cell failed");
-        require(!model.paintStrokeCell({0u, 1u}),
-                "stroke exceeded configured unique-cell limit");
+        require(!model.paintStrokeCell({0u, 1u}), "stroke exceeded configured unique-cell limit");
         require(model.lastError() == l2d_editor::TilemapAuthoringError::StrokeCellLimitExceeded,
                 "stroke cell limit reported the wrong error");
         require(model.data().tileAt(0u, 1u, 0u) == l2d::EmptyTile,
@@ -246,8 +241,7 @@ namespace
         require(model.redoCount() == 1u,
                 "cancelled tile stroke invalidated pre-existing redo history");
         require(model.redo(), "redo after cancelled tile stroke failed");
-        require(model.data().tileAt(0u, 0u, 0u) == 1u &&
-                    model.data().tileAt(0u, 0u, 1u) == 1u,
+        require(model.data().tileAt(0u, 0u, 0u) == 1u && model.data().tileAt(0u, 0u, 1u) == 1u,
                 "redo after cancelled tile stroke restored wrong cells");
 
         require(model.beginPaintStroke(), "unable to begin no-op stroke");
@@ -255,8 +249,7 @@ namespace
                 "painting identical tile state unexpectedly reported a mutation");
         const std::size_t historyBeforeNoOp = model.undoCount();
         require(!model.commitPaintStroke(), "no-op stroke unexpectedly created history");
-        require(model.undoCount() == historyBeforeNoOp,
-                "no-op stroke changed history depth");
+        require(model.undoCount() == historyBeforeNoOp, "no-op stroke changed history depth");
     }
 
     void testHistoryDepthIsBounded()
@@ -264,13 +257,13 @@ namespace
         l2d_editor::TilemapAuthoringLimits limits;
         limits.maxHistoryCommandCount = 2u;
         l2d_editor::TilemapAuthoringModel model(limits);
-        require(model.replace(makeMap(3u, 1u, 1u, {1u})),
-                "unable to publish bounded-history map");
+        require(model.replace(makeMap(3u, 1u, 1u, {1u})), "unable to publish bounded-history map");
         require(model.selectTile(1u), "unable to select bounded-history brush");
         require(model.paintCell({0u, 0u}), "first bounded-history paint failed");
         require(model.paintCell({1u, 0u}), "second bounded-history paint failed");
         require(model.paintCell({2u, 0u}), "third bounded-history paint failed");
-        require(model.undoCount() == 2u, "tilemap history did not enforce configured command limit");
+        require(model.undoCount() == 2u,
+                "tilemap history did not enforce configured command limit");
 
         require(model.undo(), "first bounded-history undo failed");
         require(model.undo(), "second bounded-history undo failed");
@@ -296,7 +289,8 @@ int main()
     }
     catch (const std::exception& exception)
     {
-        std::cerr << "Lorenzo2D editor tilemap authoring test failure: " << exception.what() << '\n';
+        std::cerr << "Lorenzo2D editor tilemap authoring test failure: " << exception.what()
+                  << '\n';
         return 1;
     }
 }
