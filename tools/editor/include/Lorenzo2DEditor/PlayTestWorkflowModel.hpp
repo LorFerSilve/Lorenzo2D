@@ -70,8 +70,8 @@ namespace l2d_editor
                                                  const std::filesystem::path& workingDirectory,
                                                  const std::vector<std::string>& arguments);
         [[nodiscard]] bool cleanupSnapshot();
-        [[nodiscard]] std::vector<std::string>
-        expandArguments(const std::filesystem::path& snapshotPath) const;
+        [[nodiscard]] std::vector<std::string> expandArguments(
+            const std::filesystem::path& snapshotPath) const;
 
         std::filesystem::path m_executable;
         std::filesystem::path m_workingDirectory;
