@@ -10,16 +10,16 @@ permissions:
 
 jobs:
   closeout:
-    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out closeout branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: phase-13.4-roadmap-closeout
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Update Phase 13.4 roadmap state
-        shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -82,11 +82,10 @@ through the installed public Lorenzo2D package.'''
           PY
 
       - name: Commit closeout and remove helper workflow
-        shell: bash
         run: |
-          rm .github/workflows/phase-13.4-roadmap-closeout.yml
+          git rm .github/workflows/phase-13.4-roadmap-closeout.yml
+          git add docs/post-1.0-roadmap.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/post-1.0-roadmap.md .github/workflows/phase-13.4-roadmap-closeout.yml
           git commit -m "Close out Phase 13.4 roadmap state"
           git push origin HEAD:phase-13.4-roadmap-closeout
