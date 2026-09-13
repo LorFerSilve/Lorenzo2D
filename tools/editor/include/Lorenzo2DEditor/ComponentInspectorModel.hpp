@@ -54,6 +54,15 @@ namespace l2d_editor
         std::int32_t zOrder = 0;
         l2d::TransformState transform;
         std::vector<InspectorComponentEntry> components;
+
+        // Phase 13.9 typed property snapshots. These are value copies, never
+        // references into EditorDocument storage, so history restoration cannot
+        // invalidate the inspector view.
+        std::optional<l2d::RectangleRendererPrefab> rectangleRenderer;
+        std::optional<l2d::CircleRendererPrefab> circleRenderer;
+        std::optional<l2d::SpriteRendererPrefab> spriteRenderer;
+        std::optional<l2d::AnimatorPrefab> animator;
+        std::optional<l2d::RigidBodyPrefab> rigidBody;
     };
 
     // Editor-side view model for the currently selected Prefab. All writes are
@@ -75,6 +84,33 @@ namespace l2d_editor
         [[nodiscard]] bool setActive(bool active);
         [[nodiscard]] bool setZOrder(std::int32_t zOrder);
         [[nodiscard]] bool setTransform(l2d::TransformState transform);
+
+        // Rich component-specific controls. They edit only components already
+        // present on the selected Prefab; adding/removing components remains the
+        // responsibility of addComponent()/removeComponent() and asset picking.
+        [[nodiscard]] bool setRectangleSize(sf::Vector2f size);
+        [[nodiscard]] bool setRectangleColor(sf::Color color);
+        [[nodiscard]] bool setCircleRadius(float radius);
+        [[nodiscard]] bool setCircleColor(sf::Color color);
+
+        [[nodiscard]] bool setSpriteSize(sf::Vector2f size);
+        [[nodiscard]] bool setSpriteColor(sf::Color color);
+        [[nodiscard]] bool setSpriteOrigin(sf::Vector2f origin);
+        [[nodiscard]] bool setSpriteFlipX(bool flipped);
+        [[nodiscard]] bool setSpriteFlipY(bool flipped);
+        [[nodiscard]] bool setSpriteRenderOrder(l2d::RenderOrderPrefab order);
+
+        [[nodiscard]] bool setAnimatorPlaybackSpeed(float speed);
+        [[nodiscard]] bool setAnimatorPlaying(bool playing);
+        [[nodiscard]] bool removeAnimatorClipAsset(const l2d::AssetId& clip);
+        [[nodiscard]] bool clearAnimatorInitialClip();
+
+        [[nodiscard]] bool setRigidBodyType(l2d::BodyType2D type);
+        [[nodiscard]] bool setRigidBodyVelocity(sf::Vector2f velocity);
+        [[nodiscard]] bool setRigidBodyAcceleration(sf::Vector2f acceleration);
+        [[nodiscard]] bool setRigidBodyMass(float mass);
+        [[nodiscard]] bool setRigidBodyUseGravity(bool enabled);
+        [[nodiscard]] bool setRigidBodyGravityScale(float scale);
 
         // Asset-backed component helpers used by the editor picking boundary.
         // Runtime Prefab validation remains authoritative for publication.
