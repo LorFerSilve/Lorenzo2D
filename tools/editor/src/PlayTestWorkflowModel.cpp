@@ -1,6 +1,8 @@
 #include <Lorenzo2DEditor/PlayTestWorkflowModel.hpp>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <fstream>
 #include <system_error>
 #include <utility>
@@ -9,7 +11,9 @@ namespace l2d_editor
 {
     namespace
     {
-        constexpr const char* SnapshotFilename = "lorenzo2d-editor-playtest.level.json";
+        constexpr const char* SnapshotFilename = "level.json";
+        constexpr std::size_t MaximumSnapshotDirectoryAttempts = 64u;
+        std::atomic<std::uint64_t> SnapshotSequence{0u};
 
         bool containsNull(const std::string& value) noexcept
         {
@@ -26,6 +30,45 @@ namespace l2d_editor
                 total += argument.size();
             }
             return total;
+        }
+
+        std::size_t placeholderOccurrences(const std::vector<std::string>& arguments) noexcept
+        {
+            constexpr std::size_t placeholderLength = 7u;
+            std::size_t total = 0u;
+            for (const std::string& argument : arguments)
+            {
+                std::size_t position = 0u;
+                while ((position = argument.find(PlayTestWorkflowModel::LevelPlaceholder, position)) !=
+                       std::string::npos)
+                {
+                    ++total;
+                    position += placeholderLength;
+                }
+            }
+            return total;
+        }
+
+        std::filesystem::path createOwnedSnapshotDirectory(
+            const std::filesystem::path& snapshotRoot, std::error_code& error)
+        {
+            for (std::size_t attempt = 0u; attempt < MaximumSnapshotDirectoryAttempts; ++attempt)
+            {
+                const auto timestamp = static_cast<std::uint64_t>(
+                    std::chrono::steady_clock::now().time_since_epoch().count());
+                const auto sequence = SnapshotSequence.fetch_add(1u, std::memory_order_relaxed);
+                const std::filesystem::path candidate =
+                    snapshotRoot /
+                    (std::string("lorenzo2d-editor-playtest-") + std::to_string(timestamp) + "-" +
+                     std::to_string(sequence));
+
+                error.clear();
+                if (std::filesystem::create_directory(candidate, error)) return candidate;
+                if (error) return {};
+            }
+
+            error = std::make_error_code(std::errc::file_exists);
+            return {};
         }
     }
 
@@ -71,9 +114,24 @@ namespace l2d_editor
             return false;
         }
 
-        const std::filesystem::path snapshotPath = snapshotDirectory / SnapshotFilename;
+        const std::filesystem::path snapshotRoot = std::filesystem::absolute(snapshotDirectory, error);
+        if (error)
+        {
+            m_lastError = PlayTestError::SnapshotDirectoryUnavailable;
+            return false;
+        }
+
+        const std::filesystem::path sessionDirectory = createOwnedSnapshotDirectory(snapshotRoot, error);
+        if (error || sessionDirectory.empty())
+        {
+            m_lastError = PlayTestError::SnapshotDirectoryUnavailable;
+            return false;
+        }
+
+        const std::filesystem::path snapshotPath = sessionDirectory / SnapshotFilename;
         if (!document.saveToFile(snapshotPath.string()))
         {
+            std::filesystem::remove_all(sessionDirectory, error);
             m_lastError = PlayTestError::SnapshotWriteFailed;
             return false;
         }
@@ -86,12 +144,14 @@ namespace l2d_editor
 
         if (!hooks.launch(request))
         {
-            std::filesystem::remove(snapshotPath, error);
-            m_lastError = PlayTestError::LaunchRejected;
+            error.clear();
+            std::filesystem::remove_all(sessionDirectory, error);
+            m_lastError = error ? PlayTestError::SnapshotCleanupFailed : PlayTestError::LaunchRejected;
             return false;
         }
 
         m_activeRequest = std::move(request);
+        m_snapshotSessionDirectory = sessionDirectory;
         m_stopHook = std::move(hooks.stop);
         m_active = true;
         m_lastError = PlayTestError::None;
@@ -116,6 +176,7 @@ namespace l2d_editor
         if (!cleanupSnapshot()) return false;
 
         m_activeRequest = {};
+        m_snapshotSessionDirectory.clear();
         m_lastError = PlayTestError::None;
         return true;
     }
@@ -161,10 +222,7 @@ namespace l2d_editor
             return false;
         }
 
-        const std::size_t placeholderCount = static_cast<std::size_t>(
-            std::count_if(arguments.begin(), arguments.end(), [](const std::string& argument)
-                          { return argument.find(LevelPlaceholder) != std::string::npos; }));
-        if (placeholderCount != 1u)
+        if (placeholderOccurrences(arguments) != 1u)
         {
             m_lastError = PlayTestError::MissingLevelPlaceholder;
             return false;
@@ -176,12 +234,11 @@ namespace l2d_editor
 
     bool PlayTestWorkflowModel::cleanupSnapshot()
     {
-        if (m_activeRequest.levelSnapshotPath.empty()) return true;
+        if (m_snapshotSessionDirectory.empty()) return true;
 
         std::error_code error;
-        const bool removed = std::filesystem::remove(m_activeRequest.levelSnapshotPath, error);
-        if (error ||
-            (!removed && std::filesystem::exists(m_activeRequest.levelSnapshotPath, error)))
+        std::filesystem::remove_all(m_snapshotSessionDirectory, error);
+        if (error || std::filesystem::exists(m_snapshotSessionDirectory, error))
         {
             m_lastError = PlayTestError::SnapshotCleanupFailed;
             return false;
@@ -194,12 +251,15 @@ namespace l2d_editor
     {
         std::vector<std::string> expanded = m_arguments;
         const std::string replacement = snapshotPath.string();
+        constexpr std::size_t placeholderLength = 7u;
         for (std::string& argument : expanded)
         {
-            const std::size_t position = argument.find(LevelPlaceholder);
-            if (position != std::string::npos)
-                argument.replace(position, std::char_traits<char>::length(LevelPlaceholder),
-                                 replacement);
+            std::size_t position = 0u;
+            while ((position = argument.find(LevelPlaceholder, position)) != std::string::npos)
+            {
+                argument.replace(position, placeholderLength, replacement);
+                position += replacement.size();
+            }
         }
         return expanded;
     }
