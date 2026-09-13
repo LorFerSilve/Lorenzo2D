@@ -15,19 +15,22 @@ A configured session contains:
 - an external executable path;
 - a working directory;
 - at most 32 command-line arguments and 4 KiB of aggregate argument data;
-- exactly one argument containing the `{level}` placeholder.
+- exactly one `{level}` placeholder occurrence across the complete argument vector.
 
 Starting a session:
 
-1. rejects concurrent play/test sessions;
-2. creates the caller-provided snapshot directory when necessary;
-3. serializes the current `EditorDocument` to a runtime-readable temporary level snapshot;
-4. substitutes the snapshot path for `{level}`;
-5. publishes the launch request only if the injected launcher accepts it.
+1. rejects concurrent play/test sessions on the same workflow model;
+2. creates the caller-provided snapshot root when necessary;
+3. atomically claims a workflow-owned per-session subdirectory beneath that root, so separate editor/workflow instances cannot overwrite or delete one another's snapshots;
+4. serializes the current `EditorDocument` to a runtime-readable temporary level snapshot inside that owned directory;
+5. publishes the snapshot as an absolute path and substitutes that absolute path for `{level}`;
+6. publishes the launch request only if the injected launcher accepts it.
 
-If launch is rejected, the temporary snapshot is removed and no active session is published. While a session is active, its configuration cannot be mutated and another session cannot start.
+If launch is rejected, the workflow removes its owned session directory and no active session is published. While a session is active, its configuration cannot be mutated and another session cannot start on that workflow object.
 
-Stopping delegates termination to the injected stop hook before removing the snapshot. A failed stop preserves the active session and snapshot so the editor does not claim termination or destroy input while the external process may still be running.
+`PlayTestWorkflowModel` is deliberately non-copyable and non-movable. An active model owns one process-control hook and one snapshot directory; duplicating or implicitly transferring that state would permit double-stop or cross-session cleanup bugs. Hosts should keep a stable workflow-model instance for the lifetime of a play/test session.
+
+Stopping delegates termination to the injected stop hook before removing the workflow-owned session directory. A failed stop preserves the active session and snapshot so the editor does not claim termination or destroy input while the external process may still be running.
 
 ## Deliberate non-goals
 
@@ -37,4 +40,4 @@ The temporary level remains the canonical Lorenzo2D runtime level format, so a p
 
 ## Validation
 
-`Lorenzo2DEditorPlayTestWorkflowTests` is built and executed against the installed Lorenzo2D package. Regressions cover configuration limits, placeholder expansion, runtime-readable snapshot publication, launch rollback and cleanup, active-session exclusivity, configuration immutability while active, stop delegation, and snapshot cleanup.
+`Lorenzo2DEditorPlayTestWorkflowTests` is built and executed against the installed Lorenzo2D package. Regressions cover configuration limits, exact placeholder validation, absolute launch paths, distinct ownership for concurrent workflows sharing one snapshot root, runtime-readable snapshot publication, launch rollback and cleanup, active-session exclusivity, non-copyable/non-movable ownership, configuration immutability while active, stop delegation, and snapshot cleanup.
