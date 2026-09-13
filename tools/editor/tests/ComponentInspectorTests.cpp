@@ -41,6 +41,29 @@ namespace
         return prefab;
     }
 
+    l2d::Prefab makeRichInspectorPrefab()
+    {
+        l2d::Prefab prefab;
+        prefab.name = "Rich Inspector";
+        prefab.rectangleRenderer.emplace();
+        prefab.circleRenderer.emplace();
+
+        l2d::SpriteRendererPrefab sprite;
+        sprite.texture = "textures/player.png";
+        sprite.textureRect.position = {0, 0};
+        sprite.textureRect.size = {16, 16};
+        prefab.spriteRenderer = sprite;
+
+        l2d::AnimatorPrefab animator;
+        animator.clips = {"animations/idle.anim", "animations/run.anim"};
+        animator.initialClip = animator.clips.front();
+        prefab.animator = animator;
+
+        prefab.rigidBody.emplace();
+        prefab.rigidBody->bodyType = l2d::BodyType2D::Dynamic;
+        return prefab;
+    }
+
     l2d_editor::EditorDocument makeSelectedDocument(l2d::Prefab prefab)
     {
         l2d::LevelDocument level;
@@ -237,6 +260,78 @@ namespace
         require(document.findObject(1u)->prefab.customComponents.size() == 1u,
                 "custom component removal undo did not restore data");
     }
+
+    void testComponentSpecificControlsAreTransactional()
+    {
+        l2d_editor::EditorDocument document = makeSelectedDocument(makeRichInspectorPrefab());
+        l2d_editor::EditorCommandHistory history;
+        l2d_editor::ComponentInspectorModel inspector(document, history);
+
+        require(inspector.setRectangleSize({64.f, 32.f}), "rectangle size control failed");
+        require(inspector.setRectangleColor(sf::Color::Red), "rectangle color control failed");
+        require(inspector.setCircleRadius(24.f), "circle radius control failed");
+        require(inspector.setCircleColor(sf::Color::Blue), "circle color control failed");
+        require(inspector.setSpriteSize({48.f, 24.f}), "sprite size control failed");
+        require(inspector.setSpriteOrigin({8.f, 8.f}), "sprite origin control failed");
+        require(inspector.setSpriteFlipX(true), "sprite flip X control failed");
+        require(inspector.setAnimatorPlaybackSpeed(1.5f), "animator speed control failed");
+        require(inspector.setAnimatorPlaying(false), "animator playing control failed");
+        require(inspector.setRigidBodyMass(2.f), "rigid-body mass control failed");
+        require(inspector.setRigidBodyUseGravity(true), "rigid-body gravity control failed");
+        require(inspector.setRigidBodyGravityScale(0.5f), "rigid-body gravity scale failed");
+
+        const l2d::Prefab& edited = document.findObject(1u)->prefab;
+        require(edited.rectangleRenderer->size == sf::Vector2f{64.f, 32.f},
+                "rectangle control published wrong size");
+        require(edited.circleRenderer->radius == 24.f, "circle control published wrong radius");
+        require(edited.spriteRenderer->flipX, "sprite flip control did not publish");
+        require(edited.animator->playbackSpeed == 1.5f && !edited.animator->playing,
+                "animator controls published wrong state");
+        require(edited.rigidBody->mass == 2.f && edited.rigidBody->useGravity &&
+                    edited.rigidBody->gravityScale == 0.5f,
+                "rigid-body controls published wrong state");
+
+        const std::size_t commandsBeforeRejected = history.undoCount();
+        require(!inspector.setCircleRadius(-1.f), "invalid negative circle radius was accepted");
+        require(!inspector.setAnimatorPlaybackSpeed(-1.f),
+                "invalid negative animator speed was accepted");
+        require(!inspector.setRigidBodyMass(0.f), "invalid zero rigid-body mass was accepted");
+        require(history.undoCount() == commandsBeforeRejected,
+                "rejected component edits polluted undo history");
+        require(document.findObject(1u)->prefab.circleRenderer->radius == 24.f,
+                "rejected component edit changed document state");
+
+        require(!inspector.setSpriteFlipX(true), "no-op sprite flip unexpectedly succeeded");
+        require(history.undoCount() == commandsBeforeRejected,
+                "no-op component edit entered undo history");
+
+        require(inspector.clearAnimatorInitialClip(), "clearing animator initial clip failed");
+        require(inspector.removeAnimatorClipAsset("animations/idle.anim"),
+                "removing a non-final animator clip failed");
+        require(document.findObject(1u)->prefab.animator->clips.size() == 1u,
+                "animator clip removal published wrong clip count");
+        require(!inspector.removeAnimatorClipAsset("animations/run.anim"),
+                "removing the final animator clip unexpectedly succeeded");
+        require(document.findObject(1u)->prefab.animator->clips.size() == 1u,
+                "rejected final clip removal changed animator state");
+
+        require(history.undo(document), "component-specific edit undo failed");
+        require(document.findObject(1u)->prefab.animator->clips.size() == 2u,
+                "component-specific undo did not restore animator clips");
+    }
+
+    void testRigidBodyControlRespectsComponentDependencies()
+    {
+        l2d_editor::EditorDocument document = makeSelectedDocument(makeControllerPrefab());
+        l2d_editor::EditorCommandHistory history;
+        l2d_editor::ComponentInspectorModel inspector(document, history);
+
+        require(!inspector.setRigidBodyType(l2d::BodyType2D::Dynamic),
+                "dependency-breaking rigid-body type change unexpectedly succeeded");
+        require(document.findObject(1u)->prefab.rigidBody->bodyType == l2d::BodyType2D::Kinematic,
+                "rejected rigid-body type change modified document state");
+        require(!history.canUndo(), "rejected rigid-body type change entered history");
+    }
 }
 
 int main()
@@ -248,6 +343,8 @@ int main()
         testBuiltInComponentAddRemoveAndValidation();
         testDependencyBreakingRemovalIsRejected();
         testCustomComponentEditing();
+        testComponentSpecificControlsAreTransactional();
+        testRigidBodyControlRespectsComponentDependencies();
         std::cout << "Lorenzo2D component inspector tests passed\n";
         return 0;
     }

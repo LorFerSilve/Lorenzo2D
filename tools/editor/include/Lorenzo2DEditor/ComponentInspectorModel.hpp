@@ -76,6 +76,33 @@ namespace l2d_editor
         [[nodiscard]] bool setZOrder(std::int32_t zOrder);
         [[nodiscard]] bool setTransform(l2d::TransformState transform);
 
+        // Phase 13.9 component-specific controls. These edit only components that
+        // already exist on the selected Prefab. Every mutation still passes through
+        // runtime Prefab validation and one deterministic undo/redo transaction.
+        [[nodiscard]] bool setRectangleSize(sf::Vector2f size);
+        [[nodiscard]] bool setRectangleColor(sf::Color color);
+        [[nodiscard]] bool setCircleRadius(float radius);
+        [[nodiscard]] bool setCircleColor(sf::Color color);
+
+        [[nodiscard]] bool setSpriteSize(sf::Vector2f size);
+        [[nodiscard]] bool setSpriteColor(sf::Color color);
+        [[nodiscard]] bool setSpriteOrigin(sf::Vector2f origin);
+        [[nodiscard]] bool setSpriteFlipX(bool flipped);
+        [[nodiscard]] bool setSpriteFlipY(bool flipped);
+        [[nodiscard]] bool setSpriteRenderOrder(l2d::RenderOrderPrefab order);
+
+        [[nodiscard]] bool setAnimatorPlaybackSpeed(float speed);
+        [[nodiscard]] bool setAnimatorPlaying(bool playing);
+        [[nodiscard]] bool removeAnimatorClipAsset(const l2d::AssetId& clip);
+        [[nodiscard]] bool clearAnimatorInitialClip();
+
+        [[nodiscard]] bool setRigidBodyType(l2d::BodyType2D type);
+        [[nodiscard]] bool setRigidBodyVelocity(sf::Vector2f velocity);
+        [[nodiscard]] bool setRigidBodyAcceleration(sf::Vector2f acceleration);
+        [[nodiscard]] bool setRigidBodyMass(float mass);
+        [[nodiscard]] bool setRigidBodyUseGravity(bool enabled);
+        [[nodiscard]] bool setRigidBodyGravityScale(float scale);
+
         // Asset-backed component helpers used by the editor picking boundary.
         // Runtime Prefab validation remains authoritative for publication.
         [[nodiscard]] bool setSpriteTextureAsset(l2d::AssetId texture);
