@@ -52,6 +52,14 @@ namespace l2d_editor
         static constexpr std::size_t MaximumArgumentBytes = 4096u;
         static constexpr const char* LevelPlaceholder = "{level}";
 
+        PlayTestWorkflowModel() = default;
+        ~PlayTestWorkflowModel() = default;
+
+        PlayTestWorkflowModel(const PlayTestWorkflowModel&) = delete;
+        PlayTestWorkflowModel& operator=(const PlayTestWorkflowModel&) = delete;
+        PlayTestWorkflowModel(PlayTestWorkflowModel&&) = delete;
+        PlayTestWorkflowModel& operator=(PlayTestWorkflowModel&&) = delete;
+
         [[nodiscard]] bool configure(std::filesystem::path executable,
                                      std::filesystem::path workingDirectory,
                                      std::vector<std::string> arguments);
@@ -77,6 +85,7 @@ namespace l2d_editor
         std::filesystem::path m_workingDirectory;
         std::vector<std::string> m_arguments;
         PlayTestLaunchRequest m_activeRequest;
+        std::filesystem::path m_snapshotSessionDirectory;
         std::function<bool()> m_stopHook;
         bool m_active = false;
         PlayTestError m_lastError = PlayTestError::None;
