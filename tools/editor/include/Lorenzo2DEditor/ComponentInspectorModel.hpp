@@ -54,15 +54,6 @@ namespace l2d_editor
         std::int32_t zOrder = 0;
         l2d::TransformState transform;
         std::vector<InspectorComponentEntry> components;
-
-        // Phase 13.9 typed property snapshots. These are value copies, never
-        // references into EditorDocument storage, so history restoration cannot
-        // invalidate the inspector view.
-        std::optional<l2d::RectangleRendererPrefab> rectangleRenderer;
-        std::optional<l2d::CircleRendererPrefab> circleRenderer;
-        std::optional<l2d::SpriteRendererPrefab> spriteRenderer;
-        std::optional<l2d::AnimatorPrefab> animator;
-        std::optional<l2d::RigidBodyPrefab> rigidBody;
     };
 
     // Editor-side view model for the currently selected Prefab. All writes are
@@ -85,9 +76,9 @@ namespace l2d_editor
         [[nodiscard]] bool setZOrder(std::int32_t zOrder);
         [[nodiscard]] bool setTransform(l2d::TransformState transform);
 
-        // Rich component-specific controls. They edit only components already
-        // present on the selected Prefab; adding/removing components remains the
-        // responsibility of addComponent()/removeComponent() and asset picking.
+        // Phase 13.9 component-specific controls. These edit only components that
+        // already exist on the selected Prefab. Every mutation still passes through
+        // runtime Prefab validation and one deterministic undo/redo transaction.
         [[nodiscard]] bool setRectangleSize(sf::Vector2f size);
         [[nodiscard]] bool setRectangleColor(sf::Color color);
         [[nodiscard]] bool setCircleRadius(float radius);
