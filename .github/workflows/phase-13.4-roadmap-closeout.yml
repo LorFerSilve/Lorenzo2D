@@ -18,72 +18,12 @@ jobs:
         with:
           ref: phase-13.4-roadmap-closeout
           fetch-depth: 0
-
-      - name: Update Phase 13.4 roadmap state
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path("docs/post-1.0-roadmap.md")
-          text = path.read_text(encoding="utf-8")
-
-          old_status = '''- **Phase 13 status: in progress.** Slices 13.1 through 13.3 establish the editor/runtime dependency
-  boundary, document/history foundation, interactive hierarchy, validated component inspection, and
-  coalesced viewport translation workflow. Asset browsing/picking, tilemap authoring, collider and
-  navigation visualization/editing, animation preview, play/test workflow, richer component-specific
-  controls, rotation/scale gizmos, and the end-to-end authoring tutorial remain future Phase 13
-  slices.'''
-
-          new_status = '''- **13.4 Asset browser/picking foundation:** the standalone editor now owns a bounded transactional
-  `AssetBrowserModel` over configured public `ResourceLocator` roots, publishing deterministic
-  root-relative `AssetId` candidates with ordered-root precedence, case-insensitive filtering,
-  explicit scan/asset/depth limits, portable-path validation, traversal rejection, symlink skipping,
-  and stale-selection revalidation. `AssetPickingModel` routes SpriteRenderer texture and Animator
-  clip/initial-clip picks through `ComponentInspectorModel`, `EditorCommandHistory`, and runtime
-  `Prefab` validation, preserving deterministic undo/redo and Animator invariants without inventing
-  the Phase 14 metadata/import/cook pipeline. The editor shell exposes a bounded asset list, picking
-  controls, scrolling, and repeated `--resource-root` configuration. Focused installed-package
-  regressions cover ordering, root precedence, filtering, containment, limits, stale files, picking,
-  no-op behavior, and undo/redo. PR #51 and the merged `master` commit
-  `877925c4b115c83dbb02e6b3cc2ad2cf6850358e` both pass all seven required CI gates, including
-  Windows MSVC, ASan/UBSan, coverage, clang-tidy, and the installed-package editor consumer path.
-- **Phase 13 status: in progress.** Slices 13.1 through 13.4 establish the editor/runtime dependency
-  boundary, document/history foundation, interactive hierarchy, validated component inspection,
-  coalesced viewport translation, and validated bounded asset browsing/picking. Tilemap authoring,
-  collider and navigation visualization/editing, animation preview, play/test workflow, richer
-  component-specific controls, rotation/scale gizmos, and the end-to-end authoring tutorial remain
-  future Phase 13 slices.'''
-
-          old_next = '''Begin **Phase 13.4 — asset browser/picking foundation** on top of the completed hierarchy,
-component-inspector, and viewport-transform slices. Add an editor-only, bounded asset browser that
-uses the existing configured resource-root/asset-ID contracts rather than inventing the Phase 14
-content-pipeline model early. Provide deterministic browsing/filtering and a validated picking
-boundary for component fields such as `SpriteRenderer` and `Animator`; keep filesystem/editor state
-outside engine modules, reject paths that escape configured roots, and continue validating the
-editor through the installed public Lorenzo2D package.'''
-
-          new_next = '''Begin **Phase 13.5 — tilemap authoring foundation** on top of the completed document/history,
-viewport, inspector, and asset-picking slices. Add an editor-only, bounded tilemap authoring model
-that consumes the existing installed public tilemap/Tiled contracts instead of creating a second
-runtime persistence path. Establish deterministic tile selection/painting mutations with explicit
-map/layer/cell bounds, transactional failure behavior, and undo/redo semantics suitable for
-continuous painting gestures. Keep authoring state and filesystem concerns outside engine modules,
-reuse validated asset IDs where tileset resources are referenced, and validate the complete slice
-through the installed public Lorenzo2D package.'''
-
-          if text.count(old_status) != 1:
-              raise SystemExit("Expected exactly one Phase 13 status block")
-          if text.count(old_next) != 1:
-              raise SystemExit("Expected exactly one immediate-next-step block")
-
-          text = text.replace(old_status, new_status)
-          text = text.replace(old_next, new_next)
-          path.write_text(text, encoding="utf-8")
-          PY
-
-      - name: Commit closeout and remove helper workflow
+      - name: Apply Phase 13.4 roadmap closeout
+        run: python3 .github/phase-13.4-roadmap-closeout.py
+      - name: Commit roadmap closeout and remove helpers
         run: |
           git rm .github/workflows/phase-13.4-roadmap-closeout.yml
+          git rm .github/phase-13.4-roadmap-closeout.py
           git add docs/post-1.0-roadmap.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
