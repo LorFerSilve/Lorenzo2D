@@ -67,7 +67,7 @@ namespace l2d_editor
     }
 
     bool ColliderNavigationAuthoringModel::editColliderProperties(ColliderAuthoringKind kind,
-                                                                   sf::Vector2f offset)
+                                                                  sf::Vector2f offset)
     {
         return m_inspector.editSelected(
             "Edit collider offset",
@@ -104,7 +104,7 @@ namespace l2d_editor
     }
 
     bool ColliderNavigationAuthoringModel::setColliderOffset(ColliderAuthoringKind kind,
-                                                              sf::Vector2f offset)
+                                                             sf::Vector2f offset)
     {
         return editColliderProperties(kind, offset);
     }
@@ -220,7 +220,7 @@ namespace l2d_editor
     }
 
     bool ColliderNavigationAuthoringModel::publishNavigationCellEdit(sf::Vector2i position,
-                                                                      l2d::NavigationCell2D cell)
+                                                                     l2d::NavigationCell2D cell)
     {
         if (!m_navigationGrid || !l2d::NavigationGrid2D::isValidCell(cell)) return false;
         const auto before = m_navigationGrid->cell(position);
@@ -233,13 +233,13 @@ namespace l2d_editor
     }
 
     bool ColliderNavigationAuthoringModel::setNavigationCell(sf::Vector2i position,
-                                                              l2d::NavigationCell2D cell)
+                                                             l2d::NavigationCell2D cell)
     {
         return publishNavigationCellEdit(position, cell);
     }
 
     bool ColliderNavigationAuthoringModel::setNavigationWalkable(sf::Vector2i position,
-                                                                  bool walkable)
+                                                                 bool walkable)
     {
         if (!m_navigationGrid) return false;
         const auto cell = m_navigationGrid->cell(position);
@@ -250,7 +250,7 @@ namespace l2d_editor
     }
 
     bool ColliderNavigationAuthoringModel::setNavigationTraversalCost(sf::Vector2i position,
-                                                                       float traversalCost)
+                                                                      float traversalCost)
     {
         if (!m_navigationGrid) return false;
         const auto cell = m_navigationGrid->cell(position);
