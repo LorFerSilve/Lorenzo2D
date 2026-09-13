@@ -1,5 +1,6 @@
 #include <Lorenzo2DEditor/ComponentInspectorModel.hpp>
 
+#include <algorithm>
 #include <utility>
 
 namespace l2d_editor
@@ -173,6 +174,79 @@ namespace l2d_editor
                                 }
                                 prefab.transform = transform;
                                 return true;
+                            });
+    }
+
+    bool ComponentInspectorModel::setSpriteTextureAsset(l2d::AssetId texture)
+    {
+        return editSelected("Set SpriteRenderer texture",
+                            [texture = std::move(texture)](l2d::Prefab& prefab)
+                            {
+                                if (prefab.spriteRenderer)
+                                {
+                                    if (prefab.spriteRenderer->texture == texture) return false;
+                                    prefab.spriteRenderer->texture = texture;
+                                    return true;
+                                }
+
+                                l2d::SpriteRendererPrefab sprite;
+                                sprite.texture = texture;
+                                sprite.textureRect.position = {0, 0};
+                                sprite.textureRect.size = {1, 1};
+                                prefab.spriteRenderer = std::move(sprite);
+                                return true;
+                            });
+    }
+
+    bool ComponentInspectorModel::addAnimatorClipAsset(l2d::AssetId clip)
+    {
+        return editSelected("Add Animator clip",
+                            [clip = std::move(clip)](l2d::Prefab& prefab)
+                            {
+                                if (!prefab.animator)
+                                {
+                                    l2d::AnimatorPrefab animator;
+                                    animator.clips.push_back(clip);
+                                    prefab.animator = std::move(animator);
+                                    return true;
+                                }
+
+                                auto& clips = prefab.animator->clips;
+                                if (std::find(clips.begin(), clips.end(), clip) != clips.end())
+                                    return false;
+                                clips.push_back(clip);
+                                return true;
+                            });
+    }
+
+    bool ComponentInspectorModel::setAnimatorInitialClipAsset(l2d::AssetId clip)
+    {
+        return editSelected("Set Animator initial clip",
+                            [clip = std::move(clip)](l2d::Prefab& prefab)
+                            {
+                                if (!prefab.animator)
+                                {
+                                    l2d::AnimatorPrefab animator;
+                                    animator.clips.push_back(clip);
+                                    animator.initialClip = clip;
+                                    prefab.animator = std::move(animator);
+                                    return true;
+                                }
+
+                                bool changed = false;
+                                auto& animator = *prefab.animator;
+                                if (std::find(animator.clips.begin(), animator.clips.end(), clip) ==
+                                    animator.clips.end())
+                                {
+                                    animator.clips.push_back(clip);
+                                    changed = true;
+                                }
+                                if (animator.initialClip != clip)
+                                {
+                                    animator.initialClip = clip;
+                                    changed = true;
+                                }
+                                return changed;
                             });
     }
 
