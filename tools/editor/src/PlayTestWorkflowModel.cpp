@@ -136,8 +136,8 @@ namespace l2d_editor
     }
 
     bool PlayTestWorkflowModel::validateConfiguration(const std::filesystem::path& executable,
-                                                       const std::filesystem::path& workingDirectory,
-                                                       const std::vector<std::string>& arguments)
+                                                      const std::filesystem::path& workingDirectory,
+                                                      const std::vector<std::string>& arguments)
     {
         if (executable.empty() || containsNull(executable.string()))
         {
