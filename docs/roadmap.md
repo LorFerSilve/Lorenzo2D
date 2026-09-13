@@ -33,10 +33,10 @@ continuing through the planned Lorenzo2D 2.0 preparation phase.
 
 ### Current post-1.0 implementation pointer
 
-Phase 13 is the active editor/tooling phase. Slices 13.1 through 13.6 are implemented, with 13.6
-establishing the bounded collider/navigation visualization and editing foundation documented in
-[`collider-navigation-authoring.md`](collider-navigation-authoring.md). The next planned dependency
-is **Phase 13.7 — animation preview foundation**.
+Phase 13 is the active editor/tooling phase. Slices 13.1 through 13.7 are implemented. Phase 13.6
+established bounded collider/navigation visualization and editing, while Phase 13.7 adds the bounded
+editor-only animation preview foundation documented in [`animation-preview.md`](animation-preview.md).
+The next planned dependency is **Phase 13.8 — play/test workflow foundation**.
 
 ## Phase completion rule
 
