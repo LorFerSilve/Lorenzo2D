@@ -42,6 +42,7 @@ add_library(Lorenzo2DEditorCore STATIC
     src/AssetBrowserModel.cpp
     src/AssetPickingModel.cpp
     src/ColliderNavigationAuthoringModel.cpp
+    src/ComponentInspectorControls.cpp
     src/ComponentInspectorModel.cpp
     src/EditorCommandHistory.cpp
     src/EditorDocument.cpp
