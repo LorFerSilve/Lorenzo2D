@@ -86,7 +86,8 @@ namespace l2d_editor
     {
         return editSelected("Set SpriteRenderer origin", [origin](l2d::Prefab& prefab)
                             {
-                                if (!prefab.spriteRenderer || prefab.spriteRenderer->origin == origin)
+                                if (!prefab.spriteRenderer ||
+                                    prefab.spriteRenderer->origin == origin)
                                     return false;
                                 prefab.spriteRenderer->origin = origin;
                                 return true;
@@ -97,7 +98,8 @@ namespace l2d_editor
     {
         return editSelected("Set SpriteRenderer flip X", [flipped](l2d::Prefab& prefab)
                             {
-                                if (!prefab.spriteRenderer || prefab.spriteRenderer->flipX == flipped)
+                                if (!prefab.spriteRenderer ||
+                                    prefab.spriteRenderer->flipX == flipped)
                                     return false;
                                 prefab.spriteRenderer->flipX = flipped;
                                 return true;
@@ -108,7 +110,8 @@ namespace l2d_editor
     {
         return editSelected("Set SpriteRenderer flip Y", [flipped](l2d::Prefab& prefab)
                             {
-                                if (!prefab.spriteRenderer || prefab.spriteRenderer->flipY == flipped)
+                                if (!prefab.spriteRenderer ||
+                                    prefab.spriteRenderer->flipY == flipped)
                                     return false;
                                 prefab.spriteRenderer->flipY = flipped;
                                 return true;
