@@ -19,8 +19,8 @@ namespace l2d_editor
     {
     }
 
-    std::optional<ColliderAuthoringSnapshot>
-    ColliderNavigationAuthoringModel::colliderSnapshot() const
+    std::optional<ColliderAuthoringSnapshot> ColliderNavigationAuthoringModel::colliderSnapshot()
+        const
     {
         const EditorObjectRecord* object = m_document->findObject(m_document->selectedObject());
         if (!object) return std::nullopt;
@@ -67,10 +67,11 @@ namespace l2d_editor
     }
 
     bool ColliderNavigationAuthoringModel::editColliderProperties(ColliderAuthoringKind kind,
-                                                                  sf::Vector2f offset)
+                                                                   sf::Vector2f offset)
     {
         return m_inspector.editSelected(
-            "Edit collider offset", [kind, offset](l2d::Prefab& prefab)
+            "Edit collider offset",
+            [kind, offset](l2d::Prefab& prefab)
             {
                 switch (kind)
                 {
@@ -80,12 +81,14 @@ namespace l2d_editor
                     prefab.boxCollider->properties.offset = offset;
                     return true;
                 case ColliderAuthoringKind::Circle:
-                    if (!prefab.circleCollider || prefab.circleCollider->properties.offset == offset)
+                    if (!prefab.circleCollider ||
+                        prefab.circleCollider->properties.offset == offset)
                         return false;
                     prefab.circleCollider->properties.offset = offset;
                     return true;
                 case ColliderAuthoringKind::Capsule:
-                    if (!prefab.capsuleCollider || prefab.capsuleCollider->properties.offset == offset)
+                    if (!prefab.capsuleCollider ||
+                        prefab.capsuleCollider->properties.offset == offset)
                         return false;
                     prefab.capsuleCollider->properties.offset = offset;
                     return true;
@@ -108,7 +111,8 @@ namespace l2d_editor
 
     bool ColliderNavigationAuthoringModel::setBoxSize(sf::Vector2f size)
     {
-        return m_inspector.editSelected("Resize box collider", [size](l2d::Prefab& prefab)
+        return m_inspector.editSelected("Resize box collider",
+                                        [size](l2d::Prefab& prefab)
                                         {
                                             if (!prefab.boxCollider ||
                                                 prefab.boxCollider->size == size)
@@ -120,7 +124,8 @@ namespace l2d_editor
 
     bool ColliderNavigationAuthoringModel::setCircleRadius(float radius)
     {
-        return m_inspector.editSelected("Resize circle collider", [radius](l2d::Prefab& prefab)
+        return m_inspector.editSelected("Resize circle collider",
+                                        [radius](l2d::Prefab& prefab)
                                         {
                                             if (!prefab.circleCollider ||
                                                 prefab.circleCollider->radius == radius)
@@ -149,7 +154,8 @@ namespace l2d_editor
         std::vector<sf::Vector2f> vertices)
     {
         return m_inspector.editSelected(
-            "Edit convex collider", [vertices = std::move(vertices)](l2d::Prefab& prefab) mutable
+            "Edit convex collider",
+            [vertices = std::move(vertices)](l2d::Prefab& prefab) mutable
             {
                 if (!prefab.convexPolygonCollider ||
                     prefab.convexPolygonCollider->vertices == vertices)
@@ -193,8 +199,8 @@ namespace l2d_editor
         return m_navigationGrid ? &*m_navigationGrid : nullptr;
     }
 
-    std::optional<NavigationOverlaySnapshot>
-    ColliderNavigationAuthoringModel::navigationOverlay() const
+    std::optional<NavigationOverlaySnapshot> ColliderNavigationAuthoringModel::navigationOverlay()
+        const
     {
         if (!m_navigationGrid) return std::nullopt;
 
@@ -213,8 +219,8 @@ namespace l2d_editor
         return snapshot;
     }
 
-    bool ColliderNavigationAuthoringModel::publishNavigationCellEdit(
-        sf::Vector2i position, l2d::NavigationCell2D cell)
+    bool ColliderNavigationAuthoringModel::publishNavigationCellEdit(sf::Vector2i position,
+                                                                      l2d::NavigationCell2D cell)
     {
         if (!m_navigationGrid || !l2d::NavigationGrid2D::isValidCell(cell)) return false;
         const auto before = m_navigationGrid->cell(position);
