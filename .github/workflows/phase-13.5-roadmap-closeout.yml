@@ -1,0 +1,28 @@
+name: Phase 13.5 roadmap closeout
+
+on:
+  push:
+    branches:
+      - phase-13.5-roadmap-closeout
+
+permissions:
+  contents: write
+
+jobs:
+  apply-closeout:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Apply roadmap closeout
+        run: python3 .github/phase-13.5-roadmap-closeout.py
+      - name: Commit roadmap-only closeout
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/post-1.0-roadmap.md
+          git rm .github/phase-13.5-roadmap-closeout.py .github/workflows/phase-13.5-roadmap-closeout.yml
+          git commit -m "Close out Phase 13.5 roadmap state"
+          git push origin HEAD:phase-13.5-roadmap-closeout
