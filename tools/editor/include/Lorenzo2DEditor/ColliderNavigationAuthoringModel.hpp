@@ -81,16 +81,14 @@ namespace l2d_editor
         // previously published grid and navigation edit history unchanged.
         [[nodiscard]] bool setNavigationGrid(l2d::NavigationGrid2D grid);
         [[nodiscard]] bool buildNavigationGridFromTileMap(
-            const l2d::TileMapData& tileMap,
-            const l2d::NavigationTileMapOptions2D& options = {});
+            const l2d::TileMapData& tileMap, const l2d::NavigationTileMapOptions2D& options = {});
         void clearNavigationGrid() noexcept;
 
         [[nodiscard]] bool hasNavigationGrid() const noexcept;
         [[nodiscard]] const l2d::NavigationGrid2D* navigationGrid() const noexcept;
         [[nodiscard]] std::optional<NavigationOverlaySnapshot> navigationOverlay() const;
 
-        [[nodiscard]] bool setNavigationCell(sf::Vector2i position,
-                                             l2d::NavigationCell2D cell);
+        [[nodiscard]] bool setNavigationCell(sf::Vector2i position, l2d::NavigationCell2D cell);
         [[nodiscard]] bool setNavigationWalkable(sf::Vector2i position, bool walkable);
         [[nodiscard]] bool setNavigationTraversalCost(sf::Vector2i position, float traversalCost);
         [[nodiscard]] bool undoNavigation();
@@ -106,8 +104,7 @@ namespace l2d_editor
             l2d::NavigationCell2D after;
         };
 
-        [[nodiscard]] bool editColliderProperties(ColliderAuthoringKind kind,
-                                                  sf::Vector2f offset);
+        [[nodiscard]] bool editColliderProperties(ColliderAuthoringKind kind, sf::Vector2f offset);
         [[nodiscard]] bool publishNavigationCellEdit(sf::Vector2i position,
                                                      l2d::NavigationCell2D cell);
         void pushNavigationUndo(NavigationCellEdit edit);
