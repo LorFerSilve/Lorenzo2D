@@ -45,17 +45,22 @@ namespace
     l2d::AnimationClip makeLoopingClip()
     {
         l2d::AnimationClip clip("idle", true);
-        require(clip.addFrame({0, 0, 16, 16}, 0.1f), "failed to add preview frame 0");
-        require(clip.addFrame({16, 0, 16, 16}, 0.2f), "failed to add preview frame 1");
-        require(clip.addFrame({32, 0, 16, 16}, 0.3f), "failed to add preview frame 2");
+        require(clip.addFrame(sf::IntRect{{0, 0}, {16, 16}}, 0.1f),
+                "failed to add preview frame 0");
+        require(clip.addFrame(sf::IntRect{{16, 0}, {16, 16}}, 0.2f),
+                "failed to add preview frame 1");
+        require(clip.addFrame(sf::IntRect{{32, 0}, {16, 16}}, 0.3f),
+                "failed to add preview frame 2");
         return clip;
     }
 
     l2d::AnimationClip makeFiniteClip()
     {
         l2d::AnimationClip clip("run", false);
-        require(clip.addFrame({0, 16, 16, 16}, 0.25f), "failed to add finite frame 0");
-        require(clip.addFrame({16, 16, 16, 16}, 0.25f), "failed to add finite frame 1");
+        require(clip.addFrame(sf::IntRect{{0, 16}, {16, 16}}, 0.25f),
+                "failed to add finite frame 0");
+        require(clip.addFrame(sf::IntRect{{16, 16}, {16, 16}}, 0.25f),
+                "failed to add finite frame 1");
         return clip;
     }
 
@@ -164,7 +169,7 @@ namespace
         l2d::AnimationClip oversized("oversized", true);
         for (std::size_t i = 0u;
              i < l2d_editor::AnimationPreviewModel::MaximumPreviewFrames + 1u; ++i)
-            require(oversized.addFrame({0, 0, 1, 1}, 0.01f),
+            require(oversized.addFrame(sf::IntRect{{0, 0}, {1, 1}}, 0.01f),
                     "failed to construct over-limit preview clip");
         require(!model.bindClip("animations/idle", std::move(oversized)),
                 "over-limit preview clip was accepted");
