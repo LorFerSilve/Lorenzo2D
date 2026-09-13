@@ -17,7 +17,8 @@ namespace l2d_editor
     {
         return editSelected("Set RectangleRenderer size", [size](l2d::Prefab& prefab)
                             {
-                                if (!prefab.rectangleRenderer || prefab.rectangleRenderer->size == size)
+                                if (!prefab.rectangleRenderer ||
+                                    prefab.rectangleRenderer->size == size)
                                     return false;
                                 prefab.rectangleRenderer->size = size;
                                 return true;
@@ -28,7 +29,8 @@ namespace l2d_editor
     {
         return editSelected("Set RectangleRenderer color", [color](l2d::Prefab& prefab)
                             {
-                                if (!prefab.rectangleRenderer || prefab.rectangleRenderer->color == color)
+                                if (!prefab.rectangleRenderer ||
+                                    prefab.rectangleRenderer->color == color)
                                     return false;
                                 prefab.rectangleRenderer->color = color;
                                 return true;
@@ -39,7 +41,8 @@ namespace l2d_editor
     {
         return editSelected("Set CircleRenderer radius", [radius](l2d::Prefab& prefab)
                             {
-                                if (!prefab.circleRenderer || prefab.circleRenderer->radius == radius)
+                                if (!prefab.circleRenderer ||
+                                    prefab.circleRenderer->radius == radius)
                                     return false;
                                 prefab.circleRenderer->radius = radius;
                                 return true;
@@ -198,7 +201,8 @@ namespace l2d_editor
     {
         return editSelected("Set RigidBody acceleration", [acceleration](l2d::Prefab& prefab)
                             {
-                                if (!prefab.rigidBody || prefab.rigidBody->acceleration == acceleration)
+                                if (!prefab.rigidBody ||
+                                    prefab.rigidBody->acceleration == acceleration)
                                     return false;
                                 prefab.rigidBody->acceleration = acceleration;
                                 return true;
