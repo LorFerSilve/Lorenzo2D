@@ -45,6 +45,7 @@ add_library(Lorenzo2DEditorCore STATIC
     src/ComponentInspectorModel.cpp
     src/EditorCommandHistory.cpp
     src/EditorDocument.cpp
+    src/PlayTestWorkflowModel.cpp
     src/SceneHierarchyModel.cpp
     src/TilemapAuthoringModel.cpp
     src/ViewportTransformModel.cpp
@@ -189,6 +190,24 @@ if(L2D_EDITOR_BUILD_TESTS)
     )
     set_tests_properties(
         Lorenzo2DEditorAnimationPreviewTests
+        PROPERTIES
+            TIMEOUT 30
+    )
+
+    add_executable(
+        Lorenzo2DEditorPlayTestWorkflowTests
+        tests/PlayTestWorkflowTests.cpp
+    )
+    target_compile_features(Lorenzo2DEditorPlayTestWorkflowTests PRIVATE cxx_std_17)
+    target_link_libraries(Lorenzo2DEditorPlayTestWorkflowTests PRIVATE Lorenzo2DEditor::Core)
+    l2d_editor_enable_warnings(Lorenzo2DEditorPlayTestWorkflowTests)
+
+    add_test(
+        NAME Lorenzo2DEditorPlayTestWorkflowTests
+        COMMAND Lorenzo2DEditorPlayTestWorkflowTests
+    )
+    set_tests_properties(
+        Lorenzo2DEditorPlayTestWorkflowTests
         PROPERTIES
             TIMEOUT 30
     )
