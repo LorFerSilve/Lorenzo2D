@@ -46,7 +46,7 @@ namespace
     }
 
     l2d_editor::PlayTestProcessHooks acceptingHooks(l2d_editor::PlayTestLaunchRequest& captured,
-                                                     bool& stopCalled)
+                                                    bool& stopCalled)
     {
         l2d_editor::PlayTestProcessHooks hooks;
         hooks.launch = [&captured](const l2d_editor::PlayTestLaunchRequest& request)
