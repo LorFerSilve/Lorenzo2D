@@ -40,6 +40,7 @@ endfunction()
 add_library(Lorenzo2DEditorCore STATIC
     src/AssetBrowserModel.cpp
     src/AssetPickingModel.cpp
+    src/ColliderNavigationAuthoringModel.cpp
     src/ComponentInspectorModel.cpp
     src/EditorCommandHistory.cpp
     src/EditorDocument.cpp
@@ -151,6 +152,24 @@ if(L2D_EDITOR_BUILD_TESTS)
     )
     set_tests_properties(
         Lorenzo2DEditorTilemapAuthoringTests
+        PROPERTIES
+            TIMEOUT 30
+    )
+
+    add_executable(
+        Lorenzo2DEditorColliderNavigationAuthoringTests
+        tests/ColliderNavigationAuthoringTests.cpp
+    )
+    target_compile_features(Lorenzo2DEditorColliderNavigationAuthoringTests PRIVATE cxx_std_17)
+    target_link_libraries(Lorenzo2DEditorColliderNavigationAuthoringTests PRIVATE Lorenzo2DEditor::Core)
+    l2d_editor_enable_warnings(Lorenzo2DEditorColliderNavigationAuthoringTests)
+
+    add_test(
+        NAME Lorenzo2DEditorColliderNavigationAuthoringTests
+        COMMAND Lorenzo2DEditorColliderNavigationAuthoringTests
+    )
+    set_tests_properties(
+        Lorenzo2DEditorColliderNavigationAuthoringTests
         PROPERTIES
             TIMEOUT 30
     )

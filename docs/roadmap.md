@@ -31,6 +31,13 @@ The original 1.0 desktop baseline is complete. Continued development is tracked 
 [the post-1.0 roadmap](post-1.0-roadmap.md), beginning with Phase 11 production hardening and
 continuing through the planned Lorenzo2D 2.0 preparation phase.
 
+### Current post-1.0 implementation pointer
+
+Phase 13 is the active editor/tooling phase. Slices 13.1 through 13.6 are implemented, with 13.6
+establishing the bounded collider/navigation visualization and editing foundation documented in
+[`collider-navigation-authoring.md`](collider-navigation-authoring.md). The next planned dependency
+is **Phase 13.7 — animation preview foundation**.
+
 ## Phase completion rule
 
 A phase is complete only when its public API, validation, tests, example integration,
