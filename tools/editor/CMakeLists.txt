@@ -38,6 +38,8 @@ function(l2d_editor_enable_warnings target)
 endfunction()
 
 add_library(Lorenzo2DEditorCore STATIC
+    src/AssetBrowserModel.cpp
+    src/AssetPickingModel.cpp
     src/ComponentInspectorModel.cpp
     src/EditorCommandHistory.cpp
     src/EditorDocument.cpp
@@ -112,6 +114,24 @@ if(L2D_EDITOR_BUILD_TESTS)
     )
     set_tests_properties(
         Lorenzo2DEditorViewportTransformTests
+        PROPERTIES
+            TIMEOUT 30
+    )
+
+    add_executable(
+        Lorenzo2DEditorAssetBrowserTests
+        tests/AssetBrowserTests.cpp
+    )
+    target_compile_features(Lorenzo2DEditorAssetBrowserTests PRIVATE cxx_std_17)
+    target_link_libraries(Lorenzo2DEditorAssetBrowserTests PRIVATE Lorenzo2DEditor::Core)
+    l2d_editor_enable_warnings(Lorenzo2DEditorAssetBrowserTests)
+
+    add_test(
+        NAME Lorenzo2DEditorAssetBrowserTests
+        COMMAND Lorenzo2DEditorAssetBrowserTests
+    )
+    set_tests_properties(
+        Lorenzo2DEditorAssetBrowserTests
         PROPERTIES
             TIMEOUT 30
     )

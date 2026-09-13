@@ -126,6 +126,66 @@ Phase 13.3 deliberately establishes only the translation-gizmo and gesture-histo
 does not yet claim rotation/scale handles, camera pan/zoom controls, renderer-accurate scene previews,
 asset picking, tilemap painting, or general component widgets.
 
+## Phase 13.4 asset browser/picking foundation
+
+The fourth slice introduces an editor-owned boundary between configured resource roots and
+asset-backed serialized component fields. It deliberately reuses the public `ResourceLocator` and
+`AssetId` contracts rather than introducing the metadata, import, cook, dependency, or manifest model
+reserved for Phase 14.
+
+`AssetBrowserModel` owns the filesystem-facing state. Configured roots are normalized through
+`ResourceLocator`, scanned with explicit limits, and published transactionally only after the complete
+scan succeeds. The default limits bound scanned directory entries, published files, and recursion
+depth. A failed scan therefore leaves the previous asset index intact instead of exposing a partial
+generation.
+
+Published browser entries use portable root-relative paths as the Phase 13 asset-ID candidate. The
+browser rejects absolute IDs, parent traversal, platform-specific backslash separators, and invalid
+path components before asking `ResourceLocator` to resolve them. Symlink entries are not published,
+and `ResourceLocator` remains authoritative for canonical root containment. If multiple ordered roots
+contain the same relative ID, only the first resolvable root is published, matching runtime resource
+lookup precedence. Successful indexes are sorted by `AssetId`, and case-insensitive filtering
+preserves that deterministic order.
+
+This slice intentionally does not claim that a browsed file is already registered in an
+`AssetManager`. Lorenzo2D currently separates a resource path from the logical registry key used by
+`AssetManager` (for example, a texture may be loaded under a caller-selected name). Until Phase 14
+introduces stable content metadata, using the root-relative resource path as a serialized `AssetId`
+is a simple editor convention whose runtime registration remains the application's responsibility.
+The picking boundary guarantees path/root validity and valid `Prefab` publication; it does not invent
+or silently populate the runtime asset registry.
+
+`AssetPickingModel` re-resolves the selected browser entry immediately before each mutation, so a
+file removed after the browser was refreshed cannot be applied from stale UI state. Texture picks are
+limited to the image extensions supported by the lightweight browser classification. Applying a
+texture to an object without `SpriteRenderer` creates the smallest schema-valid `1x1` source
+rectangle; richer source-rectangle/preview controls remain later Phase 13 work. Animator clip picks
+preserve the existing runtime invariant that `initialClip`, when non-empty, belongs to `clips`.
+Duplicate clip picks are no-ops and do not enter command history.
+
+All picks route through `ComponentInspectorModel`, `EditorCommandHistory`, and ultimately
+`EditorDocument::replaceObject()`. Runtime `isValidPrefab()` validation therefore remains
+authoritative, and successful picks are ordinary deterministic undo/redo commands.
+
+The application shell now provides:
+
+- a bounded asset list in the lower hierarchy-side panel;
+- pointer selection and wheel scrolling for the visible list;
+- an inspector-side picking surface for Sprite texture, Animator clip, and Animator initial-clip
+  targets;
+- repeated `--resource-root <path>` / `--resource-root=<path>` options;
+- a conservative fallback root policy: `./assets` when present, otherwise the opened level's parent,
+  otherwise the current working directory.
+
+Focused installed-package regressions cover deterministic ordering, ordered-root precedence,
+case-insensitive filtering, portable-ID validation, traversal rejection, optional symlink skipping,
+transactional scan/asset limits, stale selection rejection, Sprite/Animator publication, no-op
+behavior, and undo/redo.
+
+Phase 13.4 does not add source-asset metadata, import settings, background cooking, manifests,
+dependency graphs, thumbnail generation, asset drag-and-drop, runtime registry introspection, or
+renderer-accurate previews. Those boundaries either belong to later editor slices or Phase 14.
+
 ## Undo/redo contract
 
 `EditorCommandHistory` retains at most 256 successful completed commands. A normal command receives an
@@ -165,8 +225,7 @@ or private engine internals.
 
 ## Next editor slice
 
-With hierarchy, validated component inspection, and coalesced viewport translation established, the
-next Phase 13 slice should add an asset-browser/picking boundary that can provide validated configured
-asset IDs to components such as `SpriteRenderer` and `Animator`. Rotation/scale gizmos and richer
-viewport camera controls can then build on the same coalesced-history contract without creating a
-second mutation path.
+After asset browsing/picking is validated, the next Phase 13 slice should establish a bounded tilemap
+authoring foundation using the existing installed public tilemap/Tiled contracts. It should preserve
+the same editor/runtime dependency direction and deterministic history semantics rather than
+introducing a second persistence or mutation path.

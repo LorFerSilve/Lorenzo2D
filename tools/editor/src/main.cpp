@@ -1,3 +1,5 @@
+#include <Lorenzo2DEditor/AssetBrowserModel.hpp>
+#include <Lorenzo2DEditor/AssetPickingModel.hpp>
 #include <Lorenzo2DEditor/ComponentInspectorModel.hpp>
 #include <Lorenzo2DEditor/EditorCommandHistory.hpp>
 #include <Lorenzo2DEditor/EditorDocument.hpp>
@@ -27,6 +29,10 @@ namespace
     constexpr float HierarchyWidth = 330.f;
     constexpr float InspectorWidth = 500.f;
     constexpr float ViewportMargin = 12.f;
+    constexpr float AssetBrowserTop = 340.f;
+    constexpr float AssetBrowserRowHeight = 22.f;
+    constexpr float AssetBrowserRowsTop = AssetBrowserTop + 62.f;
+    constexpr float AssetActionHeight = 24.f;
 
     bool loadEditorFont(sf::Font& font)
     {
@@ -65,14 +71,94 @@ namespace
         return {static_cast<float>(position.x), static_cast<float>(position.y)};
     }
 
+    bool insideBox(sf::Vector2f position, float x, float y, float width, float height) noexcept
+    {
+        return position.x >= x && position.y >= y && position.x <= x + width &&
+               position.y <= y + height;
+    }
+
+    float assetPickerTop(float height) noexcept
+    {
+        return std::max(300.f, height - 260.f);
+    }
+
+    std::string shorten(std::string value, std::size_t maxLength)
+    {
+        if (value.size() <= maxLength) return value;
+        if (maxLength <= 3u) return value.substr(0u, maxLength);
+        value.resize(maxLength - 3u);
+        value += "...";
+        return value;
+    }
+
+    struct EditorOptions
+    {
+        std::optional<std::filesystem::path> levelPath;
+        std::vector<std::filesystem::path> resourceRoots;
+    };
+
+    bool parseArguments(int argc, char** argv, EditorOptions& options)
+    {
+        for (int index = 1; index < argc; ++index)
+        {
+            const std::string argument = argv[index];
+            if (argument == "--resource-root")
+            {
+                if (index + 1 >= argc) return false;
+                options.resourceRoots.emplace_back(argv[++index]);
+                continue;
+            }
+
+            constexpr const char* ResourceRootPrefix = "--resource-root=";
+            const std::string prefix(ResourceRootPrefix);
+            if (argument.rfind(prefix, 0u) == 0u)
+            {
+                if (argument.size() == prefix.size()) return false;
+                options.resourceRoots.emplace_back(argument.substr(prefix.size()));
+                continue;
+            }
+
+            if (!argument.empty() && argument.front() == '-') return false;
+            if (options.levelPath) return false;
+            options.levelPath = std::filesystem::path(argument);
+        }
+        return true;
+    }
+
+    std::vector<std::filesystem::path> defaultResourceRoots(const EditorOptions& options)
+    {
+        if (!options.resourceRoots.empty()) return options.resourceRoots;
+
+        std::error_code error;
+        const std::filesystem::path current = std::filesystem::current_path(error);
+        if (!error)
+        {
+            const std::filesystem::path assets = current / "assets";
+            error.clear();
+            if (std::filesystem::is_directory(assets, error) && !error) return {assets};
+        }
+
+        if (options.levelPath && options.levelPath->has_parent_path())
+            return {options.levelPath->parent_path()};
+        if (!current.empty()) return {current};
+        return {};
+    }
+
     class EditorApp final : public l2d::Application
     {
       public:
-        explicit EditorApp(l2d_editor::EditorDocument document)
+        EditorApp(l2d_editor::EditorDocument document,
+                  std::vector<std::filesystem::path> resourceRoots)
             : l2d::Application(1280u, 720u, "Lorenzo2D Editor"), m_document(std::move(document)),
               m_hierarchy(m_document), m_history(), m_inspector(m_document, m_history),
-              m_viewport(m_document, m_history), m_hasFont(loadEditorFont(m_font))
+              m_viewport(m_document, m_history), m_assets(), m_assetPicker(m_assets, m_inspector),
+              m_hasFont(loadEditorFont(m_font))
         {
+            if (!m_assets.setRoots(resourceRoots) || !m_assets.refresh())
+            {
+                std::cerr << "Editor asset browser warning: "
+                          << l2d_editor::assetBrowserErrorMessage(m_assets.lastError()) << '\n';
+            }
             if (!m_hasFont)
             {
                 std::cerr << "Editor warning: no supported system font was found; panel text is "
@@ -87,8 +173,10 @@ namespace
         {
             (void)deltaTime;
             updateViewportBounds();
+            clampAssetScroll();
 
-            bool stateChanged = updateViewportInteraction();
+            bool stateChanged = updateAssetInteraction();
+            stateChanged = updateViewportInteraction() || stateChanged;
             const bool dragging = m_viewport.isDragging();
 
             if (!dragging)
@@ -146,6 +234,60 @@ namespace
         }
 
       private:
+        bool updateAssetInteraction()
+        {
+            const l2d::PointerState& pointer = l2d::Pointer::primary();
+            const sf::Vector2f position = pointerPosition(pointer.screenPosition);
+            const sf::Vector2u windowSize = getWindow().getSize();
+            const float width = static_cast<float>(windowSize.x);
+            const float height = static_cast<float>(windowSize.y);
+            bool changed = false;
+
+            if (position.x >= 0.f && position.x <= HierarchyWidth &&
+                position.y >= AssetBrowserTop && position.y <= height && pointer.wheelDelta != 0.f)
+            {
+                const std::size_t capacity = assetRowCapacity(height);
+                const std::size_t count = m_assets.visibleCount();
+                const std::size_t maxStart = count > capacity ? count - capacity : 0u;
+                constexpr std::size_t ScrollStep = 3u;
+                if (pointer.wheelDelta > 0.f)
+                    m_assetScroll = m_assetScroll > ScrollStep ? m_assetScroll - ScrollStep : 0u;
+                else
+                    m_assetScroll = std::min(maxStart, m_assetScroll + ScrollStep);
+            }
+
+            if (!pointer.pressed) return changed;
+
+            if (position.x >= 0.f && position.x <= HierarchyWidth &&
+                position.y >= AssetBrowserRowsTop && position.y <= height)
+            {
+                const std::size_t capacity = assetRowCapacity(height);
+                const float relativeY = position.y - AssetBrowserRowsTop;
+                const std::size_t row = static_cast<std::size_t>(relativeY / AssetBrowserRowHeight);
+                if (row < capacity)
+                {
+                    const std::size_t visibleIndex = m_assetScroll + row;
+                    changed = m_assets.selectVisibleIndex(visibleIndex) || changed;
+                }
+            }
+
+            const float pickerX = width - InspectorWidth + 18.f;
+            const float pickerWidth = InspectorWidth - 36.f;
+            const float pickerY = assetPickerTop(height);
+            if (insideBox(position, pickerX, pickerY + 54.f, pickerWidth, AssetActionHeight))
+                changed = m_assetPicker.applySelected(l2d_editor::AssetPickTarget::SpriteTexture) ||
+                          changed;
+            else if (insideBox(position, pickerX, pickerY + 84.f, pickerWidth, AssetActionHeight))
+                changed = m_assetPicker.applySelected(l2d_editor::AssetPickTarget::AnimatorClip) ||
+                          changed;
+            else if (insideBox(position, pickerX, pickerY + 114.f, pickerWidth, AssetActionHeight))
+                changed =
+                    m_assetPicker.applySelected(l2d_editor::AssetPickTarget::AnimatorInitialClip) ||
+                    changed;
+
+            return changed;
+        }
+
         bool updateViewportInteraction()
         {
             const l2d::PointerState& pointer = l2d::Pointer::primary();
@@ -183,6 +325,22 @@ namespace
             const float viewportHeight = std::max(1.f, height - ViewportMargin * 2.f);
             (void)m_viewport.setViewport({{HierarchyWidth + ViewportMargin, ViewportMargin},
                                           {viewportWidth, viewportHeight}});
+        }
+
+        std::size_t assetRowCapacity(float height) const noexcept
+        {
+            if (height <= AssetBrowserRowsTop + 8.f) return 0u;
+            const float available = height - AssetBrowserRowsTop - 8.f;
+            return static_cast<std::size_t>(available / AssetBrowserRowHeight);
+        }
+
+        void clampAssetScroll()
+        {
+            const float height = static_cast<float>(getWindow().getSize().y);
+            const std::size_t capacity = assetRowCapacity(height);
+            const std::size_t count = m_assets.visibleCount();
+            const std::size_t maxStart = count > capacity ? count - capacity : 0u;
+            m_assetScroll = std::min(m_assetScroll, maxStart);
         }
 
         bool adjustZOrder(std::int32_t delta)
@@ -273,9 +431,7 @@ namespace
 
             const auto snapshot = m_viewport.snapshot();
             if (snapshot && insideViewport(snapshot->gizmoPosition))
-            {
                 drawTranslationGizmo(window, snapshot->gizmoPosition, snapshot->dragging);
-            }
 
             if (m_hasFont)
             {
@@ -322,6 +478,7 @@ namespace
         void drawPanels(sf::RenderWindow& window) const
         {
             const sf::Vector2u windowSize = window.getSize();
+            const float width = static_cast<float>(windowSize.x);
             const float height = static_cast<float>(windowSize.y);
 
             sf::RectangleShape hierarchyPanel({HierarchyWidth, height});
@@ -329,8 +486,16 @@ namespace
             hierarchyPanel.setFillColor(sf::Color(30, 32, 38));
             window.draw(hierarchyPanel);
 
+            if (height > AssetBrowserTop)
+            {
+                sf::RectangleShape assetPanel({HierarchyWidth, height - AssetBrowserTop});
+                assetPanel.setPosition({0.f, AssetBrowserTop});
+                assetPanel.setFillColor(sf::Color(26, 28, 34));
+                window.draw(assetPanel);
+            }
+
             sf::RectangleShape inspectorPanel({InspectorWidth, height});
-            inspectorPanel.setPosition({static_cast<float>(windowSize.x) - InspectorWidth, 0.f});
+            inspectorPanel.setPosition({width - InspectorWidth, 0.f});
             inspectorPanel.setFillColor(sf::Color(35, 37, 44));
             window.draw(inspectorPanel);
 
@@ -340,7 +505,7 @@ namespace
             float hierarchyY = 52.f;
             for (const l2d_editor::SceneHierarchyItem& item : m_hierarchy.items())
             {
-                if (hierarchyY > height - 28.f) break;
+                if (hierarchyY > AssetBrowserTop - 30.f) break;
                 if (item.selected)
                 {
                     sf::RectangleShape selection({HierarchyWidth - 20.f, 25.f});
@@ -353,7 +518,9 @@ namespace
                 hierarchyY += 28.f;
             }
 
-            const float inspectorX = static_cast<float>(windowSize.x) - InspectorWidth + 18.f;
+            drawAssetBrowser(window, height);
+
+            const float inspectorX = width - InspectorWidth + 18.f;
             drawText(window, "Component Inspector", {inspectorX, 14.f}, 20u, sf::Color::White);
 
             const auto snapshot = m_inspector.snapshot();
@@ -361,6 +528,7 @@ namespace
             {
                 drawText(window, "No object selected", {inspectorX, 54.f}, 16u,
                          sf::Color(185, 188, 196));
+                drawAssetPicker(window, inspectorX, height);
                 drawHelp(window, inspectorX, height);
                 return;
             }
@@ -383,27 +551,111 @@ namespace
             drawText(window, "Components", {inspectorX, y}, 17u, sf::Color::White);
             y += 28.f;
 
+            const float componentBottom = assetPickerTop(height) - 12.f;
             for (const l2d_editor::InspectorComponentEntry& component : snapshot->components)
             {
-                if (y > height - 130.f) break;
+                if (y > componentBottom) break;
                 drawText(window, "- " + component.displayName, {inspectorX + 8.f, y}, 14u,
                          component.removable ? sf::Color(205, 208, 215) : sf::Color(160, 178, 210));
                 y += 22.f;
             }
 
+            drawAssetPicker(window, inspectorX, height);
             drawHelp(window, inspectorX, height);
+        }
+
+        void drawAssetBrowser(sf::RenderWindow& window, float height) const
+        {
+            if (height <= AssetBrowserTop) return;
+            drawText(window, "Asset Browser", {18.f, AssetBrowserTop + 10.f}, 18u,
+                     sf::Color::White);
+
+            std::string summary = std::to_string(m_assets.visibleCount()) + " assets / " +
+                                  std::to_string(m_assets.roots().size()) + " roots";
+            if (!m_assets.filter().empty())
+                summary += " | filter: " + std::string(m_assets.filter());
+            drawText(window, summary, {18.f, AssetBrowserTop + 34.f}, 12u,
+                     sf::Color(150, 155, 166));
+
+            if (m_assets.lastError() != l2d_editor::AssetBrowserError::None)
+            {
+                drawText(window,
+                         std::string(l2d_editor::assetBrowserErrorMessage(m_assets.lastError())),
+                         {18.f, AssetBrowserRowsTop}, 13u, sf::Color(215, 120, 120));
+                return;
+            }
+
+            const std::size_t capacity = assetRowCapacity(height);
+            const auto selected = m_assets.selectedAssetId();
+            for (std::size_t row = 0u; row < capacity; ++row)
+            {
+                const std::size_t visibleIndex = m_assetScroll + row;
+                const l2d_editor::AssetBrowserEntry* entry = m_assets.visibleEntry(visibleIndex);
+                if (entry == nullptr) break;
+
+                const float y =
+                    AssetBrowserRowsTop + static_cast<float>(row) * AssetBrowserRowHeight;
+                const bool isSelected = selected && *selected == entry->id;
+                if (isSelected)
+                {
+                    sf::RectangleShape selection({HierarchyWidth - 20.f, AssetBrowserRowHeight});
+                    selection.setPosition({10.f, y - 2.f});
+                    selection.setFillColor(sf::Color(65, 83, 115));
+                    window.draw(selection);
+                }
+
+                const std::string prefix =
+                    entry->kind == l2d_editor::AssetBrowserEntryKind::Texture ? "[T] " : "[ ] ";
+                drawText(window, prefix + shorten(entry->id, 36u), {16.f, y}, 13u,
+                         isSelected ? sf::Color::White : sf::Color(200, 203, 211));
+            }
+        }
+
+        void drawAssetPicker(sf::RenderWindow& window, float x, float height) const
+        {
+            const float y = assetPickerTop(height);
+            drawText(window, "Asset Picking", {x, y}, 17u, sf::Color::White);
+            const auto selected = m_assets.selectedAssetId();
+            drawText(window,
+                     "Selected: " + (selected ? shorten(*selected, 48u) : std::string("<none>")),
+                     {x, y + 26.f}, 13u, sf::Color(185, 189, 198));
+
+            drawAssetAction(
+                window, x, y + 54.f, "Use as Sprite Texture",
+                m_assetPicker.canApplySelected(l2d_editor::AssetPickTarget::SpriteTexture));
+            drawAssetAction(
+                window, x, y + 84.f, "Add as Animator Clip",
+                m_assetPicker.canApplySelected(l2d_editor::AssetPickTarget::AnimatorClip));
+            drawAssetAction(
+                window, x, y + 114.f, "Set as Animator Initial Clip",
+                m_assetPicker.canApplySelected(l2d_editor::AssetPickTarget::AnimatorInitialClip));
+        }
+
+        void drawAssetAction(sf::RenderWindow& window, float x, float y, const std::string& label,
+                             bool enabled) const
+        {
+            sf::RectangleShape button({InspectorWidth - 36.f, AssetActionHeight});
+            button.setPosition({x, y});
+            button.setFillColor(enabled ? sf::Color(58, 65, 78) : sf::Color(47, 49, 56));
+            button.setOutlineThickness(1.f);
+            button.setOutlineColor(enabled ? sf::Color(95, 116, 150) : sf::Color(65, 68, 76));
+            window.draw(button);
+            drawText(window, label, {x + 8.f, y + 3.f}, 13u,
+                     enabled ? sf::Color(220, 224, 234) : sf::Color(125, 128, 136));
         }
 
         void drawHelp(sf::RenderWindow& window, float x, float height) const
         {
-            const float y = height - 128.f;
-            drawText(window, "Viewport: drag selected center handle to move", {x, y}, 13u,
+            const float y = height - 104.f;
+            drawText(window, "Assets: click left list, then a picking action", {x, y}, 12u,
                      sf::Color(160, 164, 174));
-            drawText(window, "Up/Down select | A/D/W/S nudge | Left/Right z-order", {x, y + 22.f},
-                     13u, sf::Color(160, 164, 174));
-            drawText(window, "Space active | F1 rectangle | Z undo | Q redo", {x, y + 44.f}, 13u,
+            drawText(window, "Viewport: drag selected center handle to move", {x, y + 18.f}, 12u,
                      sf::Color(160, 164, 174));
-            drawText(window, "Escape cancels drag, otherwise closes", {x, y + 66.f}, 13u,
+            drawText(window, "Up/Down select | A/D/W/S nudge | Left/Right z-order", {x, y + 36.f},
+                     12u, sf::Color(160, 164, 174));
+            drawText(window, "Space active | F1 rectangle | Z undo | Q redo", {x, y + 54.f}, 12u,
+                     sf::Color(160, 164, 174));
+            drawText(window, "Escape cancels drag, otherwise closes", {x, y + 72.f}, 12u,
                      sf::Color(160, 164, 174));
         }
 
@@ -425,6 +677,8 @@ namespace
                 title += " - selected: " + snapshot->name + " [" +
                          std::to_string(snapshot->components.size()) + " components]";
             }
+            const auto selectedAsset = m_assets.selectedAssetId();
+            if (selectedAsset) title += " - asset: " + *selectedAsset;
             if (m_viewport.isDragging()) title += " - translating";
             getWindow().setTitle(title);
         }
@@ -434,6 +688,9 @@ namespace
         l2d_editor::EditorCommandHistory m_history;
         l2d_editor::ComponentInspectorModel m_inspector;
         l2d_editor::ViewportTransformModel m_viewport;
+        l2d_editor::AssetBrowserModel m_assets;
+        l2d_editor::AssetPickingModel m_assetPicker;
+        std::size_t m_assetScroll = 0u;
         sf::Font m_font;
         bool m_hasFont = false;
     };
@@ -441,25 +698,29 @@ namespace
 
 int main(int argc, char** argv)
 {
-    if (argc > 2)
+    EditorOptions options;
+    if (!parseArguments(argc, argv, options))
     {
-        std::cerr << "Usage: Lorenzo2DEditor [level.l2dlevel]\n";
+        std::cerr << "Usage: Lorenzo2DEditor [--resource-root <path>]... [level.l2dlevel]\n";
         return 2;
     }
 
     l2d_editor::EditorDocument document;
-    if (argc == 2 && !document.loadFromFile(argv[1]))
+    if (options.levelPath && !document.loadFromFile(options.levelPath->string()))
     {
-        std::cerr << "Unable to open level: " << argv[1] << '\n';
+        std::cerr << "Unable to open level: " << options.levelPath->string() << '\n';
         return 3;
     }
 
-    std::cout << "Lorenzo2D Editor Phase 13.3 viewport transform foundation\n"
+    std::vector<std::filesystem::path> resourceRoots = defaultResourceRoots(options);
+    std::cout << "Lorenzo2D Editor Phase 13.4 asset browser/picking foundation\n"
+              << "Asset roots: " << resourceRoots.size()
+              << "; click an asset and use an inspector picking action.\n"
               << "Up/Down select; drag the selected viewport handle to translate;\n"
               << "A/D/W/S nudge; Left/Right z-order; Space active; F1 rectangle;\n"
               << "Z undo; Q redo; Escape cancels an active drag or closes.\n";
 
-    EditorApp app(std::move(document));
+    EditorApp app(std::move(document), std::move(resourceRoots));
     app.run();
     return 0;
 }

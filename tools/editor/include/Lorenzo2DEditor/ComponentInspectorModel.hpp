@@ -76,6 +76,12 @@ namespace l2d_editor
         [[nodiscard]] bool setZOrder(std::int32_t zOrder);
         [[nodiscard]] bool setTransform(l2d::TransformState transform);
 
+        // Asset-backed component helpers used by the editor picking boundary.
+        // Runtime Prefab validation remains authoritative for publication.
+        [[nodiscard]] bool setSpriteTextureAsset(l2d::AssetId texture);
+        [[nodiscard]] bool addAnimatorClipAsset(l2d::AssetId clip);
+        [[nodiscard]] bool setAnimatorInitialClipAsset(l2d::AssetId clip);
+
         // Applies an editor-owned mutation to a copy of the selected Prefab.
         // The callback must return true only when it actually changed the copy.
         // Runtime Prefab validation still runs before publication.
