@@ -59,9 +59,8 @@ namespace l2d_editor
                     std::chrono::steady_clock::now().time_since_epoch().count());
                 const auto sequence = SnapshotSequence.fetch_add(1u, std::memory_order_relaxed);
                 const std::filesystem::path candidate =
-                    snapshotRoot /
-                    (std::string("lorenzo2d-editor-playtest-") + std::to_string(timestamp) + "-" +
-                     std::to_string(sequence));
+                    snapshotRoot / (std::string("lorenzo2d-editor-playtest-") +
+                                    std::to_string(timestamp) + "-" + std::to_string(sequence));
 
                 error.clear();
                 if (std::filesystem::create_directory(candidate, error)) return candidate;
