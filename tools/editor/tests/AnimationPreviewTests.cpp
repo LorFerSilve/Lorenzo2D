@@ -109,8 +109,8 @@ namespace
         require(snapshot && snapshot->frameIndex == 2u && near(snapshot->clipElapsed, 0.35f),
                 "preview playback speed did not scale elapsed time");
         require(!model.setPlaybackSpeed(-1.f) &&
-                    !model.setPlaybackSpeed(l2d_editor::AnimationPreviewModel::MaximumPlaybackSpeed +
-                                            0.1f),
+                    !model.setPlaybackSpeed(
+                        l2d_editor::AnimationPreviewModel::MaximumPlaybackSpeed + 0.1f),
                 "invalid preview speed was accepted");
 
         require(model.seek(0.59f), "valid preview seek failed");
@@ -167,8 +167,8 @@ namespace
                 "empty preview clip was accepted");
 
         l2d::AnimationClip oversized("oversized", true);
-        for (std::size_t i = 0u;
-             i < l2d_editor::AnimationPreviewModel::MaximumPreviewFrames + 1u; ++i)
+        for (std::size_t i = 0u; i < l2d_editor::AnimationPreviewModel::MaximumPreviewFrames + 1u;
+             ++i)
             require(oversized.addFrame(sf::IntRect{{0, 0}, {1, 1}}, 0.01f),
                     "failed to construct over-limit preview clip");
         require(!model.bindClip("animations/idle", std::move(oversized)),
