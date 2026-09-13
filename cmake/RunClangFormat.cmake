@@ -44,17 +44,6 @@ foreach(l2d_file IN LISTS l2d_format_files)
 
     if(NOT l2d_result EQUAL 0)
         list(APPEND l2d_format_failures "${l2d_file}")
-        if(l2d_file MATCHES "ColliderNavigationAuthoringModel.cpp$")
-            execute_process(
-                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" -i "${l2d_file}"
-            )
-            execute_process(
-                COMMAND git diff -- "${l2d_file}"
-                WORKING_DIRECTORY "${L2D_SOURCE_DIR}"
-                OUTPUT_VARIABLE l2d_format_diff
-            )
-            message(STATUS "L2D_FORMAT_DIFF_BEGIN\n${l2d_format_diff}L2D_FORMAT_DIFF_END")
-        endif()
     endif()
 endforeach()
 
