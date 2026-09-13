@@ -380,12 +380,30 @@ depend on the editor.
   no-op behavior, and undo/redo. PR #51 and the merged `master` commit
   `877925c4b115c83dbb02e6b3cc2ad2cf6850358e` both pass all seven required CI gates, including
   Windows MSVC, ASan/UBSan, coverage, clang-tidy, and the installed-package editor consumer path.
-- **Phase 13 status: in progress.** Slices 13.1 through 13.4 establish the editor/runtime dependency
+- **13.5 Bounded tilemap authoring foundation:** the standalone editor now provides an editor-only
+  `TilemapAuthoringModel` over the installed public `TileMapData` and `TiledJsonImporter` contracts.
+  Tiled JSON publication is transactional and bounded by explicit input-byte, map-cell, layer, tile
+  definition, object, and aggregate tile-slot limits. Layer selection, brush selection, and the tile
+  palette are deterministic; tile IDs and Tiled horizontal/vertical/diagonal flip flags are validated
+  through the existing runtime tilemap contract. Single-cell paint/erase and continuous paint
+  gestures use bounded cell-delta history rather than whole-map snapshots, so a successful stroke is
+  one undoable command while cancellation restores the gesture-start state and preserves pre-existing
+  redo history. The slice deliberately adds no editor-private serializer or second tilemap persistence
+  format: Tiled import remains the canonical content boundary until a future public persistence/export
+  contract exists. Focused installed-package regressions cover import publication, workload limits,
+  deterministic selection/palette behavior, painting, erase, coalesced strokes, cancellation,
+  undo/redo, redo preservation, and history eviction. PR #53 and the merged `master` implementation
+  commit `0522fcf34d6a919444644e48cc353f610810df7f` both pass all seven required CI gates, including
+  Windows MSVC, ASan/UBSan, coverage, clang-tidy, and the installed-package editor consumer path.
+- **Phase 13 status: in progress.** Slices 13.1 through 13.5 establish the editor/runtime dependency
   boundary, document/history foundation, interactive hierarchy, validated component inspection,
-  coalesced viewport translation, and validated bounded asset browsing/picking. Tilemap authoring,
-  collider and navigation visualization/editing, animation preview, play/test workflow, richer
-  component-specific controls, rotation/scale gizmos, and the end-to-end authoring tutorial remain
-  future Phase 13 slices.
+  coalesced viewport translation, validated bounded asset browsing/picking, and bounded tilemap
+  authoring with transactional Tiled import and gesture-coalesced cell-delta history. Collider and
+  navigation visualization/editing, animation preview, play/test workflow, richer component-specific
+  controls, rotation/scale gizmos, and the end-to-end authoring tutorial remain future Phase 13
+  slices. The next planned dependency is **Phase 13.6 — collider/navigation visualization and editing
+  foundation**.
+
 
 ### Initial editor scope
 
