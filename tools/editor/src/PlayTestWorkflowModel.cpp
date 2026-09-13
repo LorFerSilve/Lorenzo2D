@@ -135,10 +135,9 @@ namespace l2d_editor
         return m_lastError;
     }
 
-    bool PlayTestWorkflowModel::validateConfiguration(
-        const std::filesystem::path& executable,
-        const std::filesystem::path& workingDirectory,
-        const std::vector<std::string>& arguments)
+    bool PlayTestWorkflowModel::validateConfiguration(const std::filesystem::path& executable,
+                                                       const std::filesystem::path& workingDirectory,
+                                                       const std::vector<std::string>& arguments)
     {
         if (executable.empty() || containsNull(executable.string()))
         {
@@ -162,10 +161,9 @@ namespace l2d_editor
             return false;
         }
 
-        const std::size_t placeholderCount = static_cast<std::size_t>(std::count_if(
-            arguments.begin(), arguments.end(), [](const std::string& argument) {
-                return argument.find(LevelPlaceholder) != std::string::npos;
-            }));
+        const std::size_t placeholderCount = static_cast<std::size_t>(
+            std::count_if(arguments.begin(), arguments.end(), [](const std::string& argument)
+                          { return argument.find(LevelPlaceholder) != std::string::npos; }));
         if (placeholderCount != 1u)
         {
             m_lastError = PlayTestError::MissingLevelPlaceholder;
@@ -182,7 +180,8 @@ namespace l2d_editor
 
         std::error_code error;
         const bool removed = std::filesystem::remove(m_activeRequest.levelSnapshotPath, error);
-        if (error || (!removed && std::filesystem::exists(m_activeRequest.levelSnapshotPath, error)))
+        if (error ||
+            (!removed && std::filesystem::exists(m_activeRequest.levelSnapshotPath, error)))
         {
             m_lastError = PlayTestError::SnapshotCleanupFailed;
             return false;
@@ -190,8 +189,8 @@ namespace l2d_editor
         return true;
     }
 
-    std::vector<std::string>
-    PlayTestWorkflowModel::expandArguments(const std::filesystem::path& snapshotPath) const
+    std::vector<std::string> PlayTestWorkflowModel::expandArguments(
+        const std::filesystem::path& snapshotPath) const
     {
         std::vector<std::string> expanded = m_arguments;
         const std::string replacement = snapshotPath.string();
@@ -199,7 +198,8 @@ namespace l2d_editor
         {
             const std::size_t position = argument.find(LevelPlaceholder);
             if (position != std::string::npos)
-                argument.replace(position, std::char_traits<char>::length(LevelPlaceholder), replacement);
+                argument.replace(position, std::char_traits<char>::length(LevelPlaceholder),
+                                 replacement);
         }
         return expanded;
     }
@@ -208,20 +208,30 @@ namespace l2d_editor
     {
         switch (error)
         {
-        case PlayTestError::None: return "no error";
-        case PlayTestError::InvalidExecutable: return "invalid play/test executable";
-        case PlayTestError::InvalidWorkingDirectory: return "invalid play/test working directory";
-        case PlayTestError::TooManyArguments: return "too many play/test arguments";
-        case PlayTestError::ArgumentDataTooLarge: return "play/test argument data is invalid or too large";
+        case PlayTestError::None:
+            return "no error";
+        case PlayTestError::InvalidExecutable:
+            return "invalid play/test executable";
+        case PlayTestError::InvalidWorkingDirectory:
+            return "invalid play/test working directory";
+        case PlayTestError::TooManyArguments:
+            return "too many play/test arguments";
+        case PlayTestError::ArgumentDataTooLarge:
+            return "play/test argument data is invalid or too large";
         case PlayTestError::MissingLevelPlaceholder:
             return "play/test arguments must contain exactly one {level} placeholder";
-        case PlayTestError::SessionAlreadyActive: return "a play/test session is already active";
+        case PlayTestError::SessionAlreadyActive:
+            return "a play/test session is already active";
         case PlayTestError::SnapshotDirectoryUnavailable:
             return "play/test snapshot directory is unavailable";
-        case PlayTestError::SnapshotWriteFailed: return "failed to serialize play/test level snapshot";
-        case PlayTestError::LaunchRejected: return "play/test launcher rejected the request";
-        case PlayTestError::StopRejected: return "play/test process could not be stopped";
-        case PlayTestError::SnapshotCleanupFailed: return "play/test snapshot cleanup failed";
+        case PlayTestError::SnapshotWriteFailed:
+            return "failed to serialize play/test level snapshot";
+        case PlayTestError::LaunchRejected:
+            return "play/test launcher rejected the request";
+        case PlayTestError::StopRejected:
+            return "play/test process could not be stopped";
+        case PlayTestError::SnapshotCleanupFailed:
+            return "play/test snapshot cleanup failed";
         }
         return "unknown play/test error";
     }
