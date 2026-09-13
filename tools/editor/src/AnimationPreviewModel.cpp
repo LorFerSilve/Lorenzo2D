@@ -170,7 +170,8 @@ namespace l2d_editor
         }
         else
         {
-            target = std::max<long long>(0, std::min<long long>(target, static_cast<long long>(count - 1u)));
+            target = std::max<long long>(
+                0, std::min<long long>(target, static_cast<long long>(count - 1u)));
         }
 
         double elapsed = 0.0;
@@ -196,7 +197,8 @@ namespace l2d_editor
             return;
 
         const double duration = static_cast<double>(m_clip->duration());
-        const double advance = static_cast<double>(deltaTime) * static_cast<double>(m_playbackSpeed);
+        const double advance =
+            static_cast<double>(deltaTime) * static_cast<double>(m_playbackSpeed);
         if (!std::isfinite(advance)) return;
 
         if (m_clip->isLooping())
