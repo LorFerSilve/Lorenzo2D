@@ -40,13 +40,6 @@ foreach(l2d_file IN LISTS l2d_format_files)
             OUTPUT_QUIET
             ERROR_QUIET
         )
-        if(NOT l2d_result EQUAL 0 AND l2d_file MATCHES "PlayTestWorkflowModel\\.cpp$")
-            execute_process(
-                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" --output-replacements-xml "${l2d_file}"
-                OUTPUT_VARIABLE l2d_replacements
-            )
-            message(STATUS "FORMAT REPLACEMENTS ${l2d_replacements}")
-        endif()
     endif()
 
     if(NOT l2d_result EQUAL 0)
