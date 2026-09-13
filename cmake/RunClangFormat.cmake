@@ -34,12 +34,15 @@ foreach(l2d_file IN LISTS l2d_format_files)
         )
     else()
         execute_process(
-            COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}"
-                --dry-run --Werror "${l2d_file}"
+            COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" "${l2d_file}"
             RESULT_VARIABLE l2d_result
-            OUTPUT_QUIET
-            ERROR_QUIET
+            OUTPUT_VARIABLE l2d_formatted
         )
+        file(READ "${l2d_file}" l2d_original)
+        if(l2d_result EQUAL 0 AND NOT l2d_formatted STREQUAL l2d_original)
+            message(STATUS "BEGIN CLANG-FORMAT OUTPUT ${l2d_file}\n${l2d_formatted}END CLANG-FORMAT OUTPUT ${l2d_file}")
+            set(l2d_result 1)
+        endif()
     endif()
 
     if(NOT l2d_result EQUAL 0)
