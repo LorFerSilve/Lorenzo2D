@@ -61,10 +61,9 @@ namespace l2d
                 return false;
             }
 
-            static constexpr char AllowedCharacters[] =
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                "abcdefghijklmnopqrstuvwxyz"
-                "0123456789_-./:";
+            static constexpr char AllowedCharacters[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                                        "abcdefghijklmnopqrstuvwxyz"
+                                                        "0123456789_-./:";
             return id.find_first_not_of(AllowedCharacters) == std::string::npos;
         }
 
@@ -88,7 +87,8 @@ namespace l2d
 
         static bool validate(const AssetSourceDescriptor& descriptor, std::string* error = nullptr)
         {
-            const auto fail = [error](const char* message) {
+            const auto fail = [error](const char* message)
+            {
                 if (error != nullptr)
                 {
                     *error = message;
