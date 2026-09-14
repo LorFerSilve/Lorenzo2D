@@ -86,8 +86,7 @@ namespace
                 "runtime level name should match authoring state");
         require(runtimeLevel.objects.size() == 2u,
                 "runtime level should contain both authored objects");
-        require(runtimeLevel.objects[0].name == "Player" &&
-                    runtimeLevel.objects[1].name == "Goal",
+        require(runtimeLevel.objects[0].name == "Player" && runtimeLevel.objects[1].name == "Goal",
                 "runtime level should preserve authored object order and names");
         require(runtimeLevel.objects[0].transform.position == sf::Vector2f{96.f, 128.f},
                 "runtime level should contain the edited Player transform");
