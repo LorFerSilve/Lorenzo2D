@@ -230,4 +230,22 @@ if(L2D_EDITOR_BUILD_TESTS)
         PROPERTIES
             TIMEOUT 30
     )
+
+    add_executable(
+        Lorenzo2DEditorEndToEndAuthoringTutorialTests
+        tests/EndToEndAuthoringTutorialTests.cpp
+    )
+    target_compile_features(Lorenzo2DEditorEndToEndAuthoringTutorialTests PRIVATE cxx_std_17)
+    target_link_libraries(Lorenzo2DEditorEndToEndAuthoringTutorialTests PRIVATE Lorenzo2DEditor::Core)
+    l2d_editor_enable_warnings(Lorenzo2DEditorEndToEndAuthoringTutorialTests)
+
+    add_test(
+        NAME Lorenzo2DEditorEndToEndAuthoringTutorialTests
+        COMMAND Lorenzo2DEditorEndToEndAuthoringTutorialTests
+    )
+    set_tests_properties(
+        Lorenzo2DEditorEndToEndAuthoringTutorialTests
+        PROPERTIES
+            TIMEOUT 30
+    )
 endif()
