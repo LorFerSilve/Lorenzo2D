@@ -14,8 +14,18 @@ target_link_libraries(
     PRIVATE Lorenzo2D::Lorenzo2D
 )
 
+add_executable(Lorenzo2DAssetMetadataPackageConsumer asset_metadata.cpp)
+target_link_libraries(
+    Lorenzo2DAssetMetadataPackageConsumer
+    PRIVATE Lorenzo2D::Lorenzo2D
+)
+
 include(CTest)
 add_test(
     NAME Lorenzo2DPackageConsumer
     COMMAND Lorenzo2DPackageConsumer
+)
+add_test(
+    NAME Lorenzo2DAssetMetadataPackageConsumer
+    COMMAND Lorenzo2DAssetMetadataPackageConsumer
 )
