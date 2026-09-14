@@ -33,12 +33,12 @@ continuing through the planned Lorenzo2D 2.0 preparation phase.
 
 ### Current post-1.0 implementation pointer
 
-Phase 13 is the active editor/tooling phase. Slices 13.1 through 13.9 are implemented. Phase 13.8
-established the bounded play/test orchestration and runtime-readable unsaved-level snapshot workflow,
-while Phase 13.9 adds validated typed property controls for rectangle/circle renderers, sprites,
-animators, and rigid bodies as documented in
-[`component-inspector-controls.md`](component-inspector-controls.md). The next planned dependency is
-**Phase 13.10 — rotation/scale gizmos**.
+Phase 13 is the active editor/tooling phase. Slices 13.1 through 13.10 are implemented. Phase 13.9
+added validated typed property controls for rectangle/circle renderers, sprites, animators, and rigid
+bodies, while Phase 13.10 extends the existing viewport gesture contract with continuous rotation and
+X/Y/uniform scaling as documented in
+[`rotation-scale-gizmos.md`](rotation-scale-gizmos.md). The remaining planned Phase 13 dependency is
+**Phase 13.11 — end-to-end authoring tutorial and Phase 13 completion evidence**.
 
 ## Phase completion rule
 
