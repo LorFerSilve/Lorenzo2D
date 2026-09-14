@@ -57,8 +57,8 @@ namespace
                                           const std::filesystem::path& cookedPath)
     {
         l2d::AssetCookRequest request;
-        L2D_REQUIRE(l2d::AssetManifest::makeCookRequest(
-            descriptor, sourceHash, importerVersion, request));
+        L2D_REQUIRE(
+            l2d::AssetManifest::makeCookRequest(descriptor, sourceHash, importerVersion, request));
 
         l2d::AssetManifestEntry entry;
         entry.source = request.source;
@@ -205,8 +205,7 @@ namespace
 
         l2d::AssetCookRequest changedHash;
         l2d::AssetCookRequest changedVersion;
-        L2D_REQUIRE(
-            l2d::AssetManifest::makeCookRequest(descriptor, 0x1235u, "1.0", changedHash));
+        L2D_REQUIRE(l2d::AssetManifest::makeCookRequest(descriptor, 0x1235u, "1.0", changedHash));
         L2D_REQUIRE(
             l2d::AssetManifest::makeCookRequest(descriptor, 0x1234u, "1.1", changedVersion));
         L2D_REQUIRE(first.cookKey != changedHash.cookKey);
