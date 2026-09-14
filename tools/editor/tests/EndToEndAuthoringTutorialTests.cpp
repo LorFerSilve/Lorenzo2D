@@ -50,35 +50,30 @@ namespace
         require(document.setName("Phase 13 Tutorial"), "tutorial level name should be valid");
 
         l2d_editor::EditorObjectId playerId = l2d_editor::InvalidEditorObjectId;
-        require(history.execute(
-                    document, "Create Player",
-                    [&playerId](l2d_editor::EditorDocument& editor)
-                    {
-                        const auto created = editor.addObject(makeObject("Player", {64.f, 96.f}));
-                        if (!created) return false;
-                        playerId = *created;
-                        return editor.selectObject(playerId);
-                    }),
+        const auto createPlayer = [&playerId](l2d_editor::EditorDocument& editor)
+        {
+            const auto created = editor.addObject(makeObject("Player", {64.f, 96.f}));
+            if (!created) return false;
+            playerId = *created;
+            return editor.selectObject(playerId);
+        };
+        require(history.execute(document, "Create Player", createPlayer),
                 "tutorial should create and select the Player through editor APIs");
 
-        require(history.execute(
-                    document, "Create Goal",
-                    [](l2d_editor::EditorDocument& editor)
-                    {
-                        return editor.addObject(makeObject("Goal", {256.f, 96.f})).has_value();
-                    }),
+        const auto createGoal = [](l2d_editor::EditorDocument& editor)
+        { return editor.addObject(makeObject("Goal", {256.f, 96.f})).has_value(); };
+        require(history.execute(document, "Create Goal", createGoal),
                 "tutorial should create the Goal through editor APIs");
 
-        require(history.execute(
-                    document, "Move Player",
-                    [playerId](l2d_editor::EditorDocument& editor)
-                    {
-                        const l2d_editor::EditorObjectRecord* player = editor.findObject(playerId);
-                        if (player == nullptr) return false;
-                        l2d::TransformState transform = player->prefab.transform;
-                        transform.position = {96.f, 128.f};
-                        return editor.setObjectTransform(playerId, transform);
-                    }),
+        const auto movePlayer = [playerId](l2d_editor::EditorDocument& editor)
+        {
+            const l2d_editor::EditorObjectRecord* player = editor.findObject(playerId);
+            if (player == nullptr) return false;
+            l2d::TransformState transform = player->prefab.transform;
+            transform.position = {96.f, 128.f};
+            return editor.setObjectTransform(playerId, transform);
+        };
+        require(history.execute(document, "Move Player", movePlayer),
                 "tutorial should edit the Player transform through command history");
 
         require(document.saveToFile(authoredLevel.string()),
