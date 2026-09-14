@@ -72,8 +72,8 @@ namespace
         require(near(snapshot->scaleYHandlePosition, {210.f, 222.f}),
                 "Y scale handle position is incorrect");
 
-        const float diagonal = l2d_editor::ViewportTransformModel::ScaleHandleDistance *
-                               0.70710678118654752440f;
+        const float diagonal =
+            l2d_editor::ViewportTransformModel::ScaleHandleDistance * 0.70710678118654752440f;
         require(near(snapshot->scaleUniformHandlePosition, {210.f + diagonal, 170.f + diagonal}),
                 "uniform scale handle position is incorrect");
 
@@ -190,8 +190,8 @@ namespace
         require(viewport.beginScaleDrag(l2d_editor::ViewportScaleHandle::Uniform,
                                         snapshot->scaleUniformHandlePosition),
                 "uniform scale drag did not begin");
-        const float diagonal = l2d_editor::ViewportTransformModel::ScaleHandleDistance *
-                               0.70710678118654752440f * 2.f;
+        const float diagonal =
+            l2d_editor::ViewportTransformModel::ScaleHandleDistance * 0.70710678118654752440f * 2.f;
         require(viewport.updateScaleDrag(
                     {snapshot->gizmoPosition.x + diagonal, snapshot->gizmoPosition.y + diagonal}),
                 "uniform scale update failed");
@@ -223,8 +223,8 @@ namespace
 
         require(viewport.beginRotationDrag(snapshot->rotationHandlePosition),
                 "cancelled rotation did not begin");
-        require(viewport.updateRotationDrag({snapshot->gizmoPosition.x + 64.f,
-                                             snapshot->gizmoPosition.y}),
+        require(viewport.updateRotationDrag(
+                    {snapshot->gizmoPosition.x + 64.f, snapshot->gizmoPosition.y}),
                 "cancelled rotation update failed");
         require(viewport.cancelActiveDrag(), "active rotation cancellation failed");
         require(near(document.findObject(1u)->prefab.transform.rotation, initial.rotation),

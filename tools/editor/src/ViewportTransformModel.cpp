@@ -30,8 +30,10 @@ namespace l2d_editor
         float wrappedAngleDelta(float current, float previous) noexcept
         {
             float delta = current - previous;
-            while (delta > Pi) delta -= 2.f * Pi;
-            while (delta < -Pi) delta += 2.f * Pi;
+            while (delta > Pi)
+                delta -= 2.f * Pi;
+            while (delta < -Pi)
+                delta += 2.f * Pi;
             return delta;
         }
 
@@ -43,7 +45,8 @@ namespace l2d_editor
 
         bool scaleComponentAllowed(float start, float target) noexcept
         {
-            if (!std::isfinite(target) || std::fabs(target) > ViewportTransformModel::MaximumScaleMagnitude)
+            if (!std::isfinite(target) ||
+                std::fabs(target) > ViewportTransformModel::MaximumScaleMagnitude)
                 return false;
             if (start != 0.f && std::fabs(target) < ViewportTransformModel::MinimumScaleMagnitude)
                 return false;
@@ -318,7 +321,8 @@ namespace l2d_editor
     {
         if (!m_drag || !isFinite(pointerPosition)) return false;
         const ViewportTransformDragKind kind = m_drag->kind;
-        if (kind != ViewportTransformDragKind::ScaleX && kind != ViewportTransformDragKind::ScaleY &&
+        if (kind != ViewportTransformDragKind::ScaleX &&
+            kind != ViewportTransformDragKind::ScaleY &&
             kind != ViewportTransformDragKind::ScaleUniform)
         {
             return false;
@@ -370,7 +374,8 @@ namespace l2d_editor
     {
         if (!m_drag) return false;
         const ViewportTransformDragKind kind = m_drag->kind;
-        if (kind != ViewportTransformDragKind::ScaleX && kind != ViewportTransformDragKind::ScaleY &&
+        if (kind != ViewportTransformDragKind::ScaleX &&
+            kind != ViewportTransformDragKind::ScaleY &&
             kind != ViewportTransformDragKind::ScaleUniform)
         {
             return false;
@@ -382,7 +387,8 @@ namespace l2d_editor
     {
         if (!m_drag) return false;
         const ViewportTransformDragKind kind = m_drag->kind;
-        if (kind != ViewportTransformDragKind::ScaleX && kind != ViewportTransformDragKind::ScaleY &&
+        if (kind != ViewportTransformDragKind::ScaleX &&
+            kind != ViewportTransformDragKind::ScaleY &&
             kind != ViewportTransformDragKind::ScaleUniform)
         {
             return false;
@@ -423,12 +429,14 @@ namespace l2d_editor
         return m_document->findObject(selected);
     }
 
-    sf::Vector2f ViewportTransformModel::gizmoCenter(const EditorObjectRecord& object) const noexcept
+    sf::Vector2f ViewportTransformModel::gizmoCenter(
+        const EditorObjectRecord& object) const noexcept
     {
         return worldToViewport(object.prefab.transform.position);
     }
 
-    sf::Vector2f ViewportTransformModel::rotationHandle(const EditorObjectRecord& object) const noexcept
+    sf::Vector2f ViewportTransformModel::rotationHandle(
+        const EditorObjectRecord& object) const noexcept
     {
         const sf::Vector2f center = gizmoCenter(object);
         return {center.x, center.y - RotationHandleDistance};

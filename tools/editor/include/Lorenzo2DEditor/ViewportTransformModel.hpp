@@ -93,8 +93,7 @@ namespace l2d_editor
         [[nodiscard]] bool endRotationDrag();
         [[nodiscard]] bool cancelRotationDrag();
 
-        [[nodiscard]] bool beginScaleDrag(ViewportScaleHandle handle,
-                                          sf::Vector2f pointerPosition);
+        [[nodiscard]] bool beginScaleDrag(ViewportScaleHandle handle, sf::Vector2f pointerPosition);
         [[nodiscard]] bool updateScaleDrag(sf::Vector2f pointerPosition);
         [[nodiscard]] bool endScaleDrag();
         [[nodiscard]] bool cancelScaleDrag();
