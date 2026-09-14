@@ -1,0 +1,27 @@
+name: Format Diagnostic
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  format-diagnostic:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install pinned formatter
+        run: python3 -m pip install --break-system-packages clang-format==22.1.3
+      - name: Emit canonical formatted files
+        run: |
+          clang-format -i include/Lorenzo2D/Assets/AssetManifest.hpp tests/Lorenzo2DResourceTests.cpp
+          echo '===ASSET_MANIFEST_HPP_BASE64_BEGIN==='
+          base64 -w 0 include/Lorenzo2D/Assets/AssetManifest.hpp
+          echo
+          echo '===ASSET_MANIFEST_HPP_BASE64_END==='
+          echo '===RESOURCE_TESTS_CPP_BASE64_BEGIN==='
+          base64 -w 0 tests/Lorenzo2DResourceTests.cpp
+          echo
+          echo '===RESOURCE_TESTS_CPP_BASE64_END==='
