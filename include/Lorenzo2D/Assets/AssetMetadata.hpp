@@ -86,7 +86,8 @@ namespace l2d
 
         static bool isValidSourcePath(const std::filesystem::path& path) noexcept
         {
-            if (path.empty() || path.is_absolute() || path.has_root_name() || path.has_root_directory())
+            if (path.empty() || path.is_absolute() || path.has_root_name() ||
+                path.has_root_directory())
             {
                 return false;
             }
@@ -101,8 +102,7 @@ namespace l2d
             return true;
         }
 
-        static bool validate(const AssetSourceDescriptor& descriptor,
-                             std::string* error = nullptr)
+        static bool validate(const AssetSourceDescriptor& descriptor, std::string* error = nullptr)
         {
             const auto fail = [error](const char* message) {
                 if (error != nullptr)
