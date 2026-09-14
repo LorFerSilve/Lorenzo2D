@@ -61,27 +61,11 @@ namespace l2d
                 return false;
             }
 
-            for (const unsigned char character : id)
-            {
-                const bool alphaNumeric =
-                    (character >= static_cast<unsigned char>('a') &&
-                     character <= static_cast<unsigned char>('z')) ||
-                    (character >= static_cast<unsigned char>('A') &&
-                     character <= static_cast<unsigned char>('Z')) ||
-                    (character >= static_cast<unsigned char>('0') &&
-                     character <= static_cast<unsigned char>('9'));
-                const bool punctuation = character == static_cast<unsigned char>('_') ||
-                                         character == static_cast<unsigned char>('-') ||
-                                         character == static_cast<unsigned char>('.') ||
-                                         character == static_cast<unsigned char>('/') ||
-                                         character == static_cast<unsigned char>(':');
-                if (!alphaNumeric && !punctuation)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            static constexpr char AllowedCharacters[] =
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                "abcdefghijklmnopqrstuvwxyz"
+                "0123456789_-./:";
+            return id.find_first_not_of(AllowedCharacters) == std::string::npos;
         }
 
         static bool isValidSourcePath(const std::filesystem::path& path) noexcept
