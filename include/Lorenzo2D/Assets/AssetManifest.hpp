@@ -46,8 +46,7 @@ namespace l2d
 
         static bool makeCookRequest(const AssetSourceDescriptor& source,
                                     const std::uint64_t sourceContentHash,
-                                    std::string importerVersion,
-                                    AssetCookRequest& output,
+                                    std::string importerVersion, AssetCookRequest& output,
                                     std::string* error = nullptr)
         {
             std::string validationError;
@@ -69,8 +68,7 @@ namespace l2d
             canonicalize(candidate.source);
             candidate.sourceContentHash = sourceContentHash;
             candidate.importerVersion = std::move(importerVersion);
-            candidate.cookKey = computeCookKey(candidate.source,
-                                               candidate.sourceContentHash,
+            candidate.cookKey = computeCookKey(candidate.source, candidate.sourceContentHash,
                                                candidate.importerVersion);
             output = std::move(candidate);
             clearError(error);
@@ -81,11 +79,8 @@ namespace l2d
         {
             AssetCookRequest request;
             std::string requestError;
-            if (!makeCookRequest(entry.source,
-                                 entry.sourceContentHash,
-                                 entry.importerVersion,
-                                 request,
-                                 &requestError))
+            if (!makeCookRequest(entry.source, entry.sourceContentHash, entry.importerVersion,
+                                 request, &requestError))
             {
                 return fail(error, requestError);
             }
@@ -268,7 +263,8 @@ namespace l2d
                     {
                         return false;
                     }
-                    if (!entry.source.importSettings.emplace(std::move(key), std::move(value)).second)
+                    if (!entry.source.importSettings.emplace(std::move(key), std::move(value))
+                             .second)
                     {
                         return fail(error, "asset manifest contains duplicate import-setting keys");
                     }
@@ -372,9 +368,8 @@ namespace l2d
         {
             for (unsigned int shift = 0; shift < 64u; shift += 8u)
             {
-                hashByte(hash,
-                         static_cast<unsigned char>((value >> shift) &
-                                                    static_cast<std::uint64_t>(0xffu)));
+                hashByte(hash, static_cast<unsigned char>((value >> shift) &
+                                                          static_cast<std::uint64_t>(0xffu)));
             }
         }
 
@@ -423,10 +418,8 @@ namespace l2d
             output.append(value.data(), value.size());
         }
 
-        static bool readField(const std::string_view document,
-                              std::size_t& offset,
-                              std::string_view& output,
-                              std::string* error)
+        static bool readField(const std::string_view document, std::size_t& offset,
+                              std::string_view& output, std::string* error)
         {
             if (offset >= document.size())
             {
@@ -467,10 +460,8 @@ namespace l2d
             return true;
         }
 
-        static bool readString(const std::string_view document,
-                               std::size_t& offset,
-                               std::string& output,
-                               std::string* error)
+        static bool readString(const std::string_view document, std::size_t& offset,
+                               std::string& output, std::string* error)
         {
             std::string_view field;
             if (!readField(document, offset, field, error))
