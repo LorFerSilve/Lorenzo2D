@@ -82,9 +82,12 @@ namespace
         l2d::LevelDocument runtimeLevel;
         require(l2d::LevelSerializer::loadFromFile(authoredLevel.string(), runtimeLevel),
                 "saved tutorial level should be readable by a runtime-only LevelSerializer path");
-        require(runtimeLevel.name == "Phase 13 Tutorial", "runtime level name should match authoring state");
-        require(runtimeLevel.objects.size() == 2u, "runtime level should contain both authored objects");
-        require(runtimeLevel.objects[0].name == "Player" && runtimeLevel.objects[1].name == "Goal",
+        require(runtimeLevel.name == "Phase 13 Tutorial",
+                "runtime level name should match authoring state");
+        require(runtimeLevel.objects.size() == 2u,
+                "runtime level should contain both authored objects");
+        require(runtimeLevel.objects[0].name == "Player" &&
+                    runtimeLevel.objects[1].name == "Goal",
                 "runtime level should preserve authored object order and names");
         require(runtimeLevel.objects[0].transform.position == sf::Vector2f{96.f, 128.f},
                 "runtime level should contain the edited Player transform");
@@ -99,8 +102,9 @@ namespace
         hooks.launch = [&launchObserved](const l2d_editor::PlayTestLaunchRequest& request)
         {
             l2d::LevelDocument launchedLevel;
-            if (!l2d::LevelSerializer::loadFromFile(request.levelSnapshotPath.string(), launchedLevel))
-                return false;
+            const bool loaded = l2d::LevelSerializer::loadFromFile(
+                request.levelSnapshotPath.string(), launchedLevel);
+            if (!loaded) return false;
             if (launchedLevel.name != "Phase 13 Tutorial" || launchedLevel.objects.size() != 2u)
                 return false;
             if (launchedLevel.objects[0].name != "Player" ||
@@ -118,11 +122,13 @@ namespace
 
         require(workflow.start(document, root / "playtest-snapshots", std::move(hooks)),
                 "tutorial should publish the current authoring state to play/test");
-        require(launchObserved, "play/test launcher should observe a runtime-readable authored level");
+        require(launchObserved,
+                "play/test launcher should observe a runtime-readable authored level");
         require(workflow.isActive(), "tutorial play/test session should become active");
         require(workflow.stop(), "tutorial play/test session should stop cleanly");
         require(stopObserved, "tutorial stop hook should be called");
-        require(!workflow.isActive(), "tutorial play/test session should become inactive after stop");
+        require(!workflow.isActive(),
+                "tutorial play/test session should become inactive after stop");
 
         std::error_code error;
         std::filesystem::remove_all(root, error);
