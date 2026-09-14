@@ -219,7 +219,7 @@ namespace
             if (l2d::Input::wasKeyPressed(l2d::Key::Escape))
             {
                 if (m_viewport.isDragging())
-                    stateChanged = m_viewport.cancelTranslationDrag() || stateChanged;
+                    stateChanged = m_viewport.cancelActiveDrag() || stateChanged;
                 else
                     requestClose();
             }
@@ -295,24 +295,72 @@ namespace
 
             if (pointer.dragStarted && !m_viewport.isDragging())
             {
-                if (m_viewport.beginTranslationDrag(pointerPosition(pointer.dragOrigin)))
-                {
-                    changed =
-                        m_viewport.updateTranslationDrag(pointerPosition(pointer.screenPosition)) ||
-                        changed;
-                }
+                const sf::Vector2f origin = pointerPosition(pointer.dragOrigin);
+                bool began = false;
+
+                if (m_viewport.hitTestRotationHandle(origin))
+                    began = m_viewport.beginRotationDrag(origin);
+                else if (m_viewport.hitTestScaleHandle(l2d_editor::ViewportScaleHandle::Uniform,
+                                                       origin))
+                    began =
+                        m_viewport.beginScaleDrag(l2d_editor::ViewportScaleHandle::Uniform, origin);
+                else if (m_viewport.hitTestScaleHandle(l2d_editor::ViewportScaleHandle::X, origin))
+                    began = m_viewport.beginScaleDrag(l2d_editor::ViewportScaleHandle::X, origin);
+                else if (m_viewport.hitTestScaleHandle(l2d_editor::ViewportScaleHandle::Y, origin))
+                    began = m_viewport.beginScaleDrag(l2d_editor::ViewportScaleHandle::Y, origin);
+                else
+                    began = m_viewport.beginTranslationDrag(origin);
+
+                if (began)
+                    changed = updateActiveViewportDrag(pointerPosition(pointer.screenPosition)) ||
+                              changed;
             }
             else if (pointer.dragging && m_viewport.isDragging())
             {
                 changed =
-                    m_viewport.updateTranslationDrag(pointerPosition(pointer.screenPosition)) ||
-                    changed;
+                    updateActiveViewportDrag(pointerPosition(pointer.screenPosition)) || changed;
             }
 
             if (pointer.dragEnded && m_viewport.isDragging())
-                changed = m_viewport.endTranslationDrag() || changed;
+                changed = endActiveViewportDrag() || changed;
 
             return changed;
+        }
+
+        bool updateActiveViewportDrag(sf::Vector2f pointer)
+        {
+            switch (m_viewport.dragKind())
+            {
+            case l2d_editor::ViewportTransformDragKind::Translation:
+                return m_viewport.updateTranslationDrag(pointer);
+            case l2d_editor::ViewportTransformDragKind::Rotation:
+                return m_viewport.updateRotationDrag(pointer);
+            case l2d_editor::ViewportTransformDragKind::ScaleX:
+            case l2d_editor::ViewportTransformDragKind::ScaleY:
+            case l2d_editor::ViewportTransformDragKind::ScaleUniform:
+                return m_viewport.updateScaleDrag(pointer);
+            case l2d_editor::ViewportTransformDragKind::None:
+                return false;
+            }
+            return false;
+        }
+
+        bool endActiveViewportDrag()
+        {
+            switch (m_viewport.dragKind())
+            {
+            case l2d_editor::ViewportTransformDragKind::Translation:
+                return m_viewport.endTranslationDrag();
+            case l2d_editor::ViewportTransformDragKind::Rotation:
+                return m_viewport.endRotationDrag();
+            case l2d_editor::ViewportTransformDragKind::ScaleX:
+            case l2d_editor::ViewportTransformDragKind::ScaleY:
+            case l2d_editor::ViewportTransformDragKind::ScaleUniform:
+                return m_viewport.endScaleDrag();
+            case l2d_editor::ViewportTransformDragKind::None:
+                return false;
+            }
+            return false;
         }
 
         void updateViewportBounds()
@@ -431,22 +479,23 @@ namespace
 
             const auto snapshot = m_viewport.snapshot();
             if (snapshot && insideViewport(snapshot->gizmoPosition))
-                drawTranslationGizmo(window, snapshot->gizmoPosition, snapshot->dragging);
+                drawTransformGizmo(window, *snapshot);
 
             if (m_hasFont)
             {
                 drawText(window, "Viewport",
                          {viewport.position.x + 12.f, viewport.position.y + 10.f}, 18u,
                          sf::Color::White);
-                drawText(window, "Drag the selected center handle to translate",
+                drawText(window, "Drag center, rotation, or scale handles to transform",
                          {viewport.position.x + 12.f, viewport.position.y + 34.f}, 12u,
                          sf::Color(155, 160, 171));
             }
         }
 
-        void drawTranslationGizmo(sf::RenderWindow& window, sf::Vector2f center,
-                                  bool dragging) const
+        void drawTransformGizmo(sf::RenderWindow& window,
+                                const l2d_editor::ViewportTransformSnapshot& snapshot) const
         {
+            const sf::Vector2f center = snapshot.gizmoPosition;
             sf::RectangleShape xAxis({42.f, 3.f});
             xAxis.setOrigin({0.f, 1.5f});
             xAxis.setPosition(center);
@@ -459,12 +508,53 @@ namespace
             yAxis.setFillColor(sf::Color(96, 184, 118));
             window.draw(yAxis);
 
-            constexpr float handleRadius = 8.f;
-            sf::CircleShape handle(handleRadius);
-            handle.setOrigin({handleRadius, handleRadius});
-            handle.setPosition(center);
-            handle.setFillColor(dragging ? sf::Color(245, 210, 105) : sf::Color(105, 160, 235));
-            window.draw(handle);
+            sf::RectangleShape rotationStem(
+                {2.f, l2d_editor::ViewportTransformModel::RotationHandleDistance});
+            rotationStem.setOrigin(
+                {1.f, l2d_editor::ViewportTransformModel::RotationHandleDistance});
+            rotationStem.setPosition(center);
+            rotationStem.setFillColor(sf::Color(174, 118, 210));
+            window.draw(rotationStem);
+
+            constexpr float centerRadius = 8.f;
+            sf::CircleShape centerHandle(centerRadius);
+            centerHandle.setOrigin({centerRadius, centerRadius});
+            centerHandle.setPosition(center);
+            centerHandle.setFillColor(snapshot.dragKind ==
+                                              l2d_editor::ViewportTransformDragKind::Translation
+                                          ? sf::Color(245, 210, 105)
+                                          : sf::Color(105, 160, 235));
+            window.draw(centerHandle);
+
+            constexpr float rotationRadius = 7.f;
+            sf::CircleShape rotationHandle(rotationRadius);
+            rotationHandle.setOrigin({rotationRadius, rotationRadius});
+            rotationHandle.setPosition(snapshot.rotationHandlePosition);
+            rotationHandle.setFillColor(snapshot.dragKind ==
+                                                l2d_editor::ViewportTransformDragKind::Rotation
+                                            ? sf::Color(245, 210, 105)
+                                            : sf::Color(174, 118, 210));
+            window.draw(rotationHandle);
+
+            const auto drawScaleHandle = [&](sf::Vector2f position,
+                                             l2d_editor::ViewportTransformDragKind kind,
+                                             sf::Color color)
+            {
+                constexpr float size = 12.f;
+                sf::RectangleShape handle({size, size});
+                handle.setOrigin({size * 0.5f, size * 0.5f});
+                handle.setPosition(position);
+                handle.setFillColor(snapshot.dragKind == kind ? sf::Color(245, 210, 105) : color);
+                window.draw(handle);
+            };
+
+            drawScaleHandle(snapshot.scaleXHandlePosition,
+                            l2d_editor::ViewportTransformDragKind::ScaleX, sf::Color(205, 92, 92));
+            drawScaleHandle(snapshot.scaleYHandlePosition,
+                            l2d_editor::ViewportTransformDragKind::ScaleY, sf::Color(96, 184, 118));
+            drawScaleHandle(snapshot.scaleUniformHandlePosition,
+                            l2d_editor::ViewportTransformDragKind::ScaleUniform,
+                            sf::Color(105, 160, 235));
         }
 
         bool insideViewport(sf::Vector2f position) const noexcept
