@@ -124,6 +124,24 @@ if(L2D_EDITOR_BUILD_TESTS)
     )
 
     add_executable(
+        Lorenzo2DEditorRotationScaleGizmoTests
+        tests/RotationScaleGizmoTests.cpp
+    )
+    target_compile_features(Lorenzo2DEditorRotationScaleGizmoTests PRIVATE cxx_std_17)
+    target_link_libraries(Lorenzo2DEditorRotationScaleGizmoTests PRIVATE Lorenzo2DEditor::Core)
+    l2d_editor_enable_warnings(Lorenzo2DEditorRotationScaleGizmoTests)
+
+    add_test(
+        NAME Lorenzo2DEditorRotationScaleGizmoTests
+        COMMAND Lorenzo2DEditorRotationScaleGizmoTests
+    )
+    set_tests_properties(
+        Lorenzo2DEditorRotationScaleGizmoTests
+        PROPERTIES
+            TIMEOUT 30
+    )
+
+    add_executable(
         Lorenzo2DEditorAssetBrowserTests
         tests/AssetBrowserTests.cpp
     )
