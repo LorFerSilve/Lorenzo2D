@@ -112,6 +112,7 @@ namespace l2d_editor
             sf::Vector2f pointerStartWorld{0.f, 0.f};
             float previousPointerAngle = 0.f;
             float accumulatedRotation = 0.f;
+            float scaleStartProjection = 1.f;
         };
 
         [[nodiscard]] bool viewportIsValid() const noexcept;
