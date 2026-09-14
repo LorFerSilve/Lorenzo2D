@@ -33,11 +33,20 @@ continuing through the planned Lorenzo2D 2.0 preparation phase.
 
 ### Current post-1.0 implementation pointer
 
-Phase 13 tooling/editor foundation is complete. Slices 13.1 through 13.11 are implemented. The
-final slice adds the end-to-end authoring tutorial and a CI-backed regression that creates, edits,
-saves, runtime-loads, and play/tests a small level without hand-editing JSON; completion evidence is
-recorded in [`phase13-completion.md`](phase13-completion.md). The next roadmap dependency is
-**Phase 14 — Content pipeline 2.0**.
+Phase 13 tooling/editor foundation is complete. Slices 13.1 through 13.11 are implemented, including
+the end-to-end authoring tutorial and CI-backed authoring regression recorded in
+[`phase13-completion.md`](phase13-completion.md).
+
+**Phase 14 — Content pipeline 2.0 is now in progress.** Phase 14.1 establishes stable source-asset
+metadata on top of the existing serialized `AssetId` contract: typed source descriptors,
+project-relative paths, importer/settings metadata, declared dependencies, deterministic registry
+ordering, bounded validation, transactional replacement semantics, headless regression coverage,
+and installed-package consumption. The contract and boundaries are documented in
+[`asset-metadata.md`](asset-metadata.md).
+
+The next Phase 14 dependency is **14.2 — deterministic metadata manifests and import/cook
+contracts**, which can build persistence and cooked-output identity on the 14.1 descriptor model
+without changing runtime `AssetManager` ownership semantics.
 
 ## Phase completion rule
 
