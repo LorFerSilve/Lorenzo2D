@@ -1,4 +1,5 @@
 #include <Lorenzo2D/Assets/AssetManager.hpp>
+#include <Lorenzo2D/Assets/AssetMetadata.hpp>
 #include <Lorenzo2D/Assets/ResourceLocator.hpp>
 
 #include <filesystem>
@@ -36,6 +37,18 @@ namespace
         TemporaryFile m_seed;
         std::filesystem::path m_path;
     };
+
+    l2d::AssetSourceDescriptor textureDescriptor()
+    {
+        l2d::AssetSourceDescriptor descriptor;
+        descriptor.id = "textures/player/body";
+        descriptor.kind = l2d::AssetSourceKind::Texture;
+        descriptor.sourcePath = "textures/player/./body.png";
+        descriptor.importer = "sfml-texture";
+        descriptor.importSettings = {{"filter", "nearest"}, {"smooth", "false"}};
+        descriptor.dependencies = {"materials/player", "atlases/characters"};
+        return descriptor;
+    }
 
     void testResourceLocatorUsesOrderedRuntimeRoots()
     {
@@ -105,6 +118,57 @@ namespace
         const std::filesystem::path executable = current / "bin" / "game";
         L2D_REQUIRE(l2d::ResourceLocator::executableDirectory(executable) == current / "bin");
     }
+
+    void testAssetMetadataValidationAndStableOrdering()
+    {
+        L2D_REQUIRE(l2d::AssetMetadataRegistry::isValidAssetId("textures/player.body-v2"));
+        L2D_REQUIRE(!l2d::AssetMetadataRegistry::isValidAssetId("player body"));
+        L2D_REQUIRE(l2d::AssetMetadataRegistry::isValidSourcePath("textures/player.png"));
+        L2D_REQUIRE(!l2d::AssetMetadataRegistry::isValidSourcePath("../player.png"));
+
+        l2d::AssetMetadataRegistry registry;
+        auto zeta = textureDescriptor();
+        zeta.id = "textures/zeta";
+        auto alpha = textureDescriptor();
+        alpha.id = "textures/alpha";
+
+        L2D_REQUIRE(registry.upsert(zeta));
+        L2D_REQUIRE(registry.upsert(alpha));
+        L2D_REQUIRE(registry.size() == 2u);
+
+        const auto descriptors = registry.descriptors();
+        L2D_REQUIRE(descriptors.size() == 2u);
+        L2D_REQUIRE(descriptors[0].id == "textures/alpha");
+        L2D_REQUIRE(descriptors[1].id == "textures/zeta");
+        L2D_REQUIRE(descriptors[0].sourcePath == std::filesystem::path("textures/player/body.png"));
+        L2D_REQUIRE(descriptors[0].dependencies[0] == "atlases/characters");
+        L2D_REQUIRE(descriptors[0].dependencies[1] == "materials/player");
+    }
+
+    void testAssetMetadataRejectsInvalidReplacementTransactionally()
+    {
+        l2d::AssetMetadataRegistry registry;
+        auto descriptor = textureDescriptor();
+        L2D_REQUIRE(registry.upsert(descriptor));
+
+        std::string error;
+        auto invalid = descriptor;
+        invalid.sourcePath = "../outside-project.png";
+        invalid.importer = "broken";
+        L2D_REQUIRE(!registry.upsert(invalid, &error));
+        L2D_REQUIRE(!error.empty());
+        L2D_REQUIRE(registry.size() == 1u);
+        L2D_REQUIRE(registry.find(descriptor.id) != nullptr);
+        L2D_REQUIRE(registry.find(descriptor.id)->importer == "sfml-texture");
+
+        invalid = descriptor;
+        invalid.dependencies = {descriptor.id};
+        L2D_REQUIRE(!registry.upsert(invalid, &error));
+
+        invalid = descriptor;
+        invalid.dependencies = {"materials/player", "materials/player"};
+        L2D_REQUIRE(!registry.upsert(invalid, &error));
+    }
 }
 
 int main()
@@ -116,6 +180,10 @@ int main()
             testLocatorIntegratesWithTransactionalAssetLoads, failures);
     runTest("resource locator resolves executable directory",
             testExecutableDirectoryHasSafeFallback, failures);
+    runTest("asset metadata validates stable deterministic descriptors",
+            testAssetMetadataValidationAndStableOrdering, failures);
+    runTest("asset metadata rejects invalid replacements transactionally",
+            testAssetMetadataRejectsInvalidReplacementTransactionally, failures);
 
     if (failures != 0)
     {
