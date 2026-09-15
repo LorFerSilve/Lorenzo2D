@@ -40,14 +40,17 @@ the end-to-end authoring tutorial and CI-backed authoring regression recorded in
 **Phase 14 — Content pipeline 2.0 is now in progress.** Phase 14.1 establishes stable source-asset
 metadata on top of the existing serialized `AssetId` contract. Phase 14.2 adds deterministic,
 transactional metadata manifests plus canonical import/cook request identity derived from source
-content, importer versions, settings, dependencies, and project-relative paths. Both slices remain
-CPU-only authoring contracts and do not change runtime `AssetManager` ownership semantics. Their
-boundaries are documented in [`asset-metadata.md`](asset-metadata.md) and
-[`asset-manifest.md`](asset-manifest.md).
+content, importer versions, settings, dependencies, and project-relative paths. Phase 14.3 adds a
+transactional whole-project `AssetBuildGraph` that rejects missing dependencies and cycles and
+computes deterministic dependency-first transitive rebuild invalidation from manifest cook keys.
+These slices remain CPU-only authoring/build contracts and do not change runtime `AssetManager`
+ownership semantics. Their boundaries are documented in [`asset-metadata.md`](asset-metadata.md),
+[`asset-manifest.md`](asset-manifest.md), and [`asset-build-graph.md`](asset-build-graph.md).
 
-The next Phase 14 dependency is **14.3 — project dependency-graph validation and rebuild
-invalidation**, building whole-project completeness/cycle checks and transitive rebuild decisions on
-the 14.1 metadata and 14.2 cook-key/manifest contracts.
+The next Phase 14 dependency is the rebuild-cache/import execution slice that persists successful
+cook state and executes bounded importer/cooker work on top of the validated 14.3 graph. It must
+reuse `AssetManifest` cook identities and `AssetBuildGraph` invalidation rather than introducing a
+parallel asset identity or dependency system.
 
 ## Phase completion rule
 
