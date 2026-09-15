@@ -112,7 +112,8 @@ namespace l2d
                 const auto dependents = m_dependents.find(current);
                 if (dependents != m_dependents.end())
                 {
-                    pending.insert(pending.end(), dependents->second.begin(), dependents->second.end());
+                    pending.insert(pending.end(), dependents->second.begin(),
+                                   dependents->second.end());
                 }
             }
             return {visited.begin(), visited.end()};
@@ -129,10 +130,8 @@ namespace l2d
             return graph.build(manifest, error);
         }
 
-        static bool computeRebuildOrder(const AssetManifest& previous,
-                                        const AssetManifest& current,
-                                        std::vector<AssetId>& output,
-                                        std::string* error = nullptr)
+        static bool computeRebuildOrder(const AssetManifest& previous, const AssetManifest& current,
+                                        std::vector<AssetId>& output, std::string* error = nullptr)
         {
             AssetBuildGraph previousGraph;
             std::string graphError;
