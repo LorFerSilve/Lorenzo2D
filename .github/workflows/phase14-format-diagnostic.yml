@@ -1,0 +1,23 @@
+name: Phase 14 format diagnostic
+
+on:
+  push:
+    branches:
+      - phase-14.3-asset-build-graph
+
+permissions:
+  contents: read
+
+jobs:
+  format-diagnostic:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install pinned formatter
+        run: python3 -m pip install --break-system-packages clang-format==22.1.3
+      - name: Emit canonical formatting diff
+        run: |
+          clang-format -i include/Lorenzo2D/Assets/AssetBuildGraph.hpp tests/consumers/package/asset_metadata.cpp
+          git diff -- include/Lorenzo2D/Assets/AssetBuildGraph.hpp tests/consumers/package/asset_metadata.cpp
+          test -n "$(git status --porcelain -- include/Lorenzo2D/Assets/AssetBuildGraph.hpp tests/consumers/package/asset_metadata.cpp)"
