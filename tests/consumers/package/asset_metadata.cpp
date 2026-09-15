@@ -1,4 +1,5 @@
 #include <Lorenzo2D/Assets/AssetBuildGraph.hpp>
+#include <Lorenzo2D/Assets/AssetCookCache.hpp>
 #include <Lorenzo2D/Assets/AssetManifest.hpp>
 #include <Lorenzo2D/Assets/AssetMetadata.hpp>
 
@@ -142,9 +143,73 @@ int main()
         return 12;
     }
 
+    l2d::AssetCookCache cache;
+    std::vector<l2d::AssetId> callbackOrder;
+    l2d::AssetCookExecutionResult execution;
+    const auto cooker = [&callbackOrder](const l2d::AssetCookRequest& request,
+                                         const std::filesystem::path& cookedPath,
+                                         std::string*)
+    {
+        callbackOrder.push_back(request.source.id);
+        return !cookedPath.empty();
+    };
+
+    if (!l2d::AssetCookExecutor::execute(restored, current, cache, 2u, cooker, execution, &error) ||
+        !error.empty() ||
+        execution.cooked !=
+            std::vector<l2d::AssetId>({"textures/consumer/leaf", "materials/consumer/middle"}) ||
+        execution.remaining != std::vector<l2d::AssetId>({"prefabs/consumer/root"}) ||
+        callbackOrder != execution.cooked || cache.size() != 2u)
+    {
+        return 13;
+    }
+
+    l2d::AssetCookExecutionResult resumed;
+    if (!l2d::AssetCookExecutor::execute(restored, current, cache, 2u, cooker, resumed, &error) ||
+        resumed.cooked != std::vector<l2d::AssetId>({"prefabs/consumer/root"}) ||
+        !resumed.remaining.empty() || cache.size() != 3u)
+    {
+        return 14;
+    }
+
+    const std::string cacheDocument = cache.serialize();
+    l2d::AssetCookCache restoredCache;
+    if (!restoredCache.deserialize(cacheDocument, &error) ||
+        restoredCache.serialize() != cacheDocument ||
+        !restoredCache.contains(changedLeaf.source.id, changedLeaf.cookKey))
+    {
+        return 15;
+    }
+
+    const std::string preservedCache = restoredCache.serialize();
+    if (restoredCache.deserialize("broken", &error) || error.empty() ||
+        restoredCache.serialize() != preservedCache)
+    {
+        return 16;
+    }
+
+    l2d::AssetCookExecutionResult failed = {{"sentinel"}, {"sentinel"}};
+    const auto failingCooker = [](const l2d::AssetCookRequest&, const std::filesystem::path&,
+                                  std::string* cookError)
+    {
+        if (cookError != nullptr)
+        {
+            *cookError = "expected failure";
+        }
+        return false;
+    };
+    l2d::AssetCookCache emptyCache;
+    if (l2d::AssetCookExecutor::execute(restored, current, emptyCache, 3u, failingCooker, failed,
+                                        &error) ||
+        error.empty() || emptyCache.size() != 0u ||
+        failed.cooked != std::vector<l2d::AssetId>({"sentinel"}))
+    {
+        return 17;
+    }
+
     const auto snapshot = registry.descriptors();
     return snapshot.size() == 1u && snapshot.front().id == leafDescriptor.id &&
                    restored.contains(rootDescriptor.id)
                ? 0
-               : 13;
+               : 18;
 }
