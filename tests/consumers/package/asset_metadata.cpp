@@ -148,7 +148,8 @@ int main()
     l2d::AssetCookExecutionResult execution;
     const auto cooker = [&callbackOrder](const l2d::AssetCookRequest& request,
                                          const std::filesystem::path& cookedPath,
-                                         std::string*) {
+                                         std::string*)
+    {
         callbackOrder.push_back(request.source.id);
         return !cookedPath.empty();
     };
@@ -173,7 +174,8 @@ int main()
 
     const std::string cacheDocument = cache.serialize();
     l2d::AssetCookCache restoredCache;
-    if (!restoredCache.deserialize(cacheDocument, &error) || restoredCache.serialize() != cacheDocument ||
+    if (!restoredCache.deserialize(cacheDocument, &error) ||
+        restoredCache.serialize() != cacheDocument ||
         !restoredCache.contains(changedLeaf.source.id, changedLeaf.cookKey))
     {
         return 15;
@@ -188,7 +190,8 @@ int main()
 
     l2d::AssetCookExecutionResult failed = {{"sentinel"}, {"sentinel"}};
     const auto failingCooker = [](const l2d::AssetCookRequest&, const std::filesystem::path&,
-                                  std::string* cookError) {
+                                  std::string* cookError)
+    {
         if (cookError != nullptr)
         {
             *cookError = "expected failure";
