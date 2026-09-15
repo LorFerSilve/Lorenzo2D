@@ -59,8 +59,7 @@ int main()
 
     const auto middleDescriptor =
         descriptor("materials/consumer/middle", {"textures/consumer/leaf"});
-    const auto rootDescriptor =
-        descriptor("prefabs/consumer/root", {"materials/consumer/middle"});
+    const auto rootDescriptor = descriptor("prefabs/consumer/root", {"materials/consumer/middle"});
 
     l2d::AssetManifestEntry leaf;
     l2d::AssetManifestEntry middle;
