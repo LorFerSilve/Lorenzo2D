@@ -153,7 +153,8 @@ namespace l2d
                 {
                     return false;
                 }
-                const auto result = std::from_chars(value.data(), value.data() + value.size(), output);
+                const auto result =
+                    std::from_chars(value.data(), value.data() + value.size(), output);
                 return result.ec == std::errc{} && result.ptr == value.data() + value.size();
             }
 
@@ -222,8 +223,8 @@ namespace l2d
     class AssetCookExecutor
     {
       public:
-        using CookFunction = std::function<bool(const AssetCookRequest&, const std::filesystem::path&,
-                                                std::string*)>;
+        using CookFunction =
+            std::function<bool(const AssetCookRequest&, const std::filesystem::path&, std::string*)>;
 
         static bool execute(const AssetManifest& previous, const AssetManifest& current,
                             AssetCookCache& cache, const std::size_t maxJobs,
