@@ -2,9 +2,11 @@
 
 #include <Lorenzo2D/Assets/AssetBuildGraph.hpp>
 
+#include <algorithm>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <string>
@@ -18,18 +20,36 @@ namespace l2d
     struct AssetCookCacheEntry
     {
         AssetId id;
-        std::uint64_t cookKey = 0;
+        std::uint64_t buildKey = 0;
     };
 
+    // Durable successful-cook state for Phase 14 authoring/build workflows.
+    // Build keys are derived from authoritative AssetManifest data by
+    // AssetCookExecutor; they are not a second asset identity system.
     class AssetCookCache
     {
       public:
         static constexpr std::uint32_t FormatVersion = 1;
-        static constexpr std::size_t MaxCacheBytes = 4u * 1024u * 1024u;
+        // Every cache accepted by record() fits inside this persistence envelope:
+        // MaxAssets * (max AssetId + decimal build key + framing) is below 16 MiB.
+        static constexpr std::size_t MaxCacheBytes = 16u * 1024u * 1024u;
 
-        void record(const AssetId& id, const std::uint64_t cookKey)
+        bool record(const AssetId& id, const std::uint64_t buildKey,
+                    std::string* error = nullptr)
         {
-            m_entries.insert_or_assign(id, cookKey);
+            if (!AssetMetadataRegistry::isValidAssetId(id))
+            {
+                return fail(error, "asset cook cache id is invalid");
+            }
+            if (m_entries.find(id) == m_entries.end() &&
+                m_entries.size() >= AssetMetadataRegistry::MaxAssets)
+            {
+                return fail(error, "asset cook cache reached its configured entry limit");
+            }
+
+            m_entries.insert_or_assign(id, buildKey);
+            clearError(error);
+            return true;
         }
 
         bool erase(const AssetId& id)
@@ -37,15 +57,30 @@ namespace l2d
             return m_entries.erase(id) != 0u;
         }
 
+        void pruneToManifest(const AssetManifest& manifest)
+        {
+            for (auto entry = m_entries.begin(); entry != m_entries.end();)
+            {
+                if (!manifest.contains(entry->first))
+                {
+                    entry = m_entries.erase(entry);
+                }
+                else
+                {
+                    ++entry;
+                }
+            }
+        }
+
         void clear() noexcept
         {
             m_entries.clear();
         }
 
-        bool contains(const AssetId& id, const std::uint64_t cookKey) const noexcept
+        bool contains(const AssetId& id, const std::uint64_t buildKey) const noexcept
         {
             const auto found = m_entries.find(id);
-            return found != m_entries.end() && found->second == cookKey;
+            return found != m_entries.end() && found->second == buildKey;
         }
 
         std::size_t size() const noexcept
@@ -106,8 +141,9 @@ namespace l2d
             for (std::uint64_t index = 0; index < count; ++index)
             {
                 std::string id;
-                std::uint64_t cookKey = 0;
-                if (!reader.sizedString(id) || id.empty() || !reader.unsignedLine(cookKey))
+                std::uint64_t buildKey = 0;
+                if (!reader.sizedString(id) || !AssetMetadataRegistry::isValidAssetId(id) ||
+                    !reader.unsignedLine(buildKey))
                 {
                     return fail(error, "asset cook cache entry is malformed");
                 }
@@ -115,7 +151,7 @@ namespace l2d
                 {
                     return fail(error, "asset cook cache contains a duplicate asset id");
                 }
-                candidate.m_entries.emplace(std::move(id), cookKey);
+                candidate.m_entries.emplace(std::move(id), buildKey);
             }
 
             if (!reader.finished())
@@ -223,8 +259,8 @@ namespace l2d
     class AssetCookExecutor
     {
       public:
-        using CookFunction =
-            std::function<bool(const AssetCookRequest&, const std::filesystem::path&, std::string*)>;
+        using CookFunction = std::function<
+            bool(const AssetCookRequest&, const std::filesystem::path&, std::string*)>;
 
         static bool execute(const AssetManifest& previous, const AssetManifest& current,
                             AssetCookCache& cache, const std::size_t maxJobs,
@@ -243,15 +279,26 @@ namespace l2d
                 return fail(error, graphError);
             }
 
+            std::map<AssetId, std::uint64_t> buildKeys;
+            if (!computeBuildKeys(current, buildKeys, &graphError))
+            {
+                return fail(error, graphError);
+            }
+
+            // Removed assets have no current cook target and must not accumulate forever.
+            cache.pruneToManifest(current);
+
             AssetCookExecutionResult candidate;
             for (const auto& id : rebuildOrder)
             {
                 const auto* entry = current.find(id);
-                if (entry == nullptr)
+                const auto buildKey = buildKeys.find(id);
+                if (entry == nullptr || buildKey == buildKeys.end())
                 {
-                    return fail(error, "rebuild plan references an asset missing from the manifest");
+                    return fail(
+                        error, "rebuild plan references an asset missing from the manifest");
                 }
-                if (cache.contains(id, entry->cookKey))
+                if (cache.contains(id, buildKey->second))
                 {
                     continue;
                 }
@@ -273,7 +320,10 @@ namespace l2d
                 {
                     return fail(error, "asset '" + id + "' cook failed: " + cookError);
                 }
-                cache.record(id, entry->cookKey);
+                if (!cache.record(id, buildKey->second, error))
+                {
+                    return false;
+                }
                 candidate.cooked.push_back(id);
             }
 
@@ -283,6 +333,82 @@ namespace l2d
         }
 
       private:
+        static constexpr std::uint64_t FnvOffset = 14695981039346656037ull;
+        static constexpr std::uint64_t FnvPrime = 1099511628211ull;
+
+        static void hashByte(std::uint64_t& hash, const unsigned char value) noexcept
+        {
+            hash ^= static_cast<std::uint64_t>(value);
+            hash *= FnvPrime;
+        }
+
+        static void hashUint64(std::uint64_t& hash, const std::uint64_t value) noexcept
+        {
+            for (unsigned int shift = 0; shift < 64u; shift += 8u)
+            {
+                hashByte(hash, static_cast<unsigned char>((value >> shift) &
+                                                          static_cast<std::uint64_t>(0xffu)));
+            }
+        }
+
+        static void hashString(std::uint64_t& hash, const std::string_view value) noexcept
+        {
+            hashUint64(hash, static_cast<std::uint64_t>(value.size()));
+            for (const char character : value)
+            {
+                hashByte(hash, static_cast<unsigned char>(character));
+            }
+        }
+
+        static bool computeBuildKeys(const AssetManifest& manifest,
+                                     std::map<AssetId, std::uint64_t>& output,
+                                     std::string* error = nullptr)
+        {
+            AssetBuildGraph graph;
+            std::string graphError;
+            if (!graph.build(manifest, &graphError))
+            {
+                return fail(error, graphError);
+            }
+
+            std::map<AssetId, std::uint64_t> candidate;
+            for (const auto& id : graph.topologicalOrder())
+            {
+                const auto* entry = manifest.find(id);
+                if (entry == nullptr)
+                {
+                    return fail(error, "asset build graph references a missing manifest entry");
+                }
+
+                std::uint64_t hash = FnvOffset;
+                hashString(hash, "L2D-ASSET-BUILD-KEY-V1");
+                hashString(hash, id);
+                hashUint64(hash, entry->cookKey);
+                hashString(hash, entry->cookedPath.lexically_normal().generic_string());
+
+                std::vector<AssetId> dependencies = entry->source.dependencies;
+                std::sort(dependencies.begin(), dependencies.end());
+                hashUint64(hash, static_cast<std::uint64_t>(dependencies.size()));
+                for (const auto& dependency : dependencies)
+                {
+                    const auto dependencyKey = candidate.find(dependency);
+                    if (dependencyKey == candidate.end())
+                    {
+                        return fail(error,
+                                    "asset build key references an unresolved dependency '" +
+                                        dependency + "'");
+                    }
+                    hashString(hash, dependency);
+                    hashUint64(hash, dependencyKey->second);
+                }
+                candidate.emplace(id, hash);
+            }
+
+            output = std::move(candidate);
+            clearError(error);
+            return true;
+        }
+
         static void clearError(std::string* error)
         {
             if (error != nullptr)
