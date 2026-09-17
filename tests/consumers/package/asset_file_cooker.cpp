@@ -205,6 +205,36 @@ int main()
         return 17;
     }
 
+    filesystemError.clear();
+    if (!std::filesystem::create_directories(projectRoot / "blocked/player.png", filesystemError) ||
+        filesystemError)
+    {
+        return 18;
+    }
+
+    l2d::AssetManifestEntry blockedEntry;
+    if (!cooker.makeManifestEntry(texture, "blocked/player.png", blockedEntry, &error))
+    {
+        return 19;
+    }
+    l2d::AssetManifest blockedManifest;
+    if (!blockedManifest.upsert(blockedEntry, &error))
+    {
+        return 20;
+    }
+
+    l2d::AssetCookCache blockedCache;
+    l2d::AssetCookExecutionResult blockedResult = {{"sentinel"}, {"sentinel"}};
+    if (l2d::AssetCookExecutor::execute(previous, blockedManifest, blockedCache, 1u,
+                                        cooker.cookFunction(), blockedResult, &error) ||
+        error.find("regular file") == std::string::npos || blockedCache.size() != 0u ||
+        blockedResult.cooked != std::vector<l2d::AssetId>({"sentinel"}) ||
+        !std::filesystem::is_directory(projectRoot / "blocked/player.png", filesystemError) ||
+        filesystemError)
+    {
+        return 21;
+    }
+
     std::filesystem::remove_all(projectRoot, filesystemError);
-    return filesystemError ? 18 : 0;
+    return filesystemError ? 22 : 0;
 }
