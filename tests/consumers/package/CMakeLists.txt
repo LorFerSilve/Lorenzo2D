@@ -20,6 +20,12 @@ target_link_libraries(
     PRIVATE Lorenzo2D::Lorenzo2D
 )
 
+add_executable(Lorenzo2DAssetFileCookerPackageConsumer asset_file_cooker.cpp)
+target_link_libraries(
+    Lorenzo2DAssetFileCookerPackageConsumer
+    PRIVATE Lorenzo2D::Lorenzo2D
+)
+
 include(CTest)
 add_test(
     NAME Lorenzo2DPackageConsumer
@@ -28,4 +34,8 @@ add_test(
 add_test(
     NAME Lorenzo2DAssetMetadataPackageConsumer
     COMMAND Lorenzo2DAssetMetadataPackageConsumer
+)
+add_test(
+    NAME Lorenzo2DAssetFileCookerPackageConsumer
+    COMMAND Lorenzo2DAssetFileCookerPackageConsumer
 )
