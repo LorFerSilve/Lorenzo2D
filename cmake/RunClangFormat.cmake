@@ -44,6 +44,24 @@ foreach(l2d_file IN LISTS l2d_format_files)
 
     if(NOT l2d_result EQUAL 0)
         list(APPEND l2d_format_failures "${l2d_file}")
+        if(L2D_FORMAT_MODE STREQUAL "check")
+            execute_process(
+                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" "${l2d_file}"
+                OUTPUT_VARIABLE l2d_formatted
+                RESULT_VARIABLE l2d_format_result
+            )
+            if(l2d_format_result EQUAL 0)
+                set(l2d_temp_file "/tmp/l2d-clang-format-output.tmp")
+                file(WRITE "${l2d_temp_file}" "${l2d_formatted}")
+                execute_process(
+                    COMMAND git diff --no-index -- "${l2d_file}" "${l2d_temp_file}"
+                    OUTPUT_VARIABLE l2d_diff
+                    ERROR_VARIABLE l2d_diff_error
+                    RESULT_VARIABLE l2d_diff_result
+                )
+                message("Canonical clang-format diff for ${l2d_file}:\n${l2d_diff}${l2d_diff_error}")
+            endif()
+        endif()
     endif()
 endforeach()
 
