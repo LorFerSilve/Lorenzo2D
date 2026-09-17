@@ -515,14 +515,20 @@ namespace l2d
             for (const auto& component : parent)
             {
                 current /= component;
-                const auto status = std::filesystem::symlink_status(current, ec);
+                const bool exists = std::filesystem::exists(current, ec);
                 if (ec)
                 {
                     return fail(error,
                                 "asset cooker could not inspect the cooked artifact directory");
                 }
-                if (std::filesystem::exists(status))
+                if (exists)
                 {
+                    const auto status = std::filesystem::symlink_status(current, ec);
+                    if (ec)
+                    {
+                        return fail(
+                            error, "asset cooker could not inspect the cooked artifact directory");
+                    }
                     if (std::filesystem::is_symlink(status) ||
                         !std::filesystem::is_directory(status))
                     {
@@ -539,14 +545,20 @@ namespace l2d
             }
 
             const auto destination = current / relative.filename();
-            const auto status = std::filesystem::symlink_status(destination, ec);
+            const bool destinationExists = std::filesystem::exists(destination, ec);
             if (ec)
             {
                 return fail(error,
                             "asset cooker could not inspect the cooked artifact destination");
             }
-            if (std::filesystem::exists(status))
+            if (destinationExists)
             {
+                const auto status = std::filesystem::symlink_status(destination, ec);
+                if (ec)
+                {
+                    return fail(error,
+                                "asset cooker could not inspect the cooked artifact destination");
+                }
                 if (std::filesystem::is_symlink(status))
                 {
                     return fail(error, "cooked artifact destination cannot be a symlink");
