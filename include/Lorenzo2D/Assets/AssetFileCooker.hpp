@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <limits>
 #include <string>
 #include <string_view>
@@ -538,9 +539,17 @@ namespace l2d
             {
                 return fail(error, "asset cooker could not inspect the cooked artifact destination");
             }
-            if (std::filesystem::exists(status) && std::filesystem::is_symlink(status))
+            if (std::filesystem::exists(status))
             {
-                return fail(error, "cooked artifact destination cannot be a symlink");
+                if (std::filesystem::is_symlink(status))
+                {
+                    return fail(error, "cooked artifact destination cannot be a symlink");
+                }
+                if (!std::filesystem::is_regular_file(status))
+                {
+                    return fail(error,
+                                "existing cooked artifact destination must be a regular file");
+                }
             }
             output = destination;
             clearError(error);
