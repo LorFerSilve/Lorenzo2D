@@ -44,16 +44,19 @@ content, importer versions, settings, dependencies, and project-relative paths. 
 transactional whole-project `AssetBuildGraph` that rejects missing dependencies and cycles and
 computes deterministic dependency-first transitive rebuild invalidation from manifest cook keys.
 Phase 14.4 adds a deterministic, transactional successful-cook cache and bounded importer/cooker
-execution that consumes those canonical manifest identities and graph invalidation results. These
-slices remain CPU-only authoring/build contracts and do not change runtime `AssetManager` ownership
-semantics. Their boundaries are documented in [`asset-metadata.md`](asset-metadata.md),
-[`asset-manifest.md`](asset-manifest.md), [`asset-build-graph.md`](asset-build-graph.md), and
-[`asset-cook-execution.md`](asset-cook-execution.md).
+execution that consumes those canonical manifest identities and graph invalidation results. Phase
+14.5 adds concrete runtime-native file importers for common texture, font, sound, and shader source
+formats, canonical source-file hashing, stale-source rejection, staged artifact validation, and
+transactional cooked-file publication. These slices remain authoring/build contracts and do not
+change runtime `AssetManager` ownership semantics. Their boundaries are documented in
+[`asset-metadata.md`](asset-metadata.md), [`asset-manifest.md`](asset-manifest.md),
+[`asset-build-graph.md`](asset-build-graph.md), [`asset-cook-execution.md`](asset-cook-execution.md),
+and [`asset-file-cooker.md`](asset-file-cooker.md).
 
-The next Phase 14 dependency is the concrete importer/cooked-artifact integration slice. It should
-connect supported source formats to the bounded Phase 14.4 execution contract, validate produced
-artifacts before publication, and continue to reuse `AssetManifest`, `AssetBuildGraph`, and
-`AssetCookCache` rather than introducing parallel identity, dependency, or cache systems.
+The next Phase 14 dependency is the texture-atlas generation slice. It should build deterministic
+atlas artifacts and stable region metadata on top of the canonical manifest, graph, cache, and
+Phase 14.5 publication contracts rather than introducing separate source identity or invalidation
+state.
 
 ## Phase completion rule
 
