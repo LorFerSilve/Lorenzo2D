@@ -145,8 +145,7 @@ int main()
 
     std::vector<l2d::AssetId> callbackOrder;
     const auto cooker = [&callbackOrder](const l2d::AssetCookRequest& request,
-                                         const std::filesystem::path& cookedPath,
-                                         std::string*)
+                                         const std::filesystem::path& cookedPath, std::string*)
     {
         callbackOrder.push_back(request.source.id);
         return !cookedPath.empty();
@@ -188,8 +187,8 @@ int main()
     }
 
     l2d::AssetCookExecutionResult failed = {{"sentinel"}, {"sentinel"}};
-    const auto failingCooker = [](const l2d::AssetCookRequest&, const std::filesystem::path&,
-                                  std::string* cookError)
+    const auto failingCooker =
+        [](const l2d::AssetCookRequest&, const std::filesystem::path&, std::string* cookError)
     {
         if (cookError != nullptr)
         {
