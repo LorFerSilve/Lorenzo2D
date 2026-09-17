@@ -44,10 +44,25 @@ foreach(l2d_file IN LISTS l2d_format_files)
 
     if(NOT l2d_result EQUAL 0)
         list(APPEND l2d_format_failures "${l2d_file}")
+        if(L2D_FORMAT_MODE STREQUAL "check")
+            execute_process(
+                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" -i "${l2d_file}"
+                RESULT_VARIABLE l2d_write_result
+            )
+        endif()
     endif()
 endforeach()
 
 if(l2d_format_failures)
+    if(L2D_FORMAT_MODE STREQUAL "check")
+        execute_process(
+            COMMAND git -C "${L2D_SOURCE_DIR}" diff --
+                include/Lorenzo2D/Assets/AssetCookCache.hpp
+                tests/consumers/package/asset_metadata.cpp
+            OUTPUT_VARIABLE l2d_format_diff
+        )
+        message("Canonical clang-format diff:\n${l2d_format_diff}")
+    endif()
     list(JOIN l2d_format_failures "\n  " l2d_failure_list)
     message(FATAL_ERROR "clang-format failed for:\n  ${l2d_failure_list}")
 endif()
