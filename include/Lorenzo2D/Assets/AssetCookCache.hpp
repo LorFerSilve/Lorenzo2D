@@ -34,8 +34,7 @@ namespace l2d
         // MaxAssets * (max AssetId + decimal build key + framing) is below 16 MiB.
         static constexpr std::size_t MaxCacheBytes = 16u * 1024u * 1024u;
 
-        bool record(const AssetId& id, const std::uint64_t buildKey,
-                    std::string* error = nullptr)
+        bool record(const AssetId& id, const std::uint64_t buildKey, std::string* error = nullptr)
         {
             if (!AssetMetadataRegistry::isValidAssetId(id))
             {
@@ -259,8 +258,8 @@ namespace l2d
     class AssetCookExecutor
     {
       public:
-        using CookFunction = std::function<
-            bool(const AssetCookRequest&, const std::filesystem::path&, std::string*)>;
+        using CookFunction = std::function<bool(const AssetCookRequest&,
+                                                const std::filesystem::path&, std::string*)>;
 
         static bool execute(const AssetManifest& previous, const AssetManifest& current,
                             AssetCookCache& cache, const std::size_t maxJobs,
@@ -295,8 +294,8 @@ namespace l2d
                 const auto buildKey = buildKeys.find(id);
                 if (entry == nullptr || buildKey == buildKeys.end())
                 {
-                    return fail(
-                        error, "rebuild plan references an asset missing from the manifest");
+                    return fail(error,
+                                "rebuild plan references an asset missing from the manifest");
                 }
                 if (cache.contains(id, buildKey->second))
                 {
@@ -394,9 +393,8 @@ namespace l2d
                     const auto dependencyKey = candidate.find(dependency);
                     if (dependencyKey == candidate.end())
                     {
-                        return fail(error,
-                                    "asset build key references an unresolved dependency '" +
-                                        dependency + "'");
+                        return fail(error, "asset build key references an unresolved dependency '" +
+                                               dependency + "'");
                     }
                     hashString(hash, dependency);
                     hashUint64(hash, dependencyKey->second);
