@@ -82,9 +82,8 @@ int main()
     }
 
     const std::vector<unsigned char> pngBytes = {
-        0x89u, 0x50u, 0x4eu, 0x47u, 0x0du, 0x0au, 0x1au, 0x0au,
-        0x00u, 0x00u, 0x00u, 0x0du, 'I',   'H',   'D',   'R',
-        0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x01u};
+        0x89u, 0x50u, 0x4eu, 0x47u, 0x0du, 0x0au, 0x1au, 0x0au, 0x00u, 0x00u, 0x00u, 0x0du,
+        'I',   'H',   'D',   'R',   0x00u, 0x00u, 0x00u, 0x01u, 0x00u, 0x00u, 0x00u, 0x01u};
     const std::string shaderText = "#version 330 core\nvoid main() {}\n";
     if (!writeBytes(projectRoot / "sources/player.png", pngBytes) ||
         !writeText(projectRoot / "sources/basic.frag", shaderText))
@@ -144,8 +143,8 @@ int main()
     }
 
     l2d::AssetCookExecutionResult cached;
-    if (!l2d::AssetCookExecutor::execute(previous, current, cache, 2u, cooker.cookFunction(), cached,
-                                         &error) ||
+    if (!l2d::AssetCookExecutor::execute(previous, current, cache, 2u, cooker.cookFunction(),
+                                         cached, &error) ||
         !cached.cooked.empty() || !cached.remaining.empty() || cache.size() != 2u)
     {
         return 10;
@@ -183,8 +182,8 @@ int main()
     malformed.sourcePath = "sources/bad.png";
     l2d::AssetManifestEntry preserved;
     preserved.source.id = "sentinel";
-    if (cooker.makeManifestEntry(malformed, "cooked/bad.png", preserved, &error) ||
-        error.empty() || preserved.source.id != "sentinel")
+    if (cooker.makeManifestEntry(malformed, "cooked/bad.png", preserved, &error) || error.empty() ||
+        preserved.source.id != "sentinel")
     {
         return 15;
     }
@@ -199,7 +198,8 @@ int main()
     auto wrongImporter = shader;
     wrongImporter.id = "shaders/phase14/unsupported";
     wrongImporter.importer = "custom.unknown";
-    if (cooker.makeManifestEntry(wrongImporter, "cooked/unsupported.frag", wrongExtension, &error) ||
+    if (cooker.makeManifestEntry(wrongImporter, "cooked/unsupported.frag", wrongExtension,
+                                 &error) ||
         error.find("unsupported") == std::string::npos)
     {
         return 17;
