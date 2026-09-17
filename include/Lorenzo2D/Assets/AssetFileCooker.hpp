@@ -50,8 +50,8 @@ namespace l2d
         }
 
         bool makeManifestEntry(const AssetSourceDescriptor& source,
-                               const std::filesystem::path& cookedPath,
-                               AssetManifestEntry& output, std::string* error = nullptr) const
+                               const std::filesystem::path& cookedPath, AssetManifestEntry& output,
+                               std::string* error = nullptr) const
         {
             std::vector<unsigned char> bytes;
             if (!readAndValidateSource(source, bytes, error))
@@ -64,8 +64,8 @@ namespace l2d
             }
 
             AssetCookRequest request;
-            if (!AssetManifest::makeCookRequest(source, hashBytes(bytes),
-                                                std::string(BuiltInImporterVersion), request, error))
+            if (!AssetManifest::makeCookRequest(
+                    source, hashBytes(bytes), std::string(BuiltInImporterVersion), request, error))
             {
                 return false;
             }
@@ -185,9 +185,7 @@ namespace l2d
             const auto root = m_projectRoot;
             return [root](const AssetCookRequest& request, const std::filesystem::path& cookedPath,
                           std::string* error)
-            {
-                return AssetFileCooker(root).cook(request, cookedPath, error);
-            };
+            { return AssetFileCooker(root).cook(request, cookedPath, error); };
         }
 
       private:
@@ -203,8 +201,9 @@ namespace l2d
         static std::string lowercaseExtension(const std::filesystem::path& path)
         {
             std::string extension = path.extension().string();
-            std::transform(extension.begin(), extension.end(), extension.begin(), [](const char value)
-                           { return static_cast<char>(std::tolower(static_cast<unsigned char>(value))); });
+            std::transform(
+                extension.begin(), extension.end(), extension.begin(), [](const char value)
+                { return static_cast<char>(std::tolower(static_cast<unsigned char>(value))); });
             return extension;
         }
 
@@ -313,8 +312,9 @@ namespace l2d
             if (!AssetMetadataRegistry::isValidSourcePath(cookedPath) ||
                 cookedPath.generic_string().size() > AssetManifest::MaxPortablePathLength)
             {
-                return fail(error,
-                            "cooked artifact path must be a bounded project-relative path without '..'");
+                return fail(
+                    error,
+                    "cooked artifact path must be a bounded project-relative path without '..'");
             }
             if (lowercaseExtension(source.sourcePath) != lowercaseExtension(cookedPath))
             {
@@ -434,8 +434,7 @@ namespace l2d
             return hash;
         }
 
-        bool canonicalProjectRoot(std::filesystem::path& output,
-                                  std::string* error = nullptr) const
+        bool canonicalProjectRoot(std::filesystem::path& output, std::string* error = nullptr) const
         {
             if (m_projectRoot.empty())
             {
@@ -489,18 +488,20 @@ namespace l2d
 
             std::error_code ec;
             const auto candidate = std::filesystem::canonical(root / relative, ec);
-            if (ec || !isWithin(root, candidate) || !std::filesystem::is_regular_file(candidate, ec) ||
-                ec)
+            if (ec || !isWithin(root, candidate) ||
+                !std::filesystem::is_regular_file(candidate, ec) || ec)
             {
-                return fail(error, "asset source does not resolve to a regular file inside the project root");
+                return fail(
+                    error,
+                    "asset source does not resolve to a regular file inside the project root");
             }
             output = candidate;
             clearError(error);
             return true;
         }
 
-        bool prepareDestination(const std::filesystem::path& relative, std::filesystem::path& output,
-                                std::string* error = nullptr) const
+        bool prepareDestination(const std::filesystem::path& relative,
+                                std::filesystem::path& output, std::string* error = nullptr) const
         {
             std::filesystem::path root;
             if (!canonicalProjectRoot(root, error))
@@ -517,19 +518,23 @@ namespace l2d
                 const auto status = std::filesystem::symlink_status(current, ec);
                 if (ec)
                 {
-                    return fail(error, "asset cooker could not inspect the cooked artifact directory");
+                    return fail(error,
+                                "asset cooker could not inspect the cooked artifact directory");
                 }
                 if (std::filesystem::exists(status))
                 {
-                    if (std::filesystem::is_symlink(status) || !std::filesystem::is_directory(status))
+                    if (std::filesystem::is_symlink(status) ||
+                        !std::filesystem::is_directory(status))
                     {
-                        return fail(error,
-                                    "cooked artifact path crosses a symlink or non-directory component");
+                        return fail(
+                            error,
+                            "cooked artifact path crosses a symlink or non-directory component");
                     }
                 }
                 else if (!std::filesystem::create_directory(current, ec) || ec)
                 {
-                    return fail(error, "asset cooker could not create the cooked artifact directory");
+                    return fail(error,
+                                "asset cooker could not create the cooked artifact directory");
                 }
             }
 
@@ -537,7 +542,8 @@ namespace l2d
             const auto status = std::filesystem::symlink_status(destination, ec);
             if (ec)
             {
-                return fail(error, "asset cooker could not inspect the cooked artifact destination");
+                return fail(error,
+                            "asset cooker could not inspect the cooked artifact destination");
             }
             if (std::filesystem::exists(status))
             {
@@ -589,8 +595,7 @@ namespace l2d
         }
 
         static bool writeFile(const std::filesystem::path& path,
-                              const std::vector<unsigned char>& bytes,
-                              std::string* error = nullptr)
+                              const std::vector<unsigned char>& bytes, std::string* error = nullptr)
         {
             std::ofstream stream(path, std::ios::binary | std::ios::trunc);
             if (!stream)
@@ -621,7 +626,8 @@ namespace l2d
             const bool backupExists = std::filesystem::exists(backup, ec);
             if (ec)
             {
-                return fail(error, "asset cooker could not inspect an interrupted publication backup");
+                return fail(error,
+                            "asset cooker could not inspect an interrupted publication backup");
             }
             if (!backupExists)
             {
@@ -632,7 +638,8 @@ namespace l2d
             const bool destinationExists = std::filesystem::exists(destination, ec);
             if (ec)
             {
-                return fail(error, "asset cooker could not inspect the cooked artifact destination");
+                return fail(error,
+                            "asset cooker could not inspect the cooked artifact destination");
             }
             if (destinationExists)
             {
@@ -656,8 +663,7 @@ namespace l2d
 
         static bool publish(const std::filesystem::path& destination,
                             const std::filesystem::path& staged,
-                            const std::filesystem::path& backup,
-                            std::string* error = nullptr)
+                            const std::filesystem::path& backup, std::string* error = nullptr)
         {
             std::error_code ec;
             const bool hadDestination = std::filesystem::exists(destination, ec);
