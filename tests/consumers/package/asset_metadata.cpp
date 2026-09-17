@@ -1,4 +1,5 @@
 #include <Lorenzo2D/Assets/AssetBuildGraph.hpp>
+#include <Lorenzo2D/Assets/AssetCookCache.hpp>
 #include <Lorenzo2D/Assets/AssetManifest.hpp>
 #include <Lorenzo2D/Assets/AssetMetadata.hpp>
 
@@ -142,9 +143,143 @@ int main()
         return 12;
     }
 
+    std::vector<l2d::AssetId> callbackOrder;
+    const auto cooker = [&callbackOrder](const l2d::AssetCookRequest& request,
+                                         const std::filesystem::path& cookedPath, std::string*)
+    {
+        callbackOrder.push_back(request.source.id);
+        return !cookedPath.empty();
+    };
+
+    l2d::AssetCookCache cache;
+    l2d::AssetCookExecutionResult execution;
+    if (!l2d::AssetCookExecutor::execute(restored, current, cache, 2u, cooker, execution, &error) ||
+        !error.empty() ||
+        execution.cooked !=
+            std::vector<l2d::AssetId>({"textures/consumer/leaf", "materials/consumer/middle"}) ||
+        execution.remaining != std::vector<l2d::AssetId>({"prefabs/consumer/root"}) ||
+        callbackOrder != execution.cooked || cache.size() != 2u)
+    {
+        return 13;
+    }
+
+    l2d::AssetCookExecutionResult resumed;
+    if (!l2d::AssetCookExecutor::execute(restored, current, cache, 2u, cooker, resumed, &error) ||
+        resumed.cooked != std::vector<l2d::AssetId>({"prefabs/consumer/root"}) ||
+        !resumed.remaining.empty() || cache.size() != 3u)
+    {
+        return 14;
+    }
+
+    const std::string cacheDocument = cache.serialize();
+    l2d::AssetCookCache restoredCache;
+    if (!restoredCache.deserialize(cacheDocument, &error) ||
+        restoredCache.serialize() != cacheDocument || restoredCache.size() != 3u)
+    {
+        return 15;
+    }
+
+    const std::string preservedCache = restoredCache.serialize();
+    if (restoredCache.deserialize("broken", &error) || error.empty() ||
+        restoredCache.serialize() != preservedCache)
+    {
+        return 16;
+    }
+
+    l2d::AssetCookExecutionResult failed = {{"sentinel"}, {"sentinel"}};
+    const auto failingCooker =
+        [](const l2d::AssetCookRequest&, const std::filesystem::path&, std::string* cookError)
+    {
+        if (cookError != nullptr)
+        {
+            *cookError = "expected failure";
+        }
+        return false;
+    };
+    l2d::AssetCookCache emptyCache;
+    if (l2d::AssetCookExecutor::execute(restored, current, emptyCache, 3u, failingCooker, failed,
+                                        &error) ||
+        error.empty() || emptyCache.size() != 0u ||
+        failed.cooked != std::vector<l2d::AssetId>({"sentinel"}))
+    {
+        return 17;
+    }
+
+    // A cache produced for the previous manifest must not suppress graph-invalidated dependents.
+    l2d::AssetManifest emptyManifest;
+    l2d::AssetCookCache previousBuildCache;
+    l2d::AssetCookExecutionResult previousBuild;
+    callbackOrder.clear();
+    if (!l2d::AssetCookExecutor::execute(emptyManifest, restored, previousBuildCache, 3u, cooker,
+                                         previousBuild, &error) ||
+        previousBuild.cooked != expectedOrder || !previousBuild.remaining.empty() ||
+        callbackOrder != expectedOrder || previousBuildCache.size() != 3u)
+    {
+        return 18;
+    }
+
+    if (!previousBuildCache.record("obsolete/cache-entry", 7u, &error) || !error.empty() ||
+        previousBuildCache.size() != 4u)
+    {
+        return 19;
+    }
+
+    l2d::AssetCookExecutionResult invalidatedBuild;
+    callbackOrder.clear();
+    if (!l2d::AssetCookExecutor::execute(restored, current, previousBuildCache, 3u, cooker,
+                                         invalidatedBuild, &error) ||
+        invalidatedBuild.cooked != expectedOrder || !invalidatedBuild.remaining.empty() ||
+        callbackOrder != expectedOrder || previousBuildCache.size() != 3u)
+    {
+        return 20;
+    }
+
+    // Output-path changes are part of successful build identity even when direct cookKey is stable.
+    l2d::AssetCookCache pathCache;
+    l2d::AssetCookExecutionResult pathBaseline;
+    callbackOrder.clear();
+    if (!l2d::AssetCookExecutor::execute(emptyManifest, restored, pathCache, 3u, cooker,
+                                         pathBaseline, &error) ||
+        pathBaseline.cooked != expectedOrder || callbackOrder != expectedOrder)
+    {
+        return 21;
+    }
+
+    l2d::AssetManifest pathChanged = restored;
+    auto changedRoot = *pathChanged.find(rootDescriptor.id);
+    changedRoot.cookedPath = "cooked-alt/prefabs/consumer/root.asset";
+    if (!pathChanged.upsert(changedRoot, &error))
+    {
+        return 22;
+    }
+
+    l2d::AssetCookExecutionResult pathBuild;
+    callbackOrder.clear();
+    if (!l2d::AssetCookExecutor::execute(restored, pathChanged, pathCache, 3u, cooker, pathBuild,
+                                         &error) ||
+        pathBuild.cooked != std::vector<l2d::AssetId>({rootDescriptor.id}) ||
+        !pathBuild.remaining.empty() || callbackOrder != pathBuild.cooked)
+    {
+        return 23;
+    }
+
+    l2d::AssetCookCache boundedCache;
+    if (boundedCache.record("invalid cache id", 1u, &error) || error.empty() ||
+        boundedCache.size() != 0u)
+    {
+        return 24;
+    }
+
+    const std::string invalidIdCache = "L2D-ASSET-COOK-CACHE\n1\n1\n10:invalid id\n1\n";
+    if (restoredCache.deserialize(invalidIdCache, &error) || error.empty() ||
+        restoredCache.serialize() != preservedCache)
+    {
+        return 25;
+    }
+
     const auto snapshot = registry.descriptors();
     return snapshot.size() == 1u && snapshot.front().id == leafDescriptor.id &&
                    restored.contains(rootDescriptor.id)
                ? 0
-               : 13;
+               : 26;
 }

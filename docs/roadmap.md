@@ -43,14 +43,17 @@ transactional metadata manifests plus canonical import/cook request identity der
 content, importer versions, settings, dependencies, and project-relative paths. Phase 14.3 adds a
 transactional whole-project `AssetBuildGraph` that rejects missing dependencies and cycles and
 computes deterministic dependency-first transitive rebuild invalidation from manifest cook keys.
-These slices remain CPU-only authoring/build contracts and do not change runtime `AssetManager`
-ownership semantics. Their boundaries are documented in [`asset-metadata.md`](asset-metadata.md),
-[`asset-manifest.md`](asset-manifest.md), and [`asset-build-graph.md`](asset-build-graph.md).
+Phase 14.4 adds a deterministic, transactional successful-cook cache and bounded importer/cooker
+execution that consumes those canonical manifest identities and graph invalidation results. These
+slices remain CPU-only authoring/build contracts and do not change runtime `AssetManager` ownership
+semantics. Their boundaries are documented in [`asset-metadata.md`](asset-metadata.md),
+[`asset-manifest.md`](asset-manifest.md), [`asset-build-graph.md`](asset-build-graph.md), and
+[`asset-cook-execution.md`](asset-cook-execution.md).
 
-The next Phase 14 dependency is the rebuild-cache/import execution slice that persists successful
-cook state and executes bounded importer/cooker work on top of the validated 14.3 graph. It must
-reuse `AssetManifest` cook identities and `AssetBuildGraph` invalidation rather than introducing a
-parallel asset identity or dependency system.
+The next Phase 14 dependency is the concrete importer/cooked-artifact integration slice. It should
+connect supported source formats to the bounded Phase 14.4 execution contract, validate produced
+artifacts before publication, and continue to reuse `AssetManifest`, `AssetBuildGraph`, and
+`AssetCookCache` rather than introducing parallel identity, dependency, or cache systems.
 
 ## Phase completion rule
 
