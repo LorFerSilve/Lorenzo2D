@@ -79,8 +79,9 @@ success.
 
 Source and cooked paths remain project-relative manifest paths. Source resolution canonicalizes the
 configured project root and rejects files that resolve outside it. Cooked publication creates path
-components one at a time and rejects existing symlink components or a symlink destination, avoiding
-accidental publication outside the project tree through manifest-controlled paths.
+components one at a time, rejects symlink/non-directory path components, and accepts an existing
+final destination only when it is a regular file. This prevents manifest-controlled paths from
+relocating directories or escaping the project tree through symlinks.
 
 This API is synchronous by design. Job budgeting, dependency ordering, resume behavior, and future
 background scheduling remain responsibilities of `AssetCookExecutor` and later Phase 14 slices.
