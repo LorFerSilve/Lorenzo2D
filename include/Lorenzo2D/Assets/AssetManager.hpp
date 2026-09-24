@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Lorenzo2D/Assets/AssetHandle.hpp>
+#include <Lorenzo2D/Assets/AssetId.hpp>
 #include <Lorenzo2D/Animation/AnimationClip.hpp>
 
 #include <SFML/Audio/SoundBuffer.hpp>
@@ -13,6 +14,7 @@
 
 namespace l2d
 {
+    class AssetManifestResourceLocator;
     class ResourceLocator;
 
     class AssetManager
@@ -31,6 +33,7 @@ namespace l2d
         bool loadFont(const std::string& name, const std::string& filepath);
         bool loadFont(const std::string& name, const ResourceLocator& locator,
                       const std::string& resource);
+        bool loadFont(const AssetManifestResourceLocator& locator, const AssetId& id);
         bool storeFont(const std::string& name, FontHandle font);
 
         FontHandle getFont(const std::string& name) const;
@@ -43,6 +46,8 @@ namespace l2d
         bool loadTexture(const std::string& name, const std::string& filepath, bool smooth = true);
         bool loadTexture(const std::string& name, const ResourceLocator& locator,
                          const std::string& resource, bool smooth = true);
+        bool loadTexture(const AssetManifestResourceLocator& locator, const AssetId& id,
+                         bool smooth = true);
         bool storeTexture(const std::string& name, TextureHandle texture);
 
         TextureHandle getTexture(const std::string& name) const;
@@ -55,6 +60,7 @@ namespace l2d
         bool loadSoundBuffer(const std::string& name, const std::string& filepath);
         bool loadSoundBuffer(const std::string& name, const ResourceLocator& locator,
                              const std::string& resource);
+        bool loadSoundBuffer(const AssetManifestResourceLocator& locator, const AssetId& id);
         bool storeSoundBuffer(const std::string& name, SoundBufferHandle buffer);
 
         SoundBufferHandle getSoundBuffer(const std::string& name) const;
