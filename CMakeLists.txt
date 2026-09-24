@@ -176,6 +176,7 @@ set(LORENZO2D_SOURCES
     src/Lorenzo2D/Animation/Animator.cpp
     src/Lorenzo2D/Audio/AudioSystem.cpp
     src/Lorenzo2D/Assets/AssetManager.cpp
+    src/Lorenzo2D/Assets/AssetManifestResourceLocator.cpp
     src/Lorenzo2D/Assets/AssetPipeline.cpp
     src/Lorenzo2D/Assets/ResourceLocator.cpp
     src/Lorenzo2D/Core/ActionMap.cpp
