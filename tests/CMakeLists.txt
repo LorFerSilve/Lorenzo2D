@@ -318,6 +318,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DManifestResourceTests
+    SOURCE Lorenzo2DManifestResourceTests.cpp
+    LABELS xvfb assets resources manifest phase14 runtime
+    TIMEOUT 60
+)
+
+l2d_add_regression_test(
     Lorenzo2DTextureAtlasTests
     SOURCE Lorenzo2DTextureAtlasTests.cpp
     LABELS headless assets atlas phase14 determinism
