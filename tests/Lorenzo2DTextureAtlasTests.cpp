@@ -138,8 +138,10 @@ namespace
         const auto* b = metadata.find("textures/b");
         L2D_REQUIRE(a != nullptr);
         L2D_REQUIRE(b != nullptr);
-        L2D_REQUIRE(*a == l2d::TextureAtlasRegion{"textures/a", 0u, 0u, 2u, 1u});
-        L2D_REQUIRE(*b == l2d::TextureAtlasRegion{"textures/b", 3u, 0u, 1u, 2u});
+        const l2d::TextureAtlasRegion expectedA{"textures/a", 0u, 0u, 2u, 1u};
+        const l2d::TextureAtlasRegion expectedB{"textures/b", 3u, 0u, 1u, 2u};
+        L2D_REQUIRE(*a == expectedA);
+        L2D_REQUIRE(*b == expectedB);
 
         l2d::TextureAtlasMetadata roundTrip;
         L2D_REQUIRE(roundTrip.deserialize(metadata.serialize(), &error));
