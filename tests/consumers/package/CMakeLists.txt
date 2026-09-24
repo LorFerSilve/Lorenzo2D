@@ -32,6 +32,12 @@ target_link_libraries(
     PRIVATE Lorenzo2D::Lorenzo2D
 )
 
+add_executable(Lorenzo2DAssetManifestRuntimePackageConsumer asset_manifest_runtime.cpp)
+target_link_libraries(
+    Lorenzo2DAssetManifestRuntimePackageConsumer
+    PRIVATE Lorenzo2D::Lorenzo2D
+)
+
 include(CTest)
 add_test(
     NAME Lorenzo2DPackageConsumer
@@ -48,4 +54,8 @@ add_test(
 add_test(
     NAME Lorenzo2DAssetTextureAtlasPackageConsumer
     COMMAND Lorenzo2DAssetTextureAtlasPackageConsumer
+)
+add_test(
+    NAME Lorenzo2DAssetManifestRuntimePackageConsumer
+    COMMAND Lorenzo2DAssetManifestRuntimePackageConsumer
 )

@@ -49,16 +49,19 @@ execution that consumes those canonical manifest identities and graph invalidati
 formats, canonical source-file hashing, stale-source rejection, staged artifact validation, and
 transactional cooked-file publication. Phase 14.6 adds deterministic texture-atlas generation:
 canonical dependency-derived cook identity, bounded stable shelf packing, versioned region metadata,
-and recoverable two-artifact publication for the atlas PNG plus its metadata sidecar. These slices
-remain authoring/build contracts and do not change runtime `AssetManager` ownership semantics.
-Their boundaries are documented in [`asset-metadata.md`](asset-metadata.md),
-[`asset-manifest.md`](asset-manifest.md), [`asset-build-graph.md`](asset-build-graph.md),
-[`asset-cook-execution.md`](asset-cook-execution.md), [`asset-file-cooker.md`](asset-file-cooker.md),
-and [`asset-texture-atlas.md`](asset-texture-atlas.md).
+and recoverable two-artifact publication for the atlas PNG plus its metadata sidecar. Phase 14.7
+adds bounded manifest-backed runtime resource lookup through stable `AssetId` values, ordered
+runtime roots, kind validation, and additive `AssetManager` texture/font/sound overloads while
+preserving the existing direct/resource-root loading APIs. Their boundaries are documented in
+[`asset-metadata.md`](asset-metadata.md), [`asset-manifest.md`](asset-manifest.md),
+[`asset-build-graph.md`](asset-build-graph.md), [`asset-cook-execution.md`](asset-cook-execution.md),
+[`asset-file-cooker.md`](asset-file-cooker.md), [`asset-texture-atlas.md`](asset-texture-atlas.md),
+and [`asset-manifest-runtime.md`](asset-manifest-runtime.md).
 
-The next Phase 14 dependency is manifest-backed runtime resource lookup. It should let runtime
-resource resolution consume validated cooked manifest paths while preserving the existing simple
-resource-root workflow and without making runtime ownership depend on authoring-only cooker state.
+The next Phase 14 dependency is a transactional content-generation publication boundary. It should
+allow background/incremental rebuilds to stage a complete next manifest/artifact generation and
+publish it only when all required outputs are valid, preventing runtime/editor consumers from
+observing a partially rebuilt content set.
 
 ## Phase completion rule
 
