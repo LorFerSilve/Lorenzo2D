@@ -973,25 +973,30 @@ namespace l2d
                 return false;
             }
 
+            if (hadImage && !renamePath(image, imageBackup, error))
+            {
+                return false;
+            }
+            if (hadRegions && !renamePath(regions, regionsBackup, error))
+            {
+                if (hadImage)
+                {
+                    renameBestEffort(imageBackup, image);
+                }
+                return false;
+            }
+
+            // The marker is written only after every previous artifact has reached its backup.
+            // Therefore marker recovery can always restore the complete previous generation.
             const auto transaction = transactionPath(image);
             const std::string state = std::string(hadImage ? "1" : "0") + " " +
                                       (hadRegions ? "1\n" : "0\n");
             if (!writeText(transaction, state, error))
             {
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
                 return false;
             }
 
-            if (hadImage && !renamePath(image, imageBackup, error))
-            {
-                removeBestEffort(transaction);
-                return false;
-            }
-            if (hadRegions && !renamePath(regions, regionsBackup, error))
-            {
-                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
-                removeBestEffort(transaction);
-                return false;
-            }
             if (!renamePath(imageStaged, image, error))
             {
                 rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
