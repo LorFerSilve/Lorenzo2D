@@ -1,4 +1,5 @@
 #include <Lorenzo2D/Assets/AssetManager.hpp>
+#include <Lorenzo2D/Assets/AssetManifestResourceLocator.hpp>
 #include <Lorenzo2D/Assets/ResourceLocator.hpp>
 
 #include <memory>
@@ -20,6 +21,13 @@ namespace l2d
     {
         const std::optional<ResourceLocator::Path> path = locator.locate(resource);
         return path && loadFont(name, path->string());
+    }
+
+    bool AssetManager::loadFont(const AssetManifestResourceLocator& locator, const AssetId& id)
+    {
+        AssetManifestResource resource;
+        return locator.resolve(id, AssetSourceKind::Font, resource) &&
+               loadFont(id, resource.path.string());
     }
 
     bool AssetManager::storeFont(const std::string& name, FontHandle font)
@@ -106,6 +114,14 @@ namespace l2d
         return path && loadTexture(name, path->string(), smooth);
     }
 
+    bool AssetManager::loadTexture(const AssetManifestResourceLocator& locator, const AssetId& id,
+                                   const bool smooth)
+    {
+        AssetManifestResource resource;
+        return locator.resolve(id, AssetSourceKind::Texture, resource) &&
+               loadTexture(id, resource.path.string(), smooth);
+    }
+
     bool AssetManager::storeTexture(const std::string& name, TextureHandle texture)
     {
         if (!texture) return false;
@@ -186,6 +202,14 @@ namespace l2d
     {
         const std::optional<ResourceLocator::Path> path = locator.locate(resource);
         return path && loadSoundBuffer(name, path->string());
+    }
+
+    bool AssetManager::loadSoundBuffer(const AssetManifestResourceLocator& locator,
+                                       const AssetId& id)
+    {
+        AssetManifestResource resource;
+        return locator.resolve(id, AssetSourceKind::Sound, resource) &&
+               loadSoundBuffer(id, resource.path.string());
     }
 
     bool AssetManager::storeSoundBuffer(const std::string& name, SoundBufferHandle buffer)
