@@ -863,6 +863,13 @@ namespace l2d
                    (destination.stem().string() + ".l2d-backup" + destination.extension().string());
         }
 
+        static std::filesystem::path transactionPath(const std::filesystem::path& image)
+        {
+            auto result = image;
+            result += ".l2d-transaction";
+            return result;
+        }
+
         static bool recoverGeneration(const std::filesystem::path& image,
                                       const std::filesystem::path& imageStaged,
                                       const std::filesystem::path& imageBackup,
@@ -874,21 +881,47 @@ namespace l2d
             removeBestEffort(imageStaged);
             removeBestEffort(regionsStaged);
 
-            if (!recoverOne(image, imageBackup, error))
+            const auto transaction = transactionPath(image);
+            std::error_code ec;
+            const bool transactionExists = std::filesystem::exists(transaction, ec);
+            if (ec)
+            {
+                return fail(error, "texture atlas transaction marker could not be inspected");
+            }
+
+            if (transactionExists)
+            {
+                std::string state;
+                if (!readText(transaction, state, error) ||
+                    (state != "0 0\n" && state != "0 1\n" && state != "1 0\n" &&
+                     state != "1 1\n"))
+                {
+                    return fail(error, "texture atlas transaction marker is invalid");
+                }
+
+                const bool hadImage = state[0] == '1';
+                const bool hadRegions = state[2] == '1';
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                std::filesystem::remove(transaction, ec);
+                if (ec)
+                {
+                    return fail(error, "texture atlas transaction marker could not be removed");
+                }
+            }
+
+            if (!recoverStaleBackup(image, imageBackup, error) ||
+                !recoverStaleBackup(regions, regionsBackup, error))
             {
                 return false;
             }
-            if (!recoverOne(regions, regionsBackup, error))
-            {
-                return false;
-            }
+
             clearError(error);
             return true;
         }
 
-        static bool recoverOne(const std::filesystem::path& destination,
-                               const std::filesystem::path& backup,
-                               std::string* error = nullptr)
+        static bool recoverStaleBackup(const std::filesystem::path& destination,
+                                       const std::filesystem::path& backup,
+                                       std::string* error = nullptr)
         {
             std::error_code ec;
             const bool backupExists = std::filesystem::exists(backup, ec);
@@ -900,6 +933,7 @@ namespace l2d
             {
                 return true;
             }
+
             const bool destinationExists = std::filesystem::exists(destination, ec);
             if (ec)
             {
@@ -932,39 +966,52 @@ namespace l2d
                                       const std::filesystem::path& regionsBackup,
                                       std::string* error = nullptr)
         {
-            const bool hadImage = pathExists(image, error);
-            if (error != nullptr && !error->empty())
+            bool hadImage = false;
+            bool hadRegions = false;
+            if (!pathExists(image, hadImage, error) || !pathExists(regions, hadRegions, error))
             {
                 return false;
             }
-            const bool hadRegions = pathExists(regions, error);
-            if (error != nullptr && !error->empty())
+
+            const auto transaction = transactionPath(image);
+            const std::string state = std::string(hadImage ? "1" : "0") + " " +
+                                      (hadRegions ? "1\n" : "0\n");
+            if (!writeText(transaction, state, error))
             {
                 return false;
             }
 
             if (hadImage && !renamePath(image, imageBackup, error))
             {
+                removeBestEffort(transaction);
                 return false;
             }
             if (hadRegions && !renamePath(regions, regionsBackup, error))
             {
-                if (hadImage)
-                {
-                    renameBestEffort(imageBackup, image);
-                }
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                removeBestEffort(transaction);
                 return false;
             }
             if (!renamePath(imageStaged, image, error))
             {
-                restoreGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                removeBestEffort(transaction);
                 return false;
             }
             if (!renamePath(regionsStaged, regions, error))
             {
-                removeBestEffort(image);
-                restoreGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                removeBestEffort(transaction);
                 return false;
+            }
+
+            std::error_code ec;
+            std::filesystem::remove(transaction, ec);
+            if (ec)
+            {
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                removeBestEffort(transaction);
+                return fail(error, "texture atlas transaction marker could not be committed");
             }
 
             removeBestEffort(imageBackup);
@@ -973,32 +1020,45 @@ namespace l2d
             return true;
         }
 
-        static void restoreGeneration(const std::filesystem::path& image,
-                                      const std::filesystem::path& imageBackup, const bool hadImage,
-                                      const std::filesystem::path& regions,
-                                      const std::filesystem::path& regionsBackup,
-                                      const bool hadRegions) noexcept
+        static void rollbackGeneration(const std::filesystem::path& image,
+                                       const std::filesystem::path& imageBackup,
+                                       const bool hadImage,
+                                       const std::filesystem::path& regions,
+                                       const std::filesystem::path& regionsBackup,
+                                       const bool hadRegions) noexcept
         {
+            removeBestEffort(image);
+            removeBestEffort(regions);
             if (hadImage)
             {
                 renameBestEffort(imageBackup, image);
+            }
+            else
+            {
+                removeBestEffort(imageBackup);
             }
             if (hadRegions)
             {
                 renameBestEffort(regionsBackup, regions);
             }
+            else
+            {
+                removeBestEffort(regionsBackup);
+            }
         }
 
-        static bool pathExists(const std::filesystem::path& path, std::string* error = nullptr)
+        static bool pathExists(const std::filesystem::path& path, bool& output,
+                               std::string* error = nullptr)
         {
             std::error_code ec;
             const bool exists = std::filesystem::exists(path, ec);
             if (ec)
             {
-                fail(error, "texture atlas publication destination could not be inspected");
-                return false;
+                return fail(error, "texture atlas publication destination could not be inspected");
             }
-            return exists;
+            output = exists;
+            clearError(error);
+            return true;
         }
 
         static bool renamePath(const std::filesystem::path& from, const std::filesystem::path& to,
