@@ -526,8 +526,8 @@ namespace l2d
                     const auto status = std::filesystem::symlink_status(current, ec);
                     if (ec)
                     {
-                        return fail(
-                            error, "asset cooker could not inspect the cooked artifact directory");
+                        return fail(error,
+                                    "asset cooker could not inspect the cooked artifact directory");
                     }
                     if (std::filesystem::is_symlink(status) ||
                         !std::filesystem::is_directory(status))
