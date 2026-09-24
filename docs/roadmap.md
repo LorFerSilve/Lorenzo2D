@@ -47,16 +47,18 @@ Phase 14.4 adds a deterministic, transactional successful-cook cache and bounded
 execution that consumes those canonical manifest identities and graph invalidation results. Phase
 14.5 adds concrete runtime-native file importers for common texture, font, sound, and shader source
 formats, canonical source-file hashing, stale-source rejection, staged artifact validation, and
-transactional cooked-file publication. These slices remain authoring/build contracts and do not
-change runtime `AssetManager` ownership semantics. Their boundaries are documented in
-[`asset-metadata.md`](asset-metadata.md), [`asset-manifest.md`](asset-manifest.md),
-[`asset-build-graph.md`](asset-build-graph.md), [`asset-cook-execution.md`](asset-cook-execution.md),
-and [`asset-file-cooker.md`](asset-file-cooker.md).
+transactional cooked-file publication. Phase 14.6 adds deterministic texture-atlas generation:
+canonical dependency-derived cook identity, bounded stable shelf packing, versioned region metadata,
+and recoverable two-artifact publication for the atlas PNG plus its metadata sidecar. These slices
+remain authoring/build contracts and do not change runtime `AssetManager` ownership semantics.
+Their boundaries are documented in [`asset-metadata.md`](asset-metadata.md),
+[`asset-manifest.md`](asset-manifest.md), [`asset-build-graph.md`](asset-build-graph.md),
+[`asset-cook-execution.md`](asset-cook-execution.md), [`asset-file-cooker.md`](asset-file-cooker.md),
+and [`asset-texture-atlas.md`](asset-texture-atlas.md).
 
-The next Phase 14 dependency is the texture-atlas generation slice. It should build deterministic
-atlas artifacts and stable region metadata on top of the canonical manifest, graph, cache, and
-Phase 14.5 publication contracts rather than introducing separate source identity or invalidation
-state.
+The next Phase 14 dependency is manifest-backed runtime resource lookup. It should let runtime
+resource resolution consume validated cooked manifest paths while preserving the existing simple
+resource-root workflow and without making runtime ownership depend on authoring-only cooker state.
 
 ## Phase completion rule
 
