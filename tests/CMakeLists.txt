@@ -318,6 +318,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DTextureAtlasTests
+    SOURCE Lorenzo2DTextureAtlasTests.cpp
+    LABELS headless assets atlas phase14 determinism
+    TIMEOUT 60
+)
+
+l2d_add_regression_test(
     Lorenzo2DSerializationTests
     SOURCE Lorenzo2DSerializationTests.cpp
     LABELS xvfb scene prefabs serialization physics renderer
