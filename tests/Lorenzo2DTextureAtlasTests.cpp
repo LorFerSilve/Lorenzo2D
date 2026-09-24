@@ -72,10 +72,10 @@ namespace
         l2d::AssetManifestEntry b;
         std::string error;
         L2D_REQUIRE(fileCooker.makeManifestEntry(texture("textures/a", "sources/a.png"),
-                                                  "cooked/a.png", a, &error));
+                                                 "cooked/a.png", a, &error));
         L2D_REQUIRE(error.empty());
         L2D_REQUIRE(fileCooker.makeManifestEntry(texture("textures/b", "sources/b.png"),
-                                                  "cooked/b.png", b, &error));
+                                                 "cooked/b.png", b, &error));
         L2D_REQUIRE(error.empty());
         L2D_REQUIRE(manifest.upsert(a, &error));
         L2D_REQUIRE(manifest.upsert(b, &error));
@@ -84,7 +84,7 @@ namespace
         l2d::AssetCookExecutionResult result;
         l2d::AssetManifest empty;
         L2D_REQUIRE(l2d::AssetCookExecutor::execute(empty, manifest, cache, 2u,
-                                                     fileCooker.cookFunction(), result, &error));
+                                                    fileCooker.cookFunction(), result, &error));
         L2D_REQUIRE(result.cooked.size() == 2u);
         L2D_REQUIRE(result.remaining.empty());
         return manifest;
@@ -115,7 +115,7 @@ namespace
         l2d::AssetCookCache cache;
         l2d::AssetCookExecutionResult result;
         L2D_REQUIRE(l2d::AssetCookExecutor::execute(sources, current, cache, 1u,
-                                                     cooker.cookFunction(), result, &error));
+                                                    cooker.cookFunction(), result, &error));
         L2D_REQUIRE(error.empty());
         L2D_REQUIRE(result.cooked == std::vector<l2d::AssetId>({"atlases/main"}));
         L2D_REQUIRE(result.remaining.empty());
@@ -149,7 +149,7 @@ namespace
 
         l2d::AssetCookExecutionResult cached;
         L2D_REQUIRE(l2d::AssetCookExecutor::execute(sources, current, cache, 1u,
-                                                     cooker.cookFunction(), cached, &error));
+                                                    cooker.cookFunction(), cached, &error));
         L2D_REQUIRE(cached.cooked.empty());
         L2D_REQUIRE(cached.remaining.empty());
     }
@@ -170,15 +170,14 @@ namespace
         ++changed.sourceContentHash;
         l2d::AssetCookRequest changedRequest;
         L2D_REQUIRE(l2d::AssetManifest::makeCookRequest(changed.source, changed.sourceContentHash,
-                                                         changed.importerVersion, changedRequest,
-                                                         &error));
+                                                        changed.importerVersion, changedRequest,
+                                                        &error));
         changed.cookKey = changedRequest.cookKey;
         L2D_REQUIRE(changedSources.upsert(changed, &error));
 
         l2d::AssetTextureAtlasCooker changedCooker(directory.path(), changedSources, 8u, 0u);
         l2d::AssetManifestEntry rebuilt;
-        L2D_REQUIRE(changedCooker.makeManifestEntry("atlases/main",
-                                                    {"textures/a", "textures/b"},
+        L2D_REQUIRE(changedCooker.makeManifestEntry("atlases/main", {"textures/a", "textures/b"},
                                                     "cooked/main.png", rebuilt, &error));
         L2D_REQUIRE(rebuilt.sourceContentHash != original.sourceContentHash);
         L2D_REQUIRE(rebuilt.cookKey != original.cookKey);
@@ -194,15 +193,15 @@ namespace
         sentinel.source.id = "sentinel";
         std::string error;
 
-        L2D_REQUIRE(!cooker.makeManifestEntry("atlases/main", {}, "cooked/main.png", sentinel,
-                                              &error));
+        L2D_REQUIRE(
+            !cooker.makeManifestEntry("atlases/main", {}, "cooked/main.png", sentinel, &error));
         L2D_REQUIRE(sentinel.source.id == "sentinel");
         L2D_REQUIRE(!cooker.makeManifestEntry("atlases/main", {"textures/a", "textures/a"},
                                               "cooked/main.png", sentinel, &error));
         L2D_REQUIRE(!cooker.makeManifestEntry("atlases/main", {"textures/missing"},
                                               "cooked/main.png", sentinel, &error));
-        L2D_REQUIRE(!cooker.makeManifestEntry("atlases/main", {"textures/a"},
-                                              "cooked/main.jpg", sentinel, &error));
+        L2D_REQUIRE(!cooker.makeManifestEntry("atlases/main", {"textures/a"}, "cooked/main.jpg",
+                                              sentinel, &error));
 
         l2d::AssetManifestEntry valid;
         L2D_REQUIRE(cooker.makeManifestEntry("atlases/main", {"textures/a", "textures/b"},
@@ -213,7 +212,7 @@ namespace
         l2d::AssetCookCache cache;
         l2d::AssetCookExecutionResult result = {{"sentinel"}, {"sentinel"}};
         L2D_REQUIRE(!l2d::AssetCookExecutor::execute(sources, current, cache, 1u,
-                                                      cooker.cookFunction(), result, &error));
+                                                     cooker.cookFunction(), result, &error));
         L2D_REQUIRE(!error.empty());
         L2D_REQUIRE(result.cooked == std::vector<l2d::AssetId>({"sentinel"}));
         L2D_REQUIRE(!std::filesystem::exists(directory.path() / "cooked/main.png"));
