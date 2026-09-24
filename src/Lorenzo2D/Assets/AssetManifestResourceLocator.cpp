@@ -22,7 +22,6 @@ namespace l2d
 
     bool AssetManifestResourceLocator::addRoot(Path root, std::string* error)
     {
-        const std::size_t previousSize = m_resources.roots().size();
         if (!m_resources.addRoot(root))
         {
             return fail(error, "manifest resource root could not be normalized");
@@ -32,11 +31,6 @@ namespace l2d
         {
             m_resources.removeRoot(root);
             return fail(error, "manifest resource locator reached its configured root limit");
-        }
-
-        if (m_resources.roots().size() < previousSize)
-        {
-            return fail(error, "manifest resource root state became inconsistent");
         }
 
         clearError(error);
