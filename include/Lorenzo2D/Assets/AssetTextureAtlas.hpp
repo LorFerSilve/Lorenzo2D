@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Lorenzo2D/Assets/AssetManifest.hpp>
+#include <Lorenzo2D/Assets/AssetCookCache.hpp>
 
 #include <SFML/Graphics/Image.hpp>
 
 #include <algorithm>
-#include <charconv>
+#include <charconv>\n#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
