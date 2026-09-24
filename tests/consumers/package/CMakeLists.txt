@@ -26,6 +26,12 @@ target_link_libraries(
     PRIVATE Lorenzo2D::Lorenzo2D
 )
 
+add_executable(Lorenzo2DAssetTextureAtlasPackageConsumer asset_texture_atlas.cpp)
+target_link_libraries(
+    Lorenzo2DAssetTextureAtlasPackageConsumer
+    PRIVATE Lorenzo2D::Lorenzo2D
+)
+
 include(CTest)
 add_test(
     NAME Lorenzo2DPackageConsumer
@@ -38,4 +44,8 @@ add_test(
 add_test(
     NAME Lorenzo2DAssetFileCookerPackageConsumer
     COMMAND Lorenzo2DAssetFileCookerPackageConsumer
+)
+add_test(
+    NAME Lorenzo2DAssetTextureAtlasPackageConsumer
+    COMMAND Lorenzo2DAssetTextureAtlasPackageConsumer
 )
