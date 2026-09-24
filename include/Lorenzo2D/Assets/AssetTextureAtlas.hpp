@@ -5,7 +5,8 @@
 #include <SFML/Graphics/Image.hpp>
 
 #include <algorithm>
-#include <charconv>\n#include <cctype>
+#include <charconv>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -397,7 +398,7 @@ namespace l2d
             {
                 return false;
             }
-            const auto regionsDestination = destination.string() + ".regions";
+            const std::filesystem::path regionsDestination = destination.string() + ".regions";
             if (!validateFinalDestination(regionsDestination, error))
             {
                 return false;
