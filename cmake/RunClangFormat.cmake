@@ -44,6 +44,30 @@ foreach(l2d_file IN LISTS l2d_format_files)
 
     if(NOT l2d_result EQUAL 0)
         list(APPEND l2d_format_failures "${l2d_file}")
+
+        if(L2D_FORMAT_MODE STREQUAL "check")
+            set(l2d_formatted_file "${l2d_file}.l2d-format-canonical")
+            execute_process(
+                COMMAND "${L2D_CLANG_FORMAT_EXECUTABLE}" "${l2d_file}"
+                OUTPUT_FILE "${l2d_formatted_file}"
+                RESULT_VARIABLE l2d_format_result
+            )
+            if(l2d_format_result EQUAL 0)
+                execute_process(
+                    COMMAND git diff --no-index --no-color -- "${l2d_file}" "${l2d_formatted_file}"
+                    WORKING_DIRECTORY "${L2D_SOURCE_DIR}"
+                    RESULT_VARIABLE l2d_diff_result
+                    OUTPUT_VARIABLE l2d_diff
+                    ERROR_VARIABLE l2d_diff_error
+                )
+                if(l2d_diff_result EQUAL 1)
+                    message(STATUS "Canonical clang-format diff for ${l2d_file}:\n${l2d_diff}")
+                elseif(NOT l2d_diff_result EQUAL 0)
+                    message(STATUS "Could not produce formatter diff for ${l2d_file}: ${l2d_diff_error}")
+                endif()
+            endif()
+            file(REMOVE "${l2d_formatted_file}")
+        endif()
     endif()
 endforeach()
 
