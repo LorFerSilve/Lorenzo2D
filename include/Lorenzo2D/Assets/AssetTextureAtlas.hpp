@@ -358,8 +358,9 @@ namespace l2d
             }
             if (sourceHash != request.sourceContentHash)
             {
-                return fail(error,
-                            "texture atlas dependencies changed after the cook identity was created");
+                return fail(
+                    error,
+                    "texture atlas dependencies changed after the cook identity was created");
             }
 
             std::vector<LoadedImage> images;
@@ -406,7 +407,8 @@ namespace l2d
 
             const auto staged = stagedImagePath(destination);
             const auto backup = backupImagePath(destination);
-            const auto regionsStaged = std::filesystem::path(regionsDestination.string() + ".l2d-tmp");
+            const auto regionsStaged =
+                std::filesystem::path(regionsDestination.string() + ".l2d-tmp");
             const auto regionsBackup =
                 std::filesystem::path(regionsDestination.string() + ".l2d-backup");
 
@@ -429,7 +431,8 @@ namespace l2d
             }
 
             sf::Image validationImage;
-            if (!validationImage.loadFromFile(staged) || validationImage.getSize() != metadata.size())
+            if (!validationImage.loadFromFile(staged) ||
+                validationImage.getSize() != metadata.size())
             {
                 removeBestEffort(staged);
                 removeBestEffort(regionsStaged);
@@ -459,8 +462,7 @@ namespace l2d
         }
 
         bool readPublishedMetadata(const std::filesystem::path& cookedPath,
-                                   TextureAtlasMetadata& output,
-                                   std::string* error = nullptr) const
+                                   TextureAtlasMetadata& output, std::string* error = nullptr) const
         {
             if (!validateCookedPath(cookedPath, error))
             {
@@ -500,7 +502,8 @@ namespace l2d
         {
             if (m_maxDimension == 0u || m_maxDimension > MaxAtlasDimension)
             {
-                return fail(error, "texture atlas maximum dimension is outside the supported range");
+                return fail(error,
+                            "texture atlas maximum dimension is outside the supported range");
             }
             if (m_padding > MaxPadding)
             {
@@ -520,9 +523,9 @@ namespace l2d
                             "texture atlas cooked path must be a bounded project-relative path");
             }
             std::string extension = path.extension().string();
-            std::transform(extension.begin(), extension.end(), extension.begin(),
-                           [](const char value)
-                           { return static_cast<char>(std::tolower(static_cast<unsigned char>(value))); });
+            std::transform(
+                extension.begin(), extension.end(), extension.begin(), [](const char value)
+                { return static_cast<char>(std::tolower(static_cast<unsigned char>(value))); });
             if (extension != ".png")
             {
                 return fail(error, "texture atlas cooked artifact must use the .png extension");
@@ -536,16 +539,20 @@ namespace l2d
                 request.source.importer != TextureAtlasImporter ||
                 request.importerVersion != ImporterVersion)
             {
-                return fail(error, "texture atlas cook request uses an unsupported importer contract");
+                return fail(error,
+                            "texture atlas cook request uses an unsupported importer contract");
             }
             if (request.source.importSettings.size() != 2u ||
                 request.source.importSettings.find("max_dimension") ==
                     request.source.importSettings.end() ||
-                request.source.importSettings.find("padding") == request.source.importSettings.end() ||
-                request.source.importSettings.at("max_dimension") != std::to_string(m_maxDimension) ||
+                request.source.importSettings.find("padding") ==
+                    request.source.importSettings.end() ||
+                request.source.importSettings.at("max_dimension") !=
+                    std::to_string(m_maxDimension) ||
                 request.source.importSettings.at("padding") != std::to_string(m_padding))
             {
-                return fail(error, "texture atlas cook settings do not match the configured cooker");
+                return fail(error,
+                            "texture atlas cook settings do not match the configured cooker");
             }
 
             AssetCookRequest canonical;
@@ -608,7 +615,8 @@ namespace l2d
                 const auto* entry = m_sourceManifest.find(id);
                 if (entry == nullptr)
                 {
-                    return fail(error, "texture atlas source dependency is missing from the manifest");
+                    return fail(error,
+                                "texture atlas source dependency is missing from the manifest");
                 }
                 if (entry->source.kind != AssetSourceKind::Texture)
                 {
@@ -646,7 +654,8 @@ namespace l2d
                 loaded.id = id;
                 if (!loaded.image.loadFromFile(sourcePath))
                 {
-                    return fail(error, "texture atlas could not decode a cooked texture dependency");
+                    return fail(error,
+                                "texture atlas could not decode a cooked texture dependency");
                 }
                 const auto size = loaded.image.getSize();
                 if (size.x == 0u || size.y == 0u || size.x > m_maxDimension ||
@@ -683,7 +692,8 @@ namespace l2d
                     cursorX = 0u;
                     if (rowHeight > m_maxDimension - cursorY)
                     {
-                        return fail(error, "texture atlas sources exceed the configured atlas bounds");
+                        return fail(error,
+                                    "texture atlas sources exceed the configured atlas bounds");
                     }
                     cursorY += rowHeight;
                     rowHeight = 0u;
@@ -776,15 +786,16 @@ namespace l2d
             if (ec || !isWithin(root, candidate) ||
                 !std::filesystem::is_regular_file(candidate, ec) || ec)
             {
-                return fail(error, "texture atlas dependency is not a regular file inside the project");
+                return fail(error,
+                            "texture atlas dependency is not a regular file inside the project");
             }
             output = candidate;
             clearError(error);
             return true;
         }
 
-        bool prepareDestination(const std::filesystem::path& relative, std::filesystem::path& output,
-                                std::string* error = nullptr) const
+        bool prepareDestination(const std::filesystem::path& relative,
+                                std::filesystem::path& output, std::string* error = nullptr) const
         {
             std::filesystem::path root;
             if (!canonicalProjectRoot(root, error))
@@ -894,15 +905,15 @@ namespace l2d
             {
                 std::string state;
                 if (!readText(transaction, state, error) ||
-                    (state != "0 0\n" && state != "0 1\n" && state != "1 0\n" &&
-                     state != "1 1\n"))
+                    (state != "0 0\n" && state != "0 1\n" && state != "1 0\n" && state != "1 1\n"))
                 {
                     return fail(error, "texture atlas transaction marker is invalid");
                 }
 
                 const bool hadImage = state[0] == '1';
                 const bool hadRegions = state[2] == '1';
-                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup,
+                                   hadRegions);
                 std::filesystem::remove(transaction, ec);
                 if (ec)
                 {
@@ -945,7 +956,8 @@ namespace l2d
                 std::filesystem::remove(backup, ec);
                 if (ec)
                 {
-                    return fail(error, "stale texture atlas publication backup could not be removed");
+                    return fail(error,
+                                "stale texture atlas publication backup could not be removed");
                 }
             }
             else
@@ -990,23 +1002,26 @@ namespace l2d
             // The marker is written only after every previous artifact has reached its backup.
             // Therefore marker recovery can always restore the complete previous generation.
             const auto transaction = transactionPath(image);
-            const std::string state = std::string(hadImage ? "1" : "0") + " " +
-                                      (hadRegions ? "1\n" : "0\n");
+            const std::string state =
+                std::string(hadImage ? "1" : "0") + " " + (hadRegions ? "1\n" : "0\n");
             if (!writeText(transaction, state, error))
             {
-                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup,
+                                   hadRegions);
                 return false;
             }
 
             if (!renamePath(imageStaged, image, error))
             {
-                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup,
+                                   hadRegions);
                 removeBestEffort(transaction);
                 return false;
             }
             if (!renamePath(regionsStaged, regions, error))
             {
-                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup,
+                                   hadRegions);
                 removeBestEffort(transaction);
                 return false;
             }
@@ -1015,7 +1030,8 @@ namespace l2d
             std::filesystem::remove(transaction, ec);
             if (ec)
             {
-                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup, hadRegions);
+                rollbackGeneration(image, imageBackup, hadImage, regions, regionsBackup,
+                                   hadRegions);
                 removeBestEffort(transaction);
                 return fail(error, "texture atlas transaction marker could not be committed");
             }
@@ -1028,8 +1044,7 @@ namespace l2d
 
         static void rollbackGeneration(const std::filesystem::path& image,
                                        const std::filesystem::path& imageBackup,
-                                       const bool hadImage,
-                                       const std::filesystem::path& regions,
+                                       const bool hadImage, const std::filesystem::path& regions,
                                        const std::filesystem::path& regionsBackup,
                                        const bool hadRegions) noexcept
         {
@@ -1074,7 +1089,8 @@ namespace l2d
             std::filesystem::rename(from, to, ec);
             if (ec)
             {
-                return fail(error, "texture atlas generation could not be published transactionally");
+                return fail(error,
+                            "texture atlas generation could not be published transactionally");
             }
             return true;
         }
@@ -1114,7 +1130,8 @@ namespace l2d
             }
             stream.seekg(0, std::ios::end);
             const auto end = stream.tellg();
-            if (end < 0 || static_cast<std::uint64_t>(end) > TextureAtlasMetadata::MaxSerializedBytes)
+            if (end < 0 ||
+                static_cast<std::uint64_t>(end) > TextureAtlasMetadata::MaxSerializedBytes)
             {
                 return fail(error, "texture atlas metadata exceeds the configured byte limit");
             }
