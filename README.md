@@ -24,6 +24,8 @@ current support claims are documented separately:
   point-and-click, top-down, platformer, and isometric support.
 - [`docs/asset-manifest-runtime.md`](docs/asset-manifest-runtime.md) documents stable-ID
   runtime lookup of cooked Phase 14 manifest artifacts and AssetManager integration.
+- [`docs/asset-generation-publication.md`](docs/asset-generation-publication.md) documents
+  immutable staged generations and transactional publication for background/incremental rebuilds.
 - [`docs/benchmarking.md`](docs/benchmarking.md) defines diagnostic scenarios,
   machine-readable reports, and the policy for future performance budgets.
 - [`docs/input.md`](docs/input.md) documents typed actions, context blocking,
@@ -90,7 +92,8 @@ current support claims are documented separately:
 - Snapshot/live font, texture, and sound-buffer handles; background texture loading; hot reload;
   dependency tracking; ordered resource roots; and manifest-backed stable-ID runtime lookup
 - Deterministic Phase 14 source metadata/manifests, dependency-aware cook cache/execution,
-  validated native-file cooking, and deterministic texture-atlas generation
+  validated native-file cooking, deterministic texture-atlas generation, and immutable
+  generation publication that keeps incomplete rebuilds out of runtime/editor lookup
 - Screen-space runtime buttons with topmost hit-testing and press/release capture
 - Effects/UI/music audio buses with lifetime-safe voices and transactional streamed music
 - Deterministic typed save documents with versioned envelopes, workload limits, and safe file replacement

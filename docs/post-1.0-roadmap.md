@@ -437,6 +437,18 @@ depend on the editor.
 Replace ad-hoc runtime asset loading with an optional deterministic source-to-runtime content
 pipeline suitable for larger projects.
 
+### Implementation progress
+
+- **14.1-14.7:** stable source metadata, deterministic manifests, dependency/rebuild graph,
+  incremental cook cache/execution, validated native-file cooking, deterministic texture-atlas
+  generation, and manifest-backed runtime lookup are implemented.
+- **14.8 Transactional content-generation publication:** immutable published generation roots,
+  private staging roots, previous-generation seeding, dependency-driven invalidated-output removal,
+  complete-artifact publication validation, and explicit manifest/root runtime handoff are
+  implemented. Existing published generations remain untouched while the next generation is built.
+- **Phase 14 status: in progress.** The next dependency is editor/background-build orchestration on
+  the generation boundary; scheduling and UI progress/failure policy remain outside 14.8.
+
 ### Scope
 
 - Stable asset metadata/IDs.

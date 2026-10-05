@@ -87,7 +87,8 @@ Games are not required to adopt the Phase 14 content pipeline.
 
 ## Scope boundary
 
-Phase 14.7 does not watch manifests, schedule background cooks, atomically publish a complete
-multi-asset generation, or make the editor depend on runtime loading state. The next content-pipeline
-slice should establish a transactional generation-publication boundary so background rebuilds can
-be prepared without exposing a partially updated manifest/artifact set.
+Phase 14.7 itself does not watch manifests, schedule background cooks, or publish complete
+multi-asset generations. Phase 14.8 adds that missing publication boundary through immutable staged
+generations; see [`asset-generation-publication.md`](asset-generation-publication.md). Runtime
+resource ownership remains separate: publication and locator selection affect future lookup, while
+loaded-resource reload policy remains an application/editor concern.

@@ -56,12 +56,18 @@ preserving the existing direct/resource-root loading APIs. Their boundaries are 
 [`asset-metadata.md`](asset-metadata.md), [`asset-manifest.md`](asset-manifest.md),
 [`asset-build-graph.md`](asset-build-graph.md), [`asset-cook-execution.md`](asset-cook-execution.md),
 [`asset-file-cooker.md`](asset-file-cooker.md), [`asset-texture-atlas.md`](asset-texture-atlas.md),
-and [`asset-manifest-runtime.md`](asset-manifest-runtime.md).
+and [`asset-manifest-runtime.md`](asset-manifest-runtime.md). Phase 14.8 adds immutable
+content generations on top of those contracts: background/incremental rebuilds are prepared in a
+private staging root, unchanged artifacts can be copied forward from the previous generation,
+dependency-invalidated outputs are removed before cooking, publication requires every manifest
+artifact to be present and contained, and the complete tree becomes visible through one sibling
+directory rename. Runtime/editor lookup changes only after an explicit published-generation locator
+swap. The boundary is documented in
+[`asset-generation-publication.md`](asset-generation-publication.md).
 
-The next Phase 14 dependency is a transactional content-generation publication boundary. It should
-allow background/incremental rebuilds to stage a complete next manifest/artifact generation and
-publish it only when all required outputs are valid, preventing runtime/editor consumers from
-observing a partially rebuilt content set.
+The next Phase 14 dependency is editor/background-build orchestration on top of the Phase 14.8
+generation boundary. It should schedule bounded rebuild work and surface progress/failures without
+making the editor or runtime observe staging roots or partially completed generations.
 
 ## Phase completion rule
 
