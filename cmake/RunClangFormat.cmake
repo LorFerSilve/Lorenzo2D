@@ -38,7 +38,6 @@ foreach(l2d_file IN LISTS l2d_format_files)
                 --dry-run --Werror "${l2d_file}"
             RESULT_VARIABLE l2d_result
             OUTPUT_QUIET
-            ERROR_QUIET
         )
     endif()
 
