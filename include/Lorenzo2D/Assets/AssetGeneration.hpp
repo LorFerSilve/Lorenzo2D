@@ -280,8 +280,7 @@ namespace l2d
 
                 const auto path = entry.cookedPath.lexically_normal();
                 const auto first = path.begin();
-                if (first != path.end() &&
-                    *first == Path(std::string(ManifestFilename)))
+                if (first != path.end() && *first == Path(std::string(ManifestFilename)))
                 {
                     return fail(error,
                                 "asset generation cooked path uses reserved publication metadata");
