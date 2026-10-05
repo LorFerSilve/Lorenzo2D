@@ -22,8 +22,7 @@ namespace l2d
         AssetManifest manifest;
 
         // Replaces a runtime locator only after the complete generation root has been accepted.
-        bool configure(AssetManifestResourceLocator& output,
-                       std::string* error = nullptr) const
+        bool configure(AssetManifestResourceLocator& output, std::string* error = nullptr) const
         {
             std::error_code filesystemError;
             if (!std::filesystem::is_directory(root, filesystemError) || filesystemError)
@@ -135,8 +134,9 @@ namespace l2d
             }
             if (std::filesystem::exists(candidate.root, filesystemError) || filesystemError)
             {
-                return fail(error, filesystemError ? "asset generation staging check failed"
-                                                   : "asset generation staging root already exists");
+                return fail(error, filesystemError
+                                       ? "asset generation staging check failed"
+                                       : "asset generation staging root already exists");
             }
             if (!std::filesystem::create_directory(candidate.root, filesystemError) ||
                 filesystemError)
@@ -225,8 +225,8 @@ namespace l2d
             }
 
             filesystemError.clear();
-            const Path expectedStaging = std::filesystem::canonical(
-                root / (".l2d-stage-" + staging.id), filesystemError);
+            const Path expectedStaging =
+                std::filesystem::canonical(root / (".l2d-stage-" + staging.id), filesystemError);
             if (filesystemError || actualStaging != expectedStaging)
             {
                 return fail(error, "asset generation staging root is not owned by this publisher");
@@ -275,8 +275,7 @@ namespace l2d
                 std::string entryError;
                 if (!AssetManifest::validate(entry, &entryError))
                 {
-                    return fail(error,
-                                "asset generation manifest entry is invalid: " + entryError);
+                    return fail(error, "asset generation manifest entry is invalid: " + entryError);
                 }
 
                 const auto path = entry.cookedPath.lexically_normal();
@@ -317,8 +316,8 @@ namespace l2d
             }
 
             Path canonicalRoot = std::filesystem::canonical(absoluteRoot, filesystemError);
-            if (filesystemError ||
-                !std::filesystem::is_directory(canonicalRoot, filesystemError) || filesystemError)
+            if (filesystemError || !std::filesystem::is_directory(canonicalRoot, filesystemError) ||
+                filesystemError)
             {
                 return fail(error,
                             "asset generation publication root does not exist as a directory");
@@ -364,8 +363,7 @@ namespace l2d
                 const Path artifact =
                     std::filesystem::canonical(canonicalRoot / entry.cookedPath, filesystemError);
                 if (filesystemError || !isWithin(canonicalRoot, artifact) ||
-                    !std::filesystem::is_regular_file(artifact, filesystemError) ||
-                    filesystemError)
+                    !std::filesystem::is_regular_file(artifact, filesystemError) || filesystemError)
                 {
                     return fail(error, "asset generation is missing required artifact '" +
                                            entry.source.id + "'");
@@ -392,8 +390,8 @@ namespace l2d
                 const auto status = iterator->symlink_status(filesystemError);
                 if (filesystemError || std::filesystem::is_symlink(status))
                 {
-                    return fail(error,
-                                "previous asset generation contains an unreadable or symlink entry");
+                    return fail(
+                        error, "previous asset generation contains an unreadable or symlink entry");
                 }
 
                 const Path relative = iterator->path().lexically_relative(source);
@@ -417,9 +415,9 @@ namespace l2d
                     std::filesystem::create_directories(target.parent_path(), filesystemError);
                     if (!filesystemError)
                     {
-                        std::filesystem::copy_file(iterator->path(), target,
-                                                   std::filesystem::copy_options::overwrite_existing,
-                                                   filesystemError);
+                        std::filesystem::copy_file(
+                            iterator->path(), target,
+                            std::filesystem::copy_options::overwrite_existing, filesystemError);
                     }
                 }
                 else
