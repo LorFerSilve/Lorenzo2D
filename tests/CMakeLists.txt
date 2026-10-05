@@ -325,6 +325,13 @@ l2d_add_regression_test(
 )
 
 l2d_add_regression_test(
+    Lorenzo2DAssetGenerationTests
+    SOURCE Lorenzo2DAssetGenerationTests.cpp
+    LABELS headless assets manifest phase14 generation determinism
+    TIMEOUT 60
+)
+
+l2d_add_regression_test(
     Lorenzo2DTextureAtlasTests
     SOURCE Lorenzo2DTextureAtlasTests.cpp
     LABELS headless assets atlas phase14 determinism
