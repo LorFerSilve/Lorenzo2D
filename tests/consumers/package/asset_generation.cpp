@@ -59,8 +59,7 @@ int main()
     }
 
     {
-        std::ofstream stream(staging.root / entry.cookedPath,
-                             std::ios::binary | std::ios::trunc);
+        std::ofstream stream(staging.root / entry.cookedPath, std::ios::binary | std::ios::trunc);
         stream << "void main() {}\n";
         if (!stream)
         {
