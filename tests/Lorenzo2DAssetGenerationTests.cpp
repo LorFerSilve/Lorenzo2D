@@ -86,8 +86,7 @@ namespace
     {
         l2d::AssetManifest manifest;
         L2D_REQUIRE(manifest.upsert(makeEntry("assets/a", "cooked/a.frag", 1u)));
-        L2D_REQUIRE(
-            manifest.upsert(makeEntry("assets/b", "cooked/b.frag", 2u, {"assets/a"})));
+        L2D_REQUIRE(manifest.upsert(makeEntry("assets/b", "cooked/b.frag", 2u, {"assets/a"})));
         L2D_REQUIRE(manifest.upsert(makeEntry("assets/c", "cooked/c.frag", 3u)));
         return manifest;
     }
