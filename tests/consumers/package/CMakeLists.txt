@@ -38,6 +38,12 @@ target_link_libraries(
     PRIVATE Lorenzo2D::Lorenzo2D
 )
 
+add_executable(Lorenzo2DAssetGenerationPackageConsumer asset_generation.cpp)
+target_link_libraries(
+    Lorenzo2DAssetGenerationPackageConsumer
+    PRIVATE Lorenzo2D::Lorenzo2D
+)
+
 include(CTest)
 add_test(
     NAME Lorenzo2DPackageConsumer
@@ -58,4 +64,8 @@ add_test(
 add_test(
     NAME Lorenzo2DAssetManifestRuntimePackageConsumer
     COMMAND Lorenzo2DAssetManifestRuntimePackageConsumer
+)
+add_test(
+    NAME Lorenzo2DAssetGenerationPackageConsumer
+    COMMAND Lorenzo2DAssetGenerationPackageConsumer
 )
