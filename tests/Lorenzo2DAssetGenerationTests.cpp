@@ -179,6 +179,108 @@ namespace
         L2D_REQUIRE(readText(current.root / "cooked/c.frag") == "stable-c\n");
     }
 
+    void testPublishRejectsReplacedStagingRootSymlink()
+    {
+        TemporaryDirectory directory("lorenzo2d_asset_generation_stage_symlink");
+        l2d::AssetGenerationPublisher publisher(directory.path() / "published");
+
+        l2d::AssetManifest manifest;
+        L2D_REQUIRE(manifest.upsert(makeEntry("assets/a", "cooked/a.frag", 1u)));
+
+        l2d::AssetGenerationStaging staging;
+        std::string error;
+        L2D_REQUIRE(publisher.prepare(manifest, staging, &error));
+
+        std::error_code filesystemError;
+        std::filesystem::remove_all(staging.root, filesystemError);
+        L2D_REQUIRE(!filesystemError);
+
+        const auto outside = directory.path() / "outside-stage";
+        writeText(outside / "cooked/a.frag", "outside\n");
+
+        std::filesystem::create_directory_symlink(outside, staging.root, filesystemError);
+        if (filesystemError)
+        {
+            return;
+        }
+
+        l2d::AssetContentGeneration output;
+        output.id = "sentinel";
+        L2D_REQUIRE(!publisher.publish(staging, output, &error));
+        L2D_REQUIRE(!error.empty());
+        L2D_REQUIRE(output.id == "sentinel");
+        L2D_REQUIRE(std::filesystem::is_directory(outside));
+        L2D_REQUIRE(!std::filesystem::exists(directory.path() / "published" / staging.id));
+    }
+
+    void testPublishRejectsSymlinkedArtifact()
+    {
+        TemporaryDirectory directory("lorenzo2d_asset_generation_artifact_symlink");
+        l2d::AssetGenerationPublisher publisher(directory.path() / "published");
+
+        l2d::AssetManifest manifest;
+        L2D_REQUIRE(manifest.upsert(makeEntry("assets/a", "cooked/a.frag", 1u)));
+
+        l2d::AssetGenerationStaging staging;
+        std::string error;
+        L2D_REQUIRE(publisher.prepare(manifest, staging, &error));
+
+        const auto target = staging.root / "artifact-target.frag";
+        writeText(target, "shader\n");
+        std::filesystem::create_directories(staging.root / "cooked");
+
+        std::error_code filesystemError;
+        std::filesystem::create_symlink(target, staging.root / "cooked/a.frag", filesystemError);
+        if (filesystemError)
+        {
+            return;
+        }
+
+        l2d::AssetContentGeneration output;
+        output.id = "sentinel";
+        L2D_REQUIRE(!publisher.publish(staging, output, &error));
+        L2D_REQUIRE(!error.empty());
+        L2D_REQUIRE(output.id == "sentinel");
+        L2D_REQUIRE(std::filesystem::is_directory(staging.root));
+    }
+
+    void testPublishRejectsSymlinkedManifestMetadata()
+    {
+        TemporaryDirectory directory("lorenzo2d_asset_generation_manifest_symlink");
+        l2d::AssetGenerationPublisher publisher(directory.path() / "published");
+
+        l2d::AssetManifest manifest;
+        L2D_REQUIRE(manifest.upsert(makeEntry("assets/a", "cooked/a.frag", 1u)));
+
+        l2d::AssetGenerationStaging staging;
+        std::string error;
+        L2D_REQUIRE(publisher.prepare(manifest, staging, &error));
+        writeText(staging.root / "cooked/a.frag", "shader\n");
+
+        const auto metadata =
+            staging.root /
+            std::filesystem::path(std::string(l2d::AssetGenerationPublisher::ManifestFilename));
+        const auto outside = directory.path() / "outside-manifest";
+        writeText(outside, "sentinel\n");
+
+        std::error_code filesystemError;
+        L2D_REQUIRE(std::filesystem::remove(metadata, filesystemError));
+        L2D_REQUIRE(!filesystemError);
+        std::filesystem::create_symlink(outside, metadata, filesystemError);
+        if (filesystemError)
+        {
+            return;
+        }
+
+        l2d::AssetContentGeneration output;
+        output.id = "sentinel";
+        L2D_REQUIRE(!publisher.publish(staging, output, &error));
+        L2D_REQUIRE(!error.empty());
+        L2D_REQUIRE(output.id == "sentinel");
+        L2D_REQUIRE(readText(outside) == "sentinel\n");
+        L2D_REQUIRE(std::filesystem::is_directory(staging.root));
+    }
+
     void testPrepareRejectsInvalidGraphsTransactionally()
     {
         TemporaryDirectory directory("lorenzo2d_asset_generation_invalid");
@@ -219,6 +321,11 @@ int main()
     int failures = 0;
     runTest("incremental generation stays hidden until complete",
             testIncrementalGenerationStaysHiddenUntilComplete, failures);
+    runTest("publish rejects replaced staging root symlink",
+            testPublishRejectsReplacedStagingRootSymlink, failures);
+    runTest("publish rejects symlinked artifact", testPublishRejectsSymlinkedArtifact, failures);
+    runTest("publish rejects symlinked manifest metadata",
+            testPublishRejectsSymlinkedManifestMetadata, failures);
     runTest("prepare rejects invalid graphs transactionally",
             testPrepareRejectsInvalidGraphsTransactionally, failures);
     runTest("publication metadata path is reserved", testPublicationMetadataPathIsReserved,
