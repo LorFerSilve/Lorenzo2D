@@ -84,10 +84,11 @@ Before the staging directory is exposed it:
 
 1. revalidates the manifest and dependency graph;
 2. verifies that the staging identity matches the manifest;
-3. verifies that the staging directory belongs to the publisher;
+3. verifies that the staging path is the expected direct, non-symlink child of the publication root;
 4. resolves every manifest `cookedPath`;
-5. requires every required artifact to be a regular file confined to the staging root;
-6. rewrites the canonical generation manifest metadata; and
+5. rejects symlinks in required artifact paths and requires every artifact to be a regular file
+   confined to the staging root;
+6. refuses to rewrite generation metadata through a symlink or non-regular metadata path; and
 7. renames the complete staging directory to its immutable generation name.
 
 If any required artifact is missing, publication fails and the staging tree remains private.
@@ -125,8 +126,11 @@ decision.
 - Invalid or cyclic manifests are rejected before a staging root is created.
 - Missing dependencies use the existing `AssetBuildGraph` fail-closed behavior.
 - The publisher reserves `.l2d-generation-manifest` for generation metadata.
-- Required cooked paths must resolve inside the generation root.
+- Required cooked paths must resolve inside the generation root without traversing symlinks.
 - A previous generation must belong to the same publisher before it can seed a rebuild.
+- The staging root must remain the publisher-created direct directory; replacing it with a symlink is
+  rejected before validation, metadata writes, or rename.
+- Generation metadata cannot be replaced by a symlink or another non-regular filesystem entry.
 - Symlinks in a copied previous generation are rejected rather than reproduced into staging.
 - An incomplete generation is never added as a runtime resource root.
 - A successfully published generation is immutable from the publisher's point of view.
