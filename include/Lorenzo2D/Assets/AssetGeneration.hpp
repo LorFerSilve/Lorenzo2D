@@ -217,20 +217,13 @@ namespace l2d
                 return false;
             }
 
-            std::error_code filesystemError;
-            const Path actualStaging = std::filesystem::canonical(staging.root, filesystemError);
-            if (filesystemError)
+            Path actualStaging;
+            if (!validateOwnedStagingRoot(staging, root, actualStaging, error))
             {
-                return fail(error, "asset generation staging root is unavailable");
+                return false;
             }
 
-            filesystemError.clear();
-            const Path expectedStaging =
-                std::filesystem::canonical(root / (".l2d-stage-" + staging.id), filesystemError);
-            if (filesystemError || actualStaging != expectedStaging)
-            {
-                return fail(error, "asset generation staging root is not owned by this publisher");
-            }
+            std::error_code filesystemError;
 
             if (!validateArtifacts(actualStaging, staging.manifest, error) ||
                 !writeManifest(actualStaging, staging.manifest, error))
@@ -327,6 +320,36 @@ namespace l2d
             return true;
         }
 
+        static bool validateOwnedStagingRoot(const AssetGenerationStaging& staging,
+                                             const Path& publicationRoot, Path& output,
+                                             std::string* error)
+        {
+            const Path expected = publicationRoot / (".l2d-stage-" + staging.id);
+            if (staging.root.lexically_normal() != expected.lexically_normal())
+            {
+                return fail(error, "asset generation staging root is not owned by this publisher");
+            }
+
+            std::error_code filesystemError;
+            const auto status = std::filesystem::symlink_status(expected, filesystemError);
+            if (filesystemError || std::filesystem::is_symlink(status) ||
+                !std::filesystem::is_directory(status))
+            {
+                return fail(error, "asset generation staging root is unavailable or unsafe");
+            }
+
+            filesystemError.clear();
+            const Path canonical = std::filesystem::canonical(expected, filesystemError);
+            if (filesystemError || canonical != expected)
+            {
+                return fail(error, "asset generation staging root is not a direct publication child");
+            }
+
+            output = expected;
+            clearError(error);
+            return true;
+        }
+
         static bool validatePrevious(const AssetContentGeneration& previous,
                                      const Path& publicationRoot, std::string* error)
         {
@@ -358,9 +381,21 @@ namespace l2d
 
             for (const auto& entry : manifest.entries())
             {
+                Path current = canonicalRoot;
+                for (const auto& component : entry.cookedPath.lexically_normal())
+                {
+                    current /= component;
+                    filesystemError.clear();
+                    const auto status = std::filesystem::symlink_status(current, filesystemError);
+                    if (filesystemError || std::filesystem::is_symlink(status))
+                    {
+                        return fail(error, "asset generation contains an unsafe artifact path for '" +
+                                               entry.source.id + "'");
+                    }
+                }
+
                 filesystemError.clear();
-                const Path artifact =
-                    std::filesystem::canonical(canonicalRoot / entry.cookedPath, filesystemError);
+                const Path artifact = std::filesystem::canonical(current, filesystemError);
                 if (filesystemError || !isWithin(canonicalRoot, artifact) ||
                     !std::filesystem::is_regular_file(artifact, filesystemError) || filesystemError)
                 {
@@ -444,9 +479,23 @@ namespace l2d
         static bool writeManifest(const Path& root, const AssetManifest& manifest,
                                   std::string* error)
         {
+            const Path manifestPath = root / Path(std::string(ManifestFilename));
+            std::error_code filesystemError;
+            const auto status = std::filesystem::symlink_status(manifestPath, filesystemError);
+            if (filesystemError &&
+                filesystemError != std::make_error_code(std::errc::no_such_file_or_directory))
+            {
+                return fail(error, "asset generation manifest path could not be inspected");
+            }
+            if (!filesystemError && std::filesystem::exists(status) &&
+                (std::filesystem::is_symlink(status) ||
+                 !std::filesystem::is_regular_file(status)))
+            {
+                return fail(error, "asset generation manifest path is unsafe");
+            }
+
             const std::string document = manifest.serialize();
-            std::ofstream stream(root / Path(std::string(ManifestFilename)),
-                                 std::ios::binary | std::ios::trunc);
+            std::ofstream stream(manifestPath, std::ios::binary | std::ios::trunc);
             if (!stream)
             {
                 return fail(error, "asset generation manifest could not be opened for writing");
